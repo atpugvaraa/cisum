@@ -1,4 +1,4 @@
-# **cisum** - a music app
+# **cisum** - a music streaming app
 
 It is a Music Streaming app I am working on.
 <br>
