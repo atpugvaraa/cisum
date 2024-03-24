@@ -10,19 +10,125 @@ import SwiftUI
 struct Player: View {
   @Binding var expandPlayer: Bool
   var animation: Namespace.ID
+  @State private var animateContent: Bool = false
   var body: some View {
     GeometryReader {
       let size = $0.size
       let safeArea = $0.safeAreaInsets
 
       ZStack {
-        //Song/Video
-        Capsule()
-          .fill(.gray)
-          .frame(width: 120, height: 30)
+        Rectangle()
+          .fill(.ultraThinMaterial)
+          .overlay(content: {
+            Rectangle()
+            .fill(.ultraThinMaterial)
+            .opacity(animateContent ? 1 : 0)
+          })
+          .overlay(alignment: .top) {
+            MusicInfo(expandPlayer: $expandPlayer, animation: animation)
+              .allowsHitTesting(false)
+              .opacity(animateContent ? 0 : 1)
+          }
+          .matchedGeometryEffect(id: "Background", in: animation)
+
+        VStack(spacing: 15) {
+          //Song/Video
+          Capsule()
+            .fill(.gray)
+            .frame(width: 40, height: 5)
+            .opacity(animateContent ? 1 : 0)
+
+          //Artwork
+          GeometryReader {
+            let size = $0.size
+
+            Image("Image")
+              .resizable
+              .aspectRatio(contentMode: .fill)
+              .frame(width: size.width, height: size.height)
+              .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+          }
+          .matchedGeometryEffect(id: "Album Cover", in: animation)
+          //Square Artwork Image
+          .frame(height: size.width - 50)
+
+          //Player
+          Player(size)
+          //Moving it from bottom
+          .offset(y: animateContent ? 0 : size.height)
+        }
+        .padding(.top, safeArea.top + (safeArea.bottom == 0 ? 10 : 0))
+        .padding(.bottom, safeArea.bottom == 0 ? 10 : safeArea.bottom)
+        .padding(.horizontal, 25)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .clipped()
       }
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
       .ignoresSafeArea(.container, edges: .all)
+    }
+    .onAppear {
+      withAnimation(.easeInOut(duration: 0.35)) {
+        animateContent = true
+      }
+    }
+  }
+  @ViewBuilder
+  func Player(_ mainSize: CGSize) -> some View {
+    GeometryReader {
+      let size = $0.size
+
+      let spacing = size.height * 0.04
+
+      VStack(spacing: spacing) {
+        VStack(spacing: spacing) {
+          HStack(alignment: .center, spacing: 15) {
+            VStack(alignment:. leading, spacing: 4) {
+              Text("Song Name")
+              .font(.title3)
+              .fontWeight(.semibold)
+
+              Text("Artist")
+              .foregroundColor(.gray)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+
+            } label: {
+              Image(systemName: "heart.fill")
+              .foregroundColor(.primary)
+            }
+
+            Button {
+
+            } label: {
+              Image(systemName: "ellipsis")
+              .foregroundColor(.primary)
+              .padding(12)
+            }
+          }
+          //Song Duration Slider
+          Capsule()
+          .fill(.ultraThinMaterial)
+          .environment(\.colorScheme, .light)
+          .frame(height: 8)
+          .padding(.top, spacing)
+
+          //Song Duration Label
+          HStack {
+            Text("-:--")
+            .font(.caption)
+            .foregroundColor(.gray)
+
+            Spacer(minLength: 0)
+
+            Text("-:--")
+            .font(.caption)
+            .foregroundColor(.gray)
+          }
+        }
+
+        //MARK: Playback Controls 14:56
+      }
     }
   }
 }

@@ -35,15 +35,20 @@ struct Main: View {
   //MARK: FLoating Player
   @ViewBuilder
   func FloatingPlayer() -> some View {
-    @State var expandPlayer: Bool = false
-    @Namespace var animation
+    //MARK: Player Expand Animation
     ZStack {
-      Rectangle()
+      if expandPlayer {
+        Rectangle()
+        .fill(.clear)
+      } else {
+        Rectangle()
         .fill(.ultraThickMaterial)
         .overlay {
           //Music Info
           MusicInfo(expandPlayer: $expandPlayer, animation: animation)
         }
+        .matchedGeometryEffect(id: "Background", in: animation)
+      }
     }
     .frame(height: 70)
     //MARK: Separator Line
@@ -58,7 +63,10 @@ struct Main: View {
 
   @ViewBuilder
   func Tabs(_ title: String, _ icon: String) -> some View {
-    Text(title)
+    ScrollView(.vertical, showsIndicators: false, content: {
+      Text(title)
+      .padding(.top, 25)
+    })
       .tabItem {
         Image(systemName: icon)
         Text(title)
@@ -66,6 +74,8 @@ struct Main: View {
     //Changing Tab Background Color
       .toolbarBackground(.visible, for: .tabBar)
       .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+      //Hiding tab bar
+      .toolbar(expandPlayer ? .hidden : .visible, for: .tabBar)
   }
 }
 
