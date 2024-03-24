@@ -21,7 +21,7 @@ struct Player: View {
           .fill(.gray)
           .frame(width: 120, height: 30)
       }
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
       .ignoresSafeArea(.container, edges: .all)
     }
   }
