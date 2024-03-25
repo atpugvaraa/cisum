@@ -8,18 +8,43 @@
 import SwiftUI
 
 struct Main: View {
+  let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
+  @State private var selectedTab = 0
+  //Animation Properties
   @State var expandPlayer: Bool = false
   @Namespace var animation
   var body: some View {
     //MARK: Tab View
-    TabView {
+    TabView(selection: $selectedTab) {
       //Tabs
-      Tabs("Listen Now", "play.circle.fill")
-      Tabs("Library", "play.square.stack")
-      Tabs("Search", "magnifyingglass")
+      Home()
+        .tabItem {
+          if selectedTab == 0 {
+            Image("home.fill")
+          } else {
+            Image("home")
+          }
+          Text("Home")
+        }
+        .tag(0)
+
+      Library()
+        .tabItem {
+          Image(systemName: "play.square.stack")
+          Text("Library")
+        }
+        .tag(1)
+
+      Search()
+        .tabItem {
+          Image(systemName: "magnifyingglass")
+          Text("Search")
+        }
+        .tag(2)
     }
-    //Changing Tab Indicator Color
-    .tint(.red)
+    .accentColor(AccentColor)
+    //Hiding tab bar
+    .toolbar(expandPlayer ? .hidden : .visible, for: .tabBar)
     .safeAreaInset(edge: .bottom) {
       FloatingPlayer()
     }
@@ -32,50 +57,26 @@ struct Main: View {
     }
   }
 
-  //MARK: FLoating Player
+  //MARK: Floating Player
   @ViewBuilder
   func FloatingPlayer() -> some View {
     //MARK: Player Expand Animation
     ZStack {
       if expandPlayer {
         Rectangle()
-        .fill(.clear)
+          .fill(.clear)
       } else {
-        Rectangle()
-        .fill(.ultraThickMaterial)
-        .overlay {
-          //Music Info
-          MusicInfo(expandPlayer: $expandPlayer, animation: animation)
-        }
-        .matchedGeometryEffect(id: "Background", in: animation)
+        RoundedRectangle(cornerRadius: 12)
+          .fill(.ultraThinMaterial)
+          .overlay {
+            //Music Info
+            MusicInfo(expandPlayer: $expandPlayer, animation: animation)
+          }
+          .matchedGeometryEffect(id: "Background", in: animation)
       }
     }
-    .frame(height: 70)
-    //MARK: Separator Line
-    .overlay(alignment: .bottom, content: {
-      Rectangle()
-        .fill(.gray.opacity(0.3))
-        .frame(height: 1)
-  //      .offset(y: -5)
-    })
+    .frame(width: 370, height: 58)
     .offset(y: -49)
-  }
-
-  @ViewBuilder
-  func Tabs(_ title: String, _ icon: String) -> some View {
-    ScrollView(.vertical, showsIndicators: false, content: {
-      Text(title)
-      .padding(.top, 25)
-    })
-      .tabItem {
-        Image(systemName: icon)
-        Text(title)
-      }
-    //Changing Tab Background Color
-      .toolbarBackground(.visible, for: .tabBar)
-      .toolbarBackground(.ultraThinMaterial, for: .tabBar)
-      //Hiding tab bar
-      .toolbar(expandPlayer ? .hidden : .visible, for: .tabBar)
   }
 }
 

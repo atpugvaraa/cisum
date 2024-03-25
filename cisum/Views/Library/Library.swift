@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct Library: View {
+  let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
     var body: some View {
         NavigationView {
             VStack {
@@ -91,7 +92,7 @@ struct Library: View {
                     .scrollIndicators(.hidden)
                     .navigationTitle("Library")
                     .navigationBarItems(trailing: EditButton())
-                    .accentColor(.red)
+                    .accentColor(AccentColor)
             }
         }
     }

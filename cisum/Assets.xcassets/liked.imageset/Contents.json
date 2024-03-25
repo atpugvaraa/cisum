@@ -1,15 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "home-red.svg",
+      "filename" : "heart-24(@1×).png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
+      "filename" : "heart-48(@2×).png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
+      "filename" : "heart-72(@3×).png",
       "idiom" : "universal",
       "scale" : "3x"
     }
