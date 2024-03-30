@@ -8,63 +8,63 @@
 import SwiftUI
 
 struct Home: View {
-  var body: some View {
-    NavigationView {
-      ScrollView(.vertical , showsIndicators: false) {
-        HStack(alignment: .center,spacing: 0 ,content: {
-          Text("Top Picks")
-            .fontWeight(.bold)
-            .font(.title3)
-          Spacer()
-        })
-        .frame(height: 24)
-        .padding(.leading)
-
-        TopPicksScroll()
-          .padding(.bottom)
-
-        HStack(alignment:.center){
-          Text("Recently Played")
-          Spacer()
-        }.padding(.leading)
-          .font(.title3)
-          .bold()
-          .foregroundColor(.primary)
-
-        Recents()
-
-        HStack(alignment:.center){
-          Text("Try something else")
-          Spacer()
+    var body: some View {
+        NavigationView {
+            ScrollView(.vertical , showsIndicators: false) {
+                HStack(alignment: .center,spacing: 0 ,content: {
+                    Text("Top Picks")
+                        .fontWeight(.bold)
+                        .font(.title3)
+                    Spacer()
+                })
+                .frame(height: 24)
+                .padding(.leading)
+                
+                TopPicksScroll()
+                    .padding(.bottom)
+                
+                HStack(alignment:.center){
+                    Text("Recently Played")
+                    Spacer()
+                }.padding(.leading)
+                    .font(.title3)
+                    .bold()
+                    .foregroundColor(.primary)
+                
+                Recents()
+                
+                HStack(alignment:.center){
+                    Text("Try something else")
+                    Spacer()
+                }
+                .padding(.leading)
+                .font(.title3)
+                .bold()
+                .foregroundColor(.primary)
+                
+                HorizontalScrollBottom2()
+                
+                HStack(alignment:.center){
+                    Text("Made For You")
+                    Spacer()
+                }
+                .padding(.leading)
+                .font(.title3)
+                .bold()
+                .foregroundColor(.primary)
+                
+                TopPicksScroll().padding(.bottom)
+            }
+            .navigationTitle("Home")
         }
-        .padding(.leading)
-        .font(.title3)
-        .bold()
-        .foregroundColor(.primary)
-
-        HorizontalScrollBottom2()
-
-        HStack(alignment:.center){
-          Text("Made For You")
-          Spacer()
-        }
-        .padding(.leading)
-        .font(.title3)
-        .bold()
-        .foregroundColor(.primary)
-
-        TopPicksScroll().padding(.bottom)
-      }
-      .navigationTitle("Home")
     }
-  }
 }
 
 struct TopPicksScroll: View {
   var body: some View {
     ScrollView(.horizontal)
     {
-      HStack(spacing: 10) {
+      HStack(spacing: 6) {
         TopPicksCard(
           headLine: "Drake mix",
           imageName: "Artist-8",
@@ -110,6 +110,7 @@ struct TopPicksCard: View {
         VStack {
             HStack {
                 Text(headLine).font(.caption).foregroundColor(.gray)
+                    .padding(.leading, -1)
                 Spacer()
             }.frame(width: 260)
             ZStack {

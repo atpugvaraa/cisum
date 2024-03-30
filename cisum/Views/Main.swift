@@ -13,50 +13,89 @@ struct Main: View {
   //Animation Properties
   @State var expandPlayer: Bool = false
   @Namespace var animation
-  var body: some View {
-    //MARK: Tab View
-    TabView(selection: $selectedTab) {
-      //Tabs
-      Home()
-        .tabItem {
-          if selectedTab == 0 {
-            Image("home.fill")
-          } else {
-            Image("home")
-          }
-          Text("Home")
+    @State private var showMenu: Bool = false
+    var body: some View {
+        AnimatedSideBar(
+            rotatesWhenExpanded: true,
+            disablesInteraction: true,
+            sideMenuWidth: 200,
+            cornerRadius: 25,
+            showMenu: $showMenu
+        ) { safeArea in
+            //MARK: Tab View
+            TabView(selection: $selectedTab) {
+                //Tabs
+                Home()
+                    .tabItem {
+                        if selectedTab == 0 {
+                            Image("home.fill")
+                        } else {
+                            Image("home")
+                        }
+                        Text("Home")
+                    }
+                    .tag(0)
+                
+                Library()
+                    .tabItem {
+                        Image(systemName: "play.square.stack")
+                        Text("Library")
+                    }
+                    .tag(1)
+                
+                Search()
+                    .tabItem {
+                        Image(systemName: "magnifyingglass")
+                        Text("Search")
+                    }
+                    .tag(2)
+            }
+        } menuView: { safeArea in
+            sideMenuView(safeArea)
+        } background: {
+            Rectangle()
+                .fill(.sideMenu)
         }
-        .tag(0)
-
-      Library()
-        .tabItem {
-          Image(systemName: "play.square.stack")
-          Text("Library")
+        .accentColor(AccentColor)
+        //Hiding tab bar
+        .toolbar(expandPlayer ? .hidden : .visible, for: .tabBar)
+        .safeAreaInset(edge: .bottom) {
+            FloatingPlayer()
         }
-        .tag(1)
-
-      Search()
-        .tabItem {
-          Image(systemName: "magnifyingglass")
-          Text("Search")
+        .overlay {
+            Button(action: {
+                showMenu.toggle()
+            }, label: {
+                Image("Image")
+                    .resizable()
+                    .frame(width: 50, height: 50)
+                    .clipShape(RoundedRectangle(cornerRadius: 25.0))
+            })
+            .padding(.top, -345)
+            .padding(.leading, 300)
         }
-        .tag(2)
+        .overlay {
+            if expandPlayer {
+                Player(expandPlayer: $expandPlayer, animation: animation)
+                //Transition
+                    .transition(.asymmetric(insertion: .identity, removal: .offset(y: -5)))
+            }
+        }
     }
-    .accentColor(AccentColor)
-    //Hiding tab bar
-    .toolbar(expandPlayer ? .hidden : .visible, for: .tabBar)
-    .safeAreaInset(edge: .bottom) {
-      FloatingPlayer()
+    
+    //MARK: Side Bar Menu
+    @ViewBuilder
+    func sideMenuView(_ safeArea: UIEdgeInsets) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            
+        }
+        .padding(.horizontal, 15)
+        .padding(.vertical, 20)
+        .padding(.top, safeArea.top)
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
-    .overlay {
-      if expandPlayer {
-        Player(expandPlayer: $expandPlayer, animation: animation)
-        //Transition
-          .transition(.asymmetric(insertion: .identity, removal: .offset(y: -5)))
-      }
-    }
-  }
-
+    
   //MARK: Floating Player
   @ViewBuilder
   func FloatingPlayer() -> some View {
@@ -67,7 +106,7 @@ struct Main: View {
           .fill(.clear)
       } else {
         RoundedRectangle(cornerRadius: 12)
-          .fill(.ultraThinMaterial)
+          .fill(.thickMaterial)
           .overlay {
             //Music Info
             MusicInfo(expandPlayer: $expandPlayer, animation: animation)
