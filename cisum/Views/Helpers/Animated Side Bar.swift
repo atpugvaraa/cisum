@@ -40,7 +40,7 @@ struct AnimatedSideBar<Content: View, MenuView: View, Background: View>: View {
                 .overlay {
                     if disablesInteraction && progress > 0 {
                         Rectangle()
-                            .fill(.black.opacity(progress * 0.2))
+                            .fill(Color.black.opacity(Double(progress) * 0.4))
                             .onTapGesture {
                                 withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
                                     reset()
@@ -49,23 +49,25 @@ struct AnimatedSideBar<Content: View, MenuView: View, Background: View>: View {
                     }
                 }
                 .mask {
-                    RoundedRectangle(cornerRadius: progress * cornerRadius)
+                    RoundedRectangle(cornerRadius: CGFloat(progress) * cornerRadius)
                 }
                 .scaleEffect(rotatesWhenExpanded ? 1 - (progress * 0.1) : 1, anchor: .trailing)
                 .rotation3DEffect(
-                    .init(degrees: rotatesWhenExpanded ? (progress * -15) : 0),
+                    .init(degrees: rotatesWhenExpanded ? (Double(progress) * -12) : 0),
                     axis: (x: 0.0, y: 1.0, z: 0.0)
                 )
             }
             .frame(width: size.width + sideMenuWidth, height: size.height)
             .offset(x: -sideMenuWidth)
             .offset(x: offsetX)
-            .contentShape(.rect)
-            .gesture(dragGesture)
+            .contentShape(Rectangle())
+            //MARK: Drag for Side Menu
+            //Only use when done!!!
+            .simultaneousGesture(dragGesture)
         }
         .background(background)
         .ignoresSafeArea()
-        .onChange(of: showMenu) {value in
+        .onChange(of: showMenu) { value in
             withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
                 if value {
                     showSideBar()
@@ -74,6 +76,7 @@ struct AnimatedSideBar<Content: View, MenuView: View, Background: View>: View {
                 }
             }
         }
+        .gesture(dragGesture)
     }
     
     var dragGesture: some Gesture {
@@ -82,20 +85,22 @@ struct AnimatedSideBar<Content: View, MenuView: View, Background: View>: View {
                 out = true
             }
             .onChanged { value in
-                guard value.startLocation.x > 10 else {return}
-                        
-                let translationX = isDragged ? max(min(value.translation.width + lastOffsetX, sideMenuWidth), 0) : 0
-                offsetX = translationX
-                dragProgress()
+                DispatchQueue.main.asyncAfter(deadline: .now()) {
+                    guard value.startLocation.x > 10, isDragged else { return }
+                    
+                    let translationX = isDragged ? max(min(value.translation.width + lastOffsetX, sideMenuWidth), 0) : 0
+                    offsetX = translationX
+                    dragProgress()
+                }
             }
             .onEnded { value in
                 guard value.startLocation.x > 10 else {return}
                 
                 withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
-                    let velocityX = value.velocity.width / 8
+                    let velocityX = value.predictedEndTranslation.width / 8
                     let total = velocityX + offsetX
                     
-                    if total > (sideMenuWidth * 0.5) {
+                    if total > (sideMenuWidth * 0.5) || progress >= 0.5 {
                         showSideBar()
                     } else {
                         reset()
@@ -103,11 +108,13 @@ struct AnimatedSideBar<Content: View, MenuView: View, Background: View>: View {
                 }
             }
     }
+    
     //MARK: Show Side Bar
     func showSideBar() {
         offsetX = sideMenuWidth
         lastOffsetX = offsetX
         showMenu = true
+        progress = 1 //complete the progress
     }
     
     //MARK: Reset to initial state
@@ -115,6 +122,7 @@ struct AnimatedSideBar<Content: View, MenuView: View, Background: View>: View {
         offsetX = 0
         lastOffsetX = 0
         showMenu = false
+        progress = 0 // Reset the progress
     }
     
     //MARK: Calculate Drag Progress

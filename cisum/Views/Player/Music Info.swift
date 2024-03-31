@@ -41,15 +41,11 @@ struct MusicInfo: View {
             
             Spacer(minLength: 0)
             
-            Button {
-                
-            } label: {
-                Image(systemName: "airplayaudio")
-                    .font(.title2)
-            }
+            AirPlayButton()
+                .frame(width: 50, height: 50)
             
             PlayPauseButton()
-                .padding(.leading, 20)
+                .padding(.leading, 5)
         }
         .foregroundColor(.primary)
         .padding(.horizontal)

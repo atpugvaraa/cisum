@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import WebKit
 
 struct Player: View {
     let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706, opacity: 0.3)
@@ -62,7 +63,7 @@ struct Player: View {
                     //Fixing Slide Animation
                     .offset(y: animateContent ? 0 : size.height)
                     
-                    //Artwork
+                    //MARK: Async Artwork
                     GeometryReader {
                         let size = $0.size
                         
@@ -71,10 +72,10 @@ struct Player: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(width: isPlaying ? size.width : 250, height: isPlaying ? size.height : 250)
                             .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
-                            .offset(x: isPlaying ? 0 : 47, y: isPlaying ? 0 : 47)
                     }
                     .matchedGeometryEffect(id: "Album Cover", in: animation)
                     //Square Artwork Image
+                    .offset(x: isPlaying ? 0 : 47, y: isPlaying ? 0 : 47)
                     .frame(width: 343, height: 343)
                     .padding(.top, -25)
                     .padding(.vertical, size.height < 700 ? 10 : 15)
@@ -141,6 +142,7 @@ struct Player: View {
                         } label: {
                             Image(liked ? "liked" : "unliked")
                                 .foregroundColor(.white)
+                                .font(.title)
                         }
                         
                         Menu {
@@ -166,6 +168,7 @@ struct Player: View {
                                 .font(.title2)
                                 .foregroundColor(.white)
                                 .padding(12)
+                                .padding(.leading, 12)
                         }
                     }
                     
@@ -178,12 +181,12 @@ struct Player: View {
                     //Song Duration Label
                     HStack {
                         Text("--:--")
-                            .font(.headline)
+                            .font(.caption)
                         
                         Spacer(minLength: 0)
                         
                         Text("--:--")
-                            .font(.headline)
+                            .font(.caption)
                     }
                     .foregroundColor(.gray)
                 }
@@ -245,25 +248,26 @@ struct Player: View {
                     }
                     
                     HStack(alignment: .top, spacing: size.width * 0.18) {
-                        Button {
+                        Button(action: {
                             
-                        } label: {
+                        }) {
                             Image(systemName: "quote.bubble")
                                 .font(.title2)
                         }
-                        Button {
+                        .padding(.top, 3)
+                        
+                        AirPlayButton()
+                            .frame(width: 50, height: 50)
+                            .padding(.top, -13)
+                            .padding(.horizontal, 25)
+                        
+                        Button(action: {
                             
-                        } label: {
-                            Image(systemName: "airplayaudio")
-                                .font(.title2)
-                        }
-                        .padding(.horizontal, 25)
-                        Button {
-                            
-                        } label: {
+                        }) {
                             Image(systemName: "list.bullet")
                                 .font(.title2)
                         }
+                        .padding(.top, 3)
                     }
                     .foregroundColor(.white)
                     .blendMode(.overlay)

@@ -10,6 +10,11 @@ import SwiftUI
 struct Main: View {
   let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
   @State private var selectedTab = 0
+    //Side Menu Properties
+    var sideMenuWidth: CGFloat = 200
+    @State private var offsetX: CGFloat = 0
+    @State private var lastOffsetX: CGFloat = 0
+    @State private var progress: CGFloat = 0
   //Animation Properties
   @State var expandPlayer: Bool = false
   @Namespace var animation
@@ -64,36 +69,121 @@ struct Main: View {
         }
         .overlay {
             Button(action: {
-                showMenu.toggle()
-            }, label: {
+                        withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
+                            if showMenu {
+                                reset()
+                            } else {
+                                showSideBar()
+                            }
+                        }
+                    }, label: {
                 Image("Image")
                     .resizable()
-                    .frame(width: 50, height: 50)
+                    .frame(width: 40, height: 40)
                     .clipShape(RoundedRectangle(cornerRadius: 25.0))
             })
-            .padding(.top, -345)
+            .padding(.top, -338)
             .padding(.leading, 300)
         }
         .overlay {
             if expandPlayer {
                 Player(expandPlayer: $expandPlayer, animation: animation)
-                //Transition
+//                Transition
                     .transition(.asymmetric(insertion: .identity, removal: .offset(y: -5)))
             }
         }
+    }
+    
+    //MARK: Show Side Bar
+    func showSideBar() {
+        offsetX = sideMenuWidth
+        lastOffsetX = offsetX
+        showMenu = true
+        progress = 1 //complete the progress
+    }
+    
+    //MARK: Reset to initial state
+    func reset() {
+        offsetX = 0
+        lastOffsetX = 0
+        showMenu = false
+        progress = 0 // Reset the progress
     }
     
     //MARK: Side Bar Menu
     @ViewBuilder
     func sideMenuView(_ safeArea: UIEdgeInsets) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            
+            Text("cisum")
+                .font(.largeTitle.bold())
+                .padding(.bottom, 10)
+            sideMenuTabs(.profile) {
+                Profile()
+            }
+            sideMenuTabs(.downloads) {
+                Downloads()
+            }
+            sideMenuTabs(.settings) {
+                Settings()
+            }
         }
         .padding(.horizontal, 15)
         .padding(.vertical, 20)
         .padding(.top, safeArea.top)
-        .padding()
+        .padding(.bottom, safeArea.bottom)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .environment(\.colorScheme, .dark)
+    }
+    
+    //sideMenuTabs
+    @ViewBuilder
+    func sideMenuTabs<Content: View>(_ tab: Tab, onTap: @escaping () -> Content) -> some View {
+        Button(action: {
+               // Present the associated view
+            tab.view()
+           }) {
+            HStack(spacing: 12) {
+                Image(systemName: tab.rawValue)
+                    .font(.title3)
+                
+                Text(tab.title)
+                    .font(.callout)
+                
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 10)
+            .contentShape(.rect)
+            .foregroundColor(AccentColor)
+        }
+    }
+    
+    //Tabs
+    enum Tab: String, CaseIterable {
+        case profile = "person.crop.circle"
+        case downloads = "arrow.down.circle"
+        case settings = "gear" 
+        
+        func view() -> some View {
+            switch self {
+            case .profile:
+                return AnyView(Profile())
+            case .downloads:
+                return AnyView(Downloads())
+            case .settings:
+                return AnyView(Settings())
+            }
+        }
+        
+        var title: String {
+            switch self {
+            case .profile:
+                return "Profile"
+            case .downloads:
+                return "Downloads"
+            case .settings:
+                return "Settings"
+            }
+        }
     }
     
   //MARK: Floating Player
