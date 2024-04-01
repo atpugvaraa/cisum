@@ -16,7 +16,7 @@ struct APIPlayer: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: WKWebView, context: Context) {
-        guard let apiURL = URL(string: "https://pipedapi.kavin.rocks/streams/\(videoID)") else { return }
+        guard let apiURL = URL(string: "https://piped.video/watch?v=\(videoID)") else { return }
         uiView.scrollView.isScrollEnabled = false
         uiView.load(URLRequest(url: apiURL))
     }

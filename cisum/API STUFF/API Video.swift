@@ -8,17 +8,19 @@
 import Foundation
 
 // MARK: - PipedVideo
-struct APIVideo: Codable {
+struct APIVideo: Codable, Identifiable {
+    let id: String
     let title, uploader: String
     let thumbnailURL: String
     let audioStreams, videoStreams: [OStream]
 
     enum CodingKeys: String, CodingKey {
-        case title, uploader
+        case id, title, uploader
         case thumbnailURL = "thumbnailUrl"
         case audioStreams, videoStreams
     }
 }
+
 
 // MARK: - OStream
 struct OStream: Codable {
@@ -33,13 +35,19 @@ struct APISearchResponse: Codable {
 
 // MARK: - Item
 struct VideoItem: Codable {
-    let url: String
     let title: String
     let thumbnail: String
     let uploaderName: String
     let duration: Int
-    let id: VideoID
-    let snippet: VideoSnippet
+    let url: String // Directly using the URL here
+
+    var videoId: String? {
+        URLComponents(string: url)?.queryItems?.first(where: { $0.name == "v" })?.value
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case title, thumbnail, uploaderName, duration, url
+    }
 }
 
 struct VideoID: Codable {
@@ -47,9 +55,10 @@ struct VideoID: Codable {
     let videoId: String?
     let channelId: String?
     let playlistId: String?
+    let url: String
 
     enum CodingKeys: String, CodingKey {
-        case kind, videoId, channelId, playlistId
+        case kind, videoId, channelId, playlistId, url
     }
 
     init(from decoder: Decoder) throws {
@@ -58,6 +67,7 @@ struct VideoID: Codable {
         self.videoId = try container.decodeIfPresent(String.self, forKey: .videoId)
         self.channelId = try container.decodeIfPresent(String.self, forKey: .channelId)
         self.playlistId = try container.decodeIfPresent(String.self, forKey: .playlistId)
+        self.url = try container.decode(String.self, forKey: .url)
     }
 }
 

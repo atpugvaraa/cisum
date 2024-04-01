@@ -8,34 +8,10 @@
 import Foundation
 
 class APIService {
-
     private let baseUrl = "https://pipedapi.kavin.rocks/search"
-
-//    func fetchVideos(query: String, completion: @escaping ([YouTubeVideo]) -> Void) {
-//        guard let url = URL(string: "\(baseUrl)?part=snippet&maxResults=25&q=\(query)&key=\(apiKey)") else { return }
-//
-//        URLSession.shared.dataTask(with: url) { data, response, error in
-//            guard let data = data, error == nil else { return }
-//
-//            do {
-//                let searchResponse = try JSONDecoder().decode(YouTubeSearchResponse.self, from: data)
-//                let videos = searchResponse.items.compactMap { item -> YouTubeVideo? in
-//                    guard let videoId = item.id.videoId else { return nil }
-//                    return YouTubeVideo(id: videoId, title: item.snippet.title, description: item.snippet.description)
-//                }
-//                DispatchQueue.main.async {
-//                    completion(videos)
-//                }
-//            } catch {
-//                print(error)
-//                completion([])
-//            }
-//        }.resume()
-//    }
     
     func fetchVideos(query: String, completion: @escaping ([APIVideo]) -> Void) {
-        // Construct the URL with conditional inclusion of the music category
-        guard let url = URL(string: "\(baseUrl)?q=\(query)&filter=music_videos") else {
+        guard let url = URL(string: "\(baseUrl)?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&filter=music_songs&listen=1") else {
             print("Invalid URL")
             return
         }
@@ -46,19 +22,22 @@ class APIService {
                 print("API request error: \(error?.localizedDescription ?? "Unknown error")")
                 completion([])
                 return
-            }
-            
+            } 
             do {
                 // Decode the JSON response
                 let searchResponse = try JSONDecoder().decode(APISearchResponse.self, from: data)
-                // Map each item to a Video, filtering out any without a valid videoId
+                // Map each item to an APIVideo, adjusting for the correct structure
                 let videos = searchResponse.items.compactMap { item -> APIVideo? in
-                    guard let videoId = item.id.videoId else { return nil }
-                    let thumbnailUrl = item.snippet.thumbnails.medium.url
-                    // Since we don't have a separate audio URL, we pass nil for audioUrl
-                    return APIVideo(title: item.snippet.title, uploader: "", thumbnailURL: "", audioStreams: "", videoStreams: "")
+                    // Directly use the computed `videoId` property of `VideoItem`
+                    guard let videoId = item.videoId else { return nil }
+                    // No need to guard for snippet existence if you're using other properties of VideoItem
+                    let thumbnailUrl = item.thumbnail
+                    let videoStream = OStream(url: "https://pipedapi.kavin.rocks/streams/\(videoId)", videoOnly: false)
+                    return APIVideo(id: videoId, title: item.title, uploader: item.uploaderName, thumbnailURL: thumbnailUrl, audioStreams: [], videoStreams: [videoStream])
                 }
-
+                
+                
+                
                 // Complete with the array of videos
                 DispatchQueue.main.async {
                     completion(videos)

@@ -19,7 +19,7 @@ struct CreditsView: View {
             CreditsRow(name: "Aarav Gupta", role: "Main Developer", link: URL(string: "https://github.com/atpugvaraa")).foregroundColor(.accentColor)
             CreditsRow(name: "Mattycbtw", role: "API Integration", link: URL(string: "https://twitter.com/mattycbtw")).foregroundStyle(.white)
             CreditsRow(name: "Zain", role: "Lyrics", link: URL(string: "https://twitter.com/LaunchMask")).foregroundStyle(.white)
-            CreditsRow(name: "YouTube", role: "Music Streaming", link: URL(string: "https://developers.google.com/youtube/v3")).foregroundStyle(.white)
+            CreditsRow(name: "Piped API", role: "Music Search", link: URL(string: "https://docs.piped.video/docs/api-documentation/")).foregroundStyle(.white)
         }
     }
 }

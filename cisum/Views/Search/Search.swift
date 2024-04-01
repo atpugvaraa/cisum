@@ -7,15 +7,22 @@
 
 import SwiftUI
 
+struct VideoIDWrapper: Identifiable {
+    let id: String
+}
+
+
 struct Search: View {
+    var videoID: String
     @StateObject private var audioPlayerManager = AudioPlayerManager()
-    @State private var videos = [APIVideo]()
+    @State private var videos = [APIVideo]() // Fix 1: Change to [APIVideo]
     @State private var isLoading = false
-    @State private var isMusicOnly = true
     @State private var searchText = ""
     @Binding var expandPlayer: Bool
     var namespace: Namespace.ID
     
+    @State private var selectedVideo: VideoIDWrapper?
+
     var body: some View {
         NavigationView {
             VStack {
@@ -31,48 +38,72 @@ struct Search: View {
         .onChange(of: searchText, perform: { searchText in
             loadVideos()
         })
-    }
-
-    private var loadingView: some View {
-        ProgressView("Fetching YouTube Videos...")
-            .progressViewStyle(.circular)
-            .padding()
-    }
-
-    @ViewBuilder
-    var listContent: some View {
-        List(videos) { video in
-            NavigationLink(destination: Player(videoID: "", expandPlayer: $expandPlayer, animation: namespace)) {
-                videoRow(video)
-            }
+        .sheet(item: $selectedVideo, onDismiss: {
+        }) { wrapper in
+            Player(videoID: videoID, expandPlayer: $expandPlayer, animation: namespace)
         }
     }
     
-    func videoRow(_ video: APIVideo) -> some View {
+    private var loadingView: some View {
+        ProgressView("loading...")
+            .progressViewStyle(.circular)
+            .padding()
+    }
+    
+        @ViewBuilder
+        var listContent: some View {
+            List(videos) { video in
+                NavigationLink(destination: APIPlayer(videoID: video.id)) {
+                    videoRow(video)
+                }
+            }
+        }
+    
+//    @ViewBuilder
+//    var listContent: some View {
+//        List(videos) { video in
+//            Button(action: {
+//                self.selectedVideo = VideoIDWrapper(id: video.id)
+//            }) {
+//                videoRow(video)
+//            }
+//        }
+//    }
+    
+    func videoRow(_ video: APIVideo) -> some View { // Fix 2: Change argument type to APIVideo
         HStack(alignment: .center) {
-            AsyncImage(url: video.thumbnailURL) { phase in
+            AsyncImage(url: URL(string: video.thumbnailURL)) { phase in
                 switch phase {
                 case .empty: ProgressView()
-                case .success(let image): image.resizable().aspectRatio(contentMode: .fill).frame(width: 75, height: 75).clipShape(RoundedRectangle(cornerRadius: 5))
+                case .success(let image):
+                    image.resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 75, height: 75)
+                        .clipShape(RoundedRectangle(cornerRadius: 5))
+                        .matchedGeometryEffect(id: video.id, in: namespace) // Use matched geometry effect
                 case .failure: Image(systemName: "photo").frame(width: 75, height: 75)
                 @unknown default: EmptyView()
                 }
-            }
-            
-            Text(video.title).font(.caption).foregroundColor(.primary).lineLimit(1)
-        }.frame(width: 100, height: 100)
+                
+                Text(video.title).font(.caption).foregroundColor(.primary).lineLimit(1)
+            }.frame(width: 100, height: 100)
+        }
     }
 
     private func loadVideos() {
         guard !searchText.isEmpty else { return }
         isLoading = true
-        APIService().fetchVideos(query: searchText) { videos in
-            self.videos = videos
+        let APIService = APIService()
+        APIService.fetchVideos(query: searchText) { fetchedVideos in
+            if fetchedVideos.isEmpty {
+                print("No videos found for the search query: \(searchText)")
+            }
+            self.videos = fetchedVideos
             isLoading = false
         }
     }
-}
 
+}
 //struct VerticalScrollView: View {
 //    var body: some View {
 //        ScrollView(.vertical){
