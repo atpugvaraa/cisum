@@ -9,7 +9,7 @@ import Foundation
 
 
 class YouTubeService {
-    private let apiKey = "AIzaSyAdsHV4dZy_N8az74YR8VX5j9lJeKzqlv4"
+    private let apiKey = ""
     private let baseUrl = "https://www.googleapis.com/youtube/v3/search"
 
 //    func fetchVideos(query: String, completion: @escaping ([YouTubeVideo]) -> Void) {
