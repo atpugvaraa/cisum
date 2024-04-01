@@ -72,6 +72,6 @@ struct MusicInfo: View {
 }
 
 #Preview {
-  Main()
+    Main(videoID: "")
     .preferredColorScheme(.dark)
 }

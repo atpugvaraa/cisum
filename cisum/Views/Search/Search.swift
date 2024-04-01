@@ -12,39 +12,37 @@ struct Search: View {
     @State private var videos = [YouTubeVideo]()
     @State private var isLoading = false
     @State private var isMusicOnly = true
-  @State private var searchText = ""
-  var body: some View {
-      NavigationView{
-          if isLoading {
-              loadingView
-          } else {
-              listContent
-          }
-          ScrollView(.vertical){
-//              VerticalScrollView()
-          }.navigationTitle("Search")
-      }.searchable(text: $searchText)
-  }
+    @State private var searchText = ""
+    @Binding var expandPlayer: Bool
+    var namespace: Namespace.ID
     
-    private var searchUI: some View {
-        VStack {
-            TextField("Search YouTube", text: $searchText)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
-
-            Button("Search", action: loadVideos).padding()
+    var body: some View {
+        NavigationView {
+            VStack {
+                if isLoading {
+                    loadingView
+                } else {
+                    listContent
+                }
+            }
+            .navigationTitle("Search")
         }
+        .searchable(text: $searchText)
+        .onChange(of: searchText, perform: { searchText in
+            loadVideos()
+        })
     }
+
     private var loadingView: some View {
         ProgressView("Fetching YouTube Videos...")
             .progressViewStyle(.circular)
             .padding()
     }
-    
+
     @ViewBuilder
     var listContent: some View {
         List(videos) { video in
-            NavigationLink(destination: VideoDetailView(videoID: video.id)) {
+            NavigationLink(destination: Player(videoID: video.id, expandPlayer: $expandPlayer, animation: namespace)) {
                 videoRow(video)
             }
         }
@@ -55,16 +53,16 @@ struct Search: View {
             AsyncImage(url: video.thumbnailUrl) { phase in
                 switch phase {
                 case .empty: ProgressView()
-                case .success(let image): image.resizable().frame(width: 50, height: 50).contentShape(RoundedRectangle(cornerRadius: 5))
-                case .failure: Image(systemName: "photo").frame(width: 25, height: 25)
+                case .success(let image): image.resizable().aspectRatio(contentMode: .fill).frame(width: 75, height: 75).clipShape(RoundedRectangle(cornerRadius: 5))
+                case .failure: Image(systemName: "photo").frame(width: 75, height: 75)
                 @unknown default: EmptyView()
                 }
-            }.padding(.trailing, 10)
+            }
             
             Text(video.title).font(.caption).foregroundColor(.primary).lineLimit(1)
-        }.frame(height: 60)
+        }.frame(width: 100, height: 100)
     }
-    
+
     private func loadVideos() {
         guard !searchText.isEmpty else { return }
         isLoading = true
@@ -72,14 +70,6 @@ struct Search: View {
             self.videos = videos
             isLoading = false
         }
-    }
-}
-
-struct VideoDetailView: View {
-    var videoID: String
-
-    var body: some View {
-        YouTubePlayerView(videoID: videoID).edgesIgnoringSafeArea(.all)
     }
 }
 
@@ -146,7 +136,3 @@ struct VideoDetailView: View {
 //            .shadow(color: .white, radius: 2)
 //    }
 //}
-
-#Preview {
-    Search()
-}

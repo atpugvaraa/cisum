@@ -132,5 +132,5 @@ struct AnimatedSideBar<Content: View, MenuView: View, Background: View>: View {
 }
 
 #Preview {
-    Main()
+    Main(videoID: "")
 }

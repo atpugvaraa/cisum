@@ -1,31 +1,43 @@
 //
-//  YouTubeVideo.swift
-//  YouTubeExamples
+//  API Video.swift
+//  cisum
 //
-//  Created by Mattycbtw on 26/03/2024.
+//  Created by Aarav Gupta on 31/03/2024.
 //
 
 import Foundation
 
-struct YouTubeVideo: Identifiable, Codable {
-    let id: String
-    let title: String
-    let thumbnailUrl: URL
-    let audioUrl: URL?
-    
+// MARK: - PipedVideo
+struct APIVideo: Codable {
+    let title, uploader: String
+    let thumbnailURL: String
+    let audioStreams, videoStreams: [OStream]
+
     enum CodingKeys: String, CodingKey {
-        case id
-        case title = "title"
-        case thumbnailUrl = "thumbnailUrl"
-        case audioUrl = "audioUrl"
+        case title, uploader
+        case thumbnailURL = "thumbnailUrl"
+        case audioStreams, videoStreams
     }
 }
 
-struct YouTubeSearchResponse: Codable {
+// MARK: - OStream
+struct OStream: Codable {
+    let url: String
+    let videoOnly: Bool
+}
+
+// MARK: - APISearchResponse
+struct APISearchResponse: Codable {
     let items: [VideoItem]
 }
 
+// MARK: - Item
 struct VideoItem: Codable {
+    let url: String
+    let title: String
+    let thumbnail: String
+    let uploaderName: String
+    let duration: Int
     let id: VideoID
     let snippet: VideoSnippet
 }

@@ -273,5 +273,5 @@ struct Lyrics: View {
 }
 
 #Preview {
-    Main()
+    Main(videoID: "")
 }

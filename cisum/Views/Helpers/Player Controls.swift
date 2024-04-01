@@ -177,5 +177,5 @@ enum songorvideo: String, CaseIterable {
 }
 
 #Preview {
-    Main()
+    Main(videoID: "")
 }

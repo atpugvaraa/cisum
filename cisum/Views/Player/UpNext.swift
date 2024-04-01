@@ -275,11 +275,11 @@ struct UpNext: View {
 }
 
 #Preview {
-    Main()
+    Main(videoID: "")
 }
 
 //struct UpNext: View {
-//    let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
+//    let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706, opacity: 0.3)
 //    @State private var activeTab: songorvideo = .song
 //    @Binding var expandPlayer: Bool
 //    var animation: Namespace.ID
@@ -287,7 +287,7 @@ struct UpNext: View {
 //    @State private var offsetY: CGFloat = 0
 //    @State private var liked: Bool = false
 //    @State private var isPlaying: Bool = false
-//    
+//    @State private var transparency: Double = 0.0
 //    var body: some View {
 //        GeometryReader {
 //            let size = $0.size
@@ -309,6 +309,7 @@ struct UpNext: View {
 //                    .matchedGeometryEffect(id: "Background", in: animation)
 //                
 //                VStack(spacing: 15) {
+//                    //Song/Video
 //                    Capsule()
 //                        .frame(width: 40, height: 5)
 //                        .padding(.vertical, 15)
@@ -317,26 +318,75 @@ struct UpNext: View {
 //                    //Fixing Slide Animation
 //                        .offset(y: animateContent ? 0 : size.height)
 //                    
-//                    //Artwork
-//                    GeometryReader {
-//                        let size = $0.size
+//                    HStack {
+//                        //Artwork
+//                        GeometryReader {
+//                            let size = $0.size
+//                            
+//                            Image("Image")
+//                                .resizable()
+//                                .aspectRatio(contentMode: .fill)
+//                                .frame(width: 80, height: 80)
+//                                .clipShape(RoundedRectangle(cornerRadius: animateContent ? 5 : 5, style: .continuous))
+//                        }
+//                        .matchedGeometryEffect(id: "Album Cover", in: animation)
+//                        //Square Artwork Image
+//                        .frame(width: 80, height: 80)
+//                        .padding(.top, -25)
+//                        .padding(.vertical, size.height < 700 ? 10 : 15)
 //                        
-//                        Image("Image")
-//                            .resizable()
-//                            .aspectRatio(contentMode: .fill)
-//                            .frame(width: size.width, height: size.height)
-//                            .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
+//                        VStack(alignment: .leading, spacing: 4) {
+//                            Text("Song Name")
+//                                .font(.title3)
+//                                .fontWeight(.semibold)
+//
+//                            Text("Artist")
+//                                .foregroundColor(.gray)
+//                        }
+//                        .padding(.top, -15)
+//                        .frame(maxWidth: .infinity, alignment: .center)
+//                        
+//                        Button {
+//                            liked.toggle()
+//                        } label: {
+//                            Image(liked ? "liked" : "unliked")
+//                                .foregroundColor(.white)
+//                                .font(.title)
+//                        }
+//                        .padding(.top, -30)
+//                        
+//                        Menu {
+//                            Button(action: {
+//                                // Action for Add to Playlist button
+//                            }) {
+//                                Label("Add to Playlist", systemImage: "plus")
+//                            }
+//                            
+//                            Button(action: {
+//                                // Action for Downloading Song
+//                            }) {
+//                                Label("Download", systemImage: "arrow.down.circle")
+//                            }
+//                            
+//                            Button(action: {
+//                                // Action for Sharing the Song
+//                            }) {
+//                                Label("Share", systemImage: "square.and.arrow.up")
+//                            }
+//                        } label: {
+//                            Label ("", systemImage: "ellipsis")
+//                                .padding(.bottom, 40)
+//                                .font(.title2)
+//                                .foregroundColor(.white)
+//                                .padding(12)
+//                                .padding(.leading, 12)
+//                        }
 //                    }
-//                    .matchedGeometryEffect(id: "Album Cover", in: animation)
-//                    //Square Artwork Image
-//                    .frame(height: size.width - 50)
-//                    .padding(.top, -30)
-//                    .padding(.vertical, size.height < 700 ? 10 : 15)
-//                    
-//                    //Player Controls
-//                    PlayerControls(size: size)
-//                        .offset(y: animateContent ? 0 : size.height)
+//                        //Player Sliders
+//                        PlayerButtons(size: size)
+//                            .offset(y: animateContent ? 0 : size.height)
 //                }
+//                .offset(y: animateContent ? 0 : size.height)
 //                .padding(.top, safeArea.top + (safeArea.bottom == 0 ? 10 : 0))
 //                .padding(.bottom, safeArea.bottom == 0 ? 10 : safeArea.bottom)
 //                .padding(.horizontal, 25)
@@ -371,96 +421,82 @@ struct UpNext: View {
 //        }
 //    }
 //    
+//    struct upnextQueue: View {
+//        var body: some View {
+//            VStack {
+//                Image("Image")
+//                    .resizable()
+//                    .aspectRatio(contentMode: .fill)
+//            }
+//            .frame(width: 343, height: 343)
+//        }
+//    }
+//    
 //    @ViewBuilder
-//    func PlayerControls(size: CGSize) -> some View {
+//    func PlayerButtons(size: CGSize) -> some View {
 //        GeometryReader {
 //            let size = $0.size
 //            let spacing = size.height * 0.04
 //            
 //            VStack(spacing: spacing) {
+//                upnextQueue()
 //                VStack(spacing: spacing) {
-//                    HStack(alignment: .center, spacing: 15) {
-//                        VStack(alignment: .leading, spacing: 4) {
-//                            Text("Song Name")
-//                                .font(.title3)
-//                                .fontWeight(.semibold)
-//                            
-//                            Text("Artist")
-//                                .foregroundColor(.gray)
-//                        }
-//                        .frame(maxWidth: .infinity, alignment: .leading)
-//                        
-//                        Button {
-//                            liked.toggle()
-//                        } label: {
-//                            Image(liked ? "liked" : "unliked")
-//                                .foregroundColor(.white)
-//                        }
-//                        
-//                        Menu {
-//                            Button(action: {
-//                                // Action for Add to Playlist button
-//                            }) {
-//                                Label("Add to Playlist", systemImage: "plus")
-//                            }
-//                            
-//                            Button(action: {
-//                                // Action for Downloading Song
-//                            }) {
-//                                Label("Download", systemImage: "arrow.down.circle")
-//                            }
-//                            
-//                            Button(action: {
-//                                // Action for Sharing the Song
-//                            }) {
-//                                Label("Share", systemImage: "square.and.arrow.up")
-//                            }
-//                        } label: {
-//                            Label ("", systemImage: "ellipsis")
-//                                .font(.title2)
-//                                .foregroundColor(.white)
-//                                .padding(12)
-//                        }
-//                    }
 //                    
 //                    //Song Duration Slider
 //                    Capsule()
 //                        .fill(.gray)
 //                        .frame(height: 8)
-//                        .padding(.top, spacing)
 //                    
 //                    //Song Duration Label
 //                    HStack {
-//                        Text("-:--")
+//                        Text("--:--")
 //                            .font(.caption)
 //                        
 //                        Spacer(minLength: 0)
 //                        
-//                        Text("-:--")
+//                        Text("--:--")
 //                            .font(.caption)
 //                    }
+//                    .padding(.top, -10)
 //                    .foregroundColor(.gray)
 //                }
-//                .frame(height: size.height / 2.5, alignment: .top)
 //                
 //                //MARK: Playback Controls
 //                HStack(spacing: size.width * 0.18) {
-//                    Button {
-//                        
-//                    } label: {
-//                        Image(systemName: "backward.fill")
-//                            .font(.title)
-//                    }
-//                    
-//                    PlayPauseButton()
+//                    BackwardButton()
 //                    
 //                    Button {
+//                        //Play/Pause Function
 //                        
+//                        isPlaying.toggle()
+//                        transparency = 0.6
+//                        withAnimation(.easeOut(duration: 0.2)) {
+//                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+//                                transparency = 0.0
+//                            }
+//                        }
 //                    } label: {
-//                        Image(systemName: "forward.fill")
-//                            .font(.title)
+//                        ZStack {
+//                            Circle()
+//                                .frame(width: 80, height: 80)
+//                                .opacity(transparency)
+//                            Image(systemName: "pause.fill")
+//                                .font(.system(size: 50))
+//                                .scaleEffect(isPlaying ? 1 : 0)
+//                                .opacity(isPlaying ? 1 : 0)
+//                                .animation(.interpolatingSpring(stiffness: 170, damping: 15), value: isPlaying)
+//                            
+//                            Image(systemName: "play.fill")
+//                                .font(.system(size: 50))
+//                                .scaleEffect(isPlaying ? 0 : 1)
+//                                .opacity(isPlaying ? 0 : 1)
+//                                .animation(.interpolatingSpring(stiffness: 170, damping: 15), value: isPlaying)
+//                        }
 //                    }
+//                    
+//                    ForwardButton()
 //                }
+//                .padding(.top, -18)
 //                .foregroundColor(.white)
 //                .frame(maxHeight: .infinity)
 //                
@@ -480,34 +516,29 @@ struct UpNext: View {
 //                    }
 //                    
 //                    HStack(alignment: .top, spacing: size.width * 0.18) {
-//                        Button {
-//                            
-//                        } label: {
-//                            Image(systemName: "quote.bubble")
-//                                .font(.title2)
+//                        NavigationStack {
+//                            NavigationLink(destination: Lyrics(expandPlayer: $expandPlayer, animation: animation)) { Image(systemName: "list.bullet")
+//                                    .font(.title2)
+//                            }
 //                        }
-//                        Button {
-//                            
-//                        } label: {
-//                            Image(systemName: "airplayaudio")
-//                                .font(.title2)
-//                        }
+//                        
+//                        AirPlayButton()
+//                            .frame(width: 50, height: 50)
+//                            .padding(.top, -13)
 //                        .padding(.horizontal, 25)
-//                        Button {
-//                            UpNext(expandPlayer: $expandPlayer, animation: animation)
-//                        } label: {
-//                            Image(systemName: "list.bullet")
-//                                .font(.title2)
+//                        
+//                        NavigationStack {
+//                            NavigationLink(destination: Player(videoID: "", expandPlayer: $expandPlayer, animation: animation)) { Image(systemName: "list.bullet")
+//                                    .font(.title2)
+//                            }
 //                        }
+//                        .padding(.top, 3)
 //                    }
 //                    .foregroundColor(.white)
 //                    .blendMode(.overlay)
-//                    .padding(.top, spacing)
 //                }
-//                .padding(.bottom, 25)
-//                .frame(height: size.height / 2.5, alignment: .bottom)
+//                .padding(.bottom, 10)
 //            }
 //        }
 //    }
 //}
-//
