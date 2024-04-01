@@ -9,7 +9,7 @@ import SwiftUI
 
 struct Search: View {
     @StateObject private var audioPlayerManager = AudioPlayerManager()
-    @State private var videos = [YouTubeVideo]()
+    @State private var videos = [APIVideo]()
     @State private var isLoading = false
     @State private var isMusicOnly = true
     @State private var searchText = ""
@@ -42,15 +42,15 @@ struct Search: View {
     @ViewBuilder
     var listContent: some View {
         List(videos) { video in
-            NavigationLink(destination: Player(videoID: video.id, expandPlayer: $expandPlayer, animation: namespace)) {
+            NavigationLink(destination: Player(videoID: "", expandPlayer: $expandPlayer, animation: namespace)) {
                 videoRow(video)
             }
         }
     }
     
-    func videoRow(_ video: YouTubeVideo) -> some View {
+    func videoRow(_ video: APIVideo) -> some View {
         HStack(alignment: .center) {
-            AsyncImage(url: video.thumbnailUrl) { phase in
+            AsyncImage(url: video.thumbnailURL) { phase in
                 switch phase {
                 case .empty: ProgressView()
                 case .success(let image): image.resizable().aspectRatio(contentMode: .fill).frame(width: 75, height: 75).clipShape(RoundedRectangle(cornerRadius: 5))
@@ -66,7 +66,7 @@ struct Search: View {
     private func loadVideos() {
         guard !searchText.isEmpty else { return }
         isLoading = true
-        YouTubeService().fetchVideos(query: searchText, musicOnly: isMusicOnly) { videos in
+        APIService().fetchVideos(query: searchText) { videos in
             self.videos = videos
             isLoading = false
         }

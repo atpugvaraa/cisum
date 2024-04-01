@@ -73,7 +73,7 @@ struct Player: View {
                     GeometryReader {
                         let size = $0.size
                         
-                        YouTubePlayer(videoID: videoID)
+                        APIPlayer(videoID: videoID)
                             .frame(width: isPlaying ? size.width : 250, height: isPlaying ? size.height : 250)
                             .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
                     }

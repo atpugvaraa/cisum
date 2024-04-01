@@ -7,7 +7,7 @@
 
 import Foundation
 
-class YouTubeService {
+class APIService {
 
     private let baseUrl = "https://pipedapi.kavin.rocks/search"
 
