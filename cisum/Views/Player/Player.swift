@@ -74,11 +74,12 @@ struct Player: View {
                         let size = $0.size
                         
                         APIPlayer(videoID: videoID)
+                            .edgesIgnoringSafeArea(.all)
                             .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
                             .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
+                        
                     }
                     .matchedGeometryEffect(id: "Album Cover", in: animation)
-                    //Square Artwork Image
                     .offset(x: isPlaying ? 0 : 47, y: isPlaying ? 0 : 47)
                     .frame(width: 343, height: 343)
                     .padding(.top, -25)
@@ -265,14 +266,11 @@ struct Player: View {
                             .padding(.top, -13)
                             .padding(.horizontal, 25)
                         
-                        NavigationView {
-                            VStack {
-                                NavigationLink { UpNext(expandPlayer: $expandPlayer, animation: animation)
-                                } label: {
-                                    Image(systemName: "list.bullet")
-                                        .font(.title2)
-                                }
-                            }
+                        Button(action: {
+                            
+                        }) {
+                            Image(systemName: "list.bullet")
+                                .font(.title2)
                         }
                         .padding(.top, 3)
                     }

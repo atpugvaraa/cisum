@@ -11,15 +11,14 @@ struct VideoIDWrapper: Identifiable {
     let id: String
 }
 
-
 struct Search: View {
     var videoID: String
     @StateObject private var audioPlayerManager = AudioPlayerManager()
-    @State private var videos = [APIVideo]() // Fix 1: Change to [APIVideo]
+    @State private var videos = [APIVideo]()
     @State private var isLoading = false
     @State private var searchText = ""
     @Binding var expandPlayer: Bool
-    var namespace: Namespace.ID
+    var animation: Namespace.ID
     
     @State private var selectedVideo: VideoIDWrapper?
 
@@ -38,10 +37,6 @@ struct Search: View {
         .onChange(of: searchText, perform: { searchText in
             loadVideos()
         })
-        .sheet(item: $selectedVideo, onDismiss: {
-        }) { wrapper in
-            Player(videoID: videoID, expandPlayer: $expandPlayer, animation: namespace)
-        }
     }
     
     private var loadingView: some View {
@@ -50,27 +45,16 @@ struct Search: View {
             .padding()
     }
     
-        @ViewBuilder
-        var listContent: some View {
-            List(videos) { video in
-                NavigationLink(destination: APIPlayer(videoID: video.id)) {
-                    videoRow(video)
+    @ViewBuilder
+            var listContent: some View {
+                List(videos) { video in
+                    NavigationLink(destination: APIPlayer(videoID: video.id)) {
+                        videoRow(video)
+                    }
                 }
             }
-        }
     
-//    @ViewBuilder
-//    var listContent: some View {
-//        List(videos) { video in
-//            Button(action: {
-//                self.selectedVideo = VideoIDWrapper(id: video.id)
-//            }) {
-//                videoRow(video)
-//            }
-//        }
-//    }
-    
-    func videoRow(_ video: APIVideo) -> some View { // Fix 2: Change argument type to APIVideo
+    func videoRow(_ video: APIVideo) -> some View {
         HStack(alignment: .center) {
             AsyncImage(url: URL(string: video.thumbnailURL)) { phase in
                 switch phase {
@@ -80,21 +64,24 @@ struct Search: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 75, height: 75)
                         .clipShape(RoundedRectangle(cornerRadius: 5))
-                        .matchedGeometryEffect(id: video.id, in: namespace) // Use matched geometry effect
+                        .matchedGeometryEffect(id: video.id, in: animation)
                 case .failure: Image(systemName: "photo").frame(width: 75, height: 75)
                 @unknown default: EmptyView()
                 }
-                
-                Text(video.title).font(.caption).foregroundColor(.primary).lineLimit(1)
-            }.frame(width: 100, height: 100)
+            }
+            Text(video.title)
+                .font(.caption)
+                .foregroundColor(.primary)
+                .lineLimit(1)
         }
+        .frame(width: 343, height: 80)
     }
 
     private func loadVideos() {
         guard !searchText.isEmpty else { return }
         isLoading = true
-        let APIService = APIService()
-        APIService.fetchVideos(query: searchText) { fetchedVideos in
+        let apiService = APIService() // Fix 1: Use lowercase for variable names
+        apiService.fetchVideos(query: searchText) { fetchedVideos in
             if fetchedVideos.isEmpty {
                 print("No videos found for the search query: \(searchText)")
             }
@@ -102,8 +89,10 @@ struct Search: View {
             isLoading = false
         }
     }
-
 }
+
+
+
 //struct VerticalScrollView: View {
 //    var body: some View {
 //        ScrollView(.vertical){

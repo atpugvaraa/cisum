@@ -11,7 +11,7 @@ class APIService {
     private let baseUrl = "https://pipedapi.kavin.rocks/search"
     
     func fetchVideos(query: String, completion: @escaping ([APIVideo]) -> Void) {
-        guard let url = URL(string: "\(baseUrl)?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&filter=music_songs&listen=1") else {
+        guard let url = URL(string: "\(baseUrl)?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&filter=music_songs") else {
             print("Invalid URL")
             return
         }

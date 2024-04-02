@@ -49,7 +49,7 @@ struct Main: View {
                     }
                     .tag(1)
                 
-                Search(videoID: videoID, expandPlayer: .constant(false), namespace: animation)
+                Search(videoID: videoID, expandPlayer: .constant(false), animation: animation)
                     .tabItem {
                         Image(systemName: "magnifyingglass")
                         Text("Search")

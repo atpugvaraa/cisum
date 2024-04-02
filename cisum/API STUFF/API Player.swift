@@ -11,13 +11,15 @@ import WebKit
 struct APIPlayer: UIViewRepresentable {
     var videoID: String
     
+
     func makeUIView(context: Context) -> WKWebView {
         return WKWebView()
     }
     
+
     func updateUIView(_ uiView: WKWebView, context: Context) {
-        guard let apiURL = URL(string: "https://piped.video/watch?v=\(videoID)") else { return }
-        uiView.scrollView.isScrollEnabled = false
+        guard let apiURL = URL(string: "https://piped.video/watch?v=\(videoID)&listen=1") else { return }
+        uiView.scrollView.isScrollEnabled = true
         uiView.load(URLRequest(url: apiURL))
     }
 }
