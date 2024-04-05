@@ -67,7 +67,7 @@ struct TopPicksScroll: View {
       HStack(spacing: 6) {
         TopPicksCard(
           headLine: "Drake mix",
-          imageName: "Artist-8",
+          imageName: "Image",
           artistName: "Drake, J. Cole, Halsey",
           colorBlock: .blue
         )
@@ -75,21 +75,21 @@ struct TopPicksScroll: View {
 
         TopPicksCard(
           headLine: "Featuring you",
-          imageName: "Artist-7",
+          imageName: "Image",
           artistName: "Artist A, Artist B, Artist C",
           colorBlock: .brown
         )
 
         TopPicksCard(
           headLine: "Custom Headline 2",
-          imageName: "Artist-5",
+          imageName: "Image",
           artistName: "Artist X, Artist Y, Artist Z",
           colorBlock: .red
         )
 
         TopPicksCard(
           headLine: "Custom Headline 3",
-          imageName: "Artist-6",
+          imageName: "Image",
           artistName: "Custom Artist 1, Custom Artist 2, Custom Artist 3",
           colorBlock: .pink
         )
@@ -142,12 +142,12 @@ struct Recents: View {
     var body: some View {
         ScrollView(.horizontal ,showsIndicators: false){
             HStack {
-                HorizontalScollBottomCard( imageName: "Artist-9", artistName: "Tame Impala", SubartistName: "Artist")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "Tame Impala", SubartistName: "Artist")
                 .padding(.leading)
-                HorizontalScollBottomCard( imageName: "Artist-10", artistName: "The Beatles", SubartistName: "Music Rock")
-                HorizontalScollBottomCard( imageName: "Artist-5", artistName: "Frank Ocean", SubartistName: "Music")
-                HorizontalScollBottomCard( imageName: "Artist-1", artistName: "Halsey", SubartistName: "")
-                HorizontalScollBottomCard( imageName: "Artist-4", artistName: "bro", SubartistName: "Music")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "The Beatles", SubartistName: "Music Rock")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "Frank Ocean", SubartistName: "Music")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "Halsey", SubartistName: "")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "bro", SubartistName: "Music")
             }
 
         }
@@ -186,22 +186,22 @@ struct HorizontalScrollBottom2: View {
     var body: some View {
         ScrollView(.horizontal ,showsIndicators: false){
             HStack {
-                HorizontalScollBottomCard( imageName: "PlaylistPic-1", artistName: "Today's Hits", SubartistName: "Music Hits")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "Today's Hits", SubartistName: "Music Hits")
                 .padding(.leading)
 
-                HorizontalScollBottomCard( imageName: "PlaylistPic-4", artistName: "Verified Hits", SubartistName: "Music Pop")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "Verified Hits", SubartistName: "Music Pop")
 
-                HorizontalScollBottomCard( imageName: "PlaylistPic-2", artistName: "Pure Focus", SubartistName: "Music Alternative")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "Pure Focus", SubartistName: "Music Alternative")
 
-                HorizontalScollBottomCard( imageName: "PlaylistPic-3", artistName: "Everday Jam", SubartistName: "Music Dance")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "Everday Jam", SubartistName: "Music Dance")
 
-                HorizontalScollBottomCard( imageName: "PlaylistPic-2", artistName: "Pure Focus", SubartistName: "Music Alternative")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "Pure Focus", SubartistName: "Music Alternative")
 
-                HorizontalScollBottomCard( imageName: "PlaylistPic-1", artistName: "Today's Hits", SubartistName: "Music Hits")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "Today's Hits", SubartistName: "Music Hits")
 
-                HorizontalScollBottomCard( imageName: "PlaylistPic-3", artistName: "Everday Jam", SubartistName: "Music Dance")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "Everday Jam", SubartistName: "Music Dance")
 
-                HorizontalScollBottomCard( imageName: "PlaylistPic-4", artistName: "Verified Hits", SubartistName: "Music Pop")
+                HorizontalScollBottomCard( imageName: "Image", artistName: "Verified Hits", SubartistName: "Music Pop")
             }
         }
     }

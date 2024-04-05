@@ -7,7 +7,6 @@
 
 import Foundation
 
-// MARK: - PipedVideo
 struct APIVideo: Codable, Identifiable {
     let id: String
     let title, uploader: String
@@ -21,8 +20,6 @@ struct APIVideo: Codable, Identifiable {
     }
 }
 
-
-// MARK: - OStream
 struct OStream: Codable {
     let url: String
     let videoOnly: Bool
@@ -33,16 +30,23 @@ struct APISearchResponse: Codable {
     let items: [VideoItem]
 }
 
-// MARK: - Item
+// MARK: - VideoItem
 struct VideoItem: Codable {
     let title: String
     let thumbnail: String
     let uploaderName: String
     let duration: Int
-    let url: String // Directly using the URL here
+    let url: String
 
     var videoId: String? {
-        URLComponents(string: url)?.queryItems?.first(where: { $0.name == "v" })?.value
+        guard let components = URLComponents(string: url),
+              let queryItem = components.queryItems?.first(where: { $0.name == "v" }),
+              let videoId = queryItem.value
+        else {
+            print("Failed to extract videoId from URL: \(url)")
+            return nil
+        }
+        return videoId
     }
 
     enum CodingKeys: String, CodingKey {

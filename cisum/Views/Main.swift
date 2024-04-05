@@ -49,7 +49,7 @@ struct Main: View {
                     }
                     .tag(1)
                 
-                Search(videoID: videoID, expandPlayer: .constant(false), animation: animation)
+                SearchView(expandPlayer: $expandPlayer)
                     .tabItem {
                         Image(systemName: "magnifyingglass")
                         Text("Search")
@@ -89,7 +89,7 @@ struct Main: View {
         .overlay {
             if expandPlayer {
                 Player(videoID: videoID, expandPlayer: $expandPlayer, animation: animation)
-//                Transition
+                //Transition
                     .transition(.asymmetric(insertion: .identity, removal: .offset(y: -5)))
             }
         }
@@ -140,8 +140,7 @@ struct Main: View {
     @ViewBuilder
     func sideMenuTabs<Content: View>(_ tab: Tab, onTap: @escaping () -> Content) -> some View {
         Button(action: {
-               // Present the associated view
-            tab.view()
+
            }) {
             HStack(spacing: 12) {
                 Image(systemName: tab.rawValue)
@@ -162,18 +161,7 @@ struct Main: View {
     enum Tab: String, CaseIterable {
         case profile = "person.crop.circle"
         case downloads = "arrow.down.circle"
-        case settings = "gear" 
-        
-        func view() -> some View {
-            switch self {
-            case .profile:
-                return AnyView(Profile())
-            case .downloads:
-                return AnyView(Downloads())
-            case .settings:
-                return AnyView(Settings())
-            }
-        }
+        case settings = "gear"
         
         var title: String {
             switch self {
