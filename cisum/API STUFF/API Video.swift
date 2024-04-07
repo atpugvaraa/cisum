@@ -9,20 +9,14 @@ import Foundation
 
 struct APIVideo: Codable, Identifiable {
     let id: String
-    let title, uploader: String
+    let title: String
     let thumbnailURL: String
-    let audioStreams, videoStreams: [OStream]
 
     enum CodingKeys: String, CodingKey {
-        case id, title, uploader
+        case id
+        case title
         case thumbnailURL = "thumbnailUrl"
-        case audioStreams, videoStreams
     }
-}
-
-struct OStream: Codable {
-    let url: String
-    let videoOnly: Bool
 }
 
 // MARK: - APISearchResponse
@@ -34,7 +28,6 @@ struct APISearchResponse: Codable {
 struct VideoItem: Codable {
     let title: String
     let thumbnail: String
-    let uploaderName: String
     let duration: Int
     let url: String
 
@@ -50,7 +43,7 @@ struct VideoItem: Codable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case title, thumbnail, uploaderName, duration, url
+        case title, thumbnail, duration, url
     }
 }
 

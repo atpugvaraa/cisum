@@ -32,8 +32,7 @@ class APIService {
                     guard let videoId = item.videoId else { return nil }
                     // No need to guard for snippet existence if you're using other properties of VideoItem
                     let thumbnailUrl = item.thumbnail
-                    let videoStream = OStream(url: "https://pipedapi.kavin.rocks/streams/\(videoId)", videoOnly: false)
-                    return APIVideo(id: videoId, title: item.title, uploader: item.uploaderName, thumbnailURL: thumbnailUrl, audioStreams: [], videoStreams: [videoStream])
+                    return APIVideo(id: videoId, title: item.title, thumbnailURL: thumbnailUrl)
                 }
                 
                 
