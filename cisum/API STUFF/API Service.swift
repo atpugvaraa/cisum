@@ -7,37 +7,27 @@
 
 import Foundation
 
+import Foundation
+
 class APIService {
     private let baseUrl = "https://pipedapi.kavin.rocks/search"
     
     func fetchVideos(query: String, completion: @escaping ([APIVideo]) -> Void) {
-        guard let url = URL(string: "\(baseUrl)?q=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&filter=music_songs") else {
+        guard let url = buildURL(for: query) else {
             print("Invalid URL")
+            completion([])
             return
         }
         
         URLSession.shared.dataTask(with: url) { data, response, error in
-            // Check for errors or no data
             guard let data = data, error == nil else {
                 print("API request error: \(error?.localizedDescription ?? "Unknown error")")
                 completion([])
                 return
-            } 
+            }
+            
             do {
-                // Decode the JSON response
-                let searchResponse = try JSONDecoder().decode(APISearchResponse.self, from: data)
-                // Map each item to an APIVideo, adjusting for the correct structure
-                let videos = searchResponse.items.compactMap { item -> APIVideo? in
-                    // Directly use the computed `videoId` property of `VideoItem`
-                    guard let videoId = item.videoId else { return nil }
-                    // No need to guard for snippet existence if you're using other properties of VideoItem
-                    let thumbnailUrl = item.thumbnail
-                    return APIVideo(id: videoId, title: item.title, thumbnailURL: thumbnailUrl)
-                }
-                
-                
-                
-                // Complete with the array of videos
+                let videos = try self.decodeVideos(from: data)
                 DispatchQueue.main.async {
                     completion(videos)
                 }
@@ -46,5 +36,21 @@ class APIService {
                 completion([])
             }
         }.resume()
+    }
+    
+    private func buildURL(for query: String) -> URL? {
+        guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            return nil
+        }
+        let urlString = "\(baseUrl)?q=\(encodedQuery)&filter=music_songs"
+        return URL(string: urlString)
+    }
+    
+    private func decodeVideos(from data: Data) throws -> [APIVideo] {
+        let searchResponse = try JSONDecoder().decode(APISearchResponse.self, from: data)
+        return searchResponse.items.compactMap { item -> APIVideo? in
+            guard let videoId = item.videoId else { return nil }
+            return APIVideo(id: videoId, title: item.title, thumbnailURL: item.thumbnail)
+        }
     }
 }

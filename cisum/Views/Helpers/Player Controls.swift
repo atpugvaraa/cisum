@@ -10,7 +10,6 @@ import MediaPlayer
 import AVKit
 
 // MARK: - AirPlayButton
-
 struct AirPlayButton: UIViewRepresentable {
     func makeUIView(context: Context) -> AVRoutePickerView {
         let routePickerView = AVRoutePickerView()
@@ -24,7 +23,6 @@ struct AirPlayButton: UIViewRepresentable {
 }
 
 // MARK: - PlayPauseButton
-
 struct PlayPauseButton: View {
     @State private var isPlaying = false
     @State private var transparency: Double = 0.0
@@ -63,7 +61,6 @@ struct PlayPauseButton: View {
 }
 
 // MARK: - ForwardButton
-
 struct ForwardButton: View {
     @State private var isForwarded = false
     @State private var transparency: Double = 0.0
@@ -91,7 +88,6 @@ struct ForwardButton: View {
 }
 
 // MARK: - BackwardButton
-
 struct BackwardButton: View {
     @State private var isBackwarded = false
     @State private var transparency: Double = 0.0
