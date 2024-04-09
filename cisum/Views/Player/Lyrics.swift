@@ -8,9 +8,9 @@
 import SwiftUI
 
 struct Lyrics: View {
+  @EnvironmentObject var viewModel: PlayerViewModel
     let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706, opacity: 0.3)
     @State private var activeTab: songorvideo = .song
-    @Binding var expandPlayer: Bool
     var animation: Namespace.ID
     @State private var animateContent: Bool = false
     @State private var offsetY: CGFloat = 0
@@ -31,9 +31,15 @@ struct Lyrics: View {
                             .opacity(animateContent ? 1 : 0)
                     })
                     .overlay(alignment: .top) {
-                        MusicInfo(expandPlayer: $expandPlayer, animation: animation)
-                            .allowsHitTesting(false)
-                            .opacity(animateContent ? 0 : 1)
+                      MusicInfo(
+                        expandPlayer: $viewModel.expandPlayer,
+                        animation: animation,
+                        currentTitle: viewModel.currentTitle ?? "Not Playing",
+                        currentArtist: viewModel.currentArtist ?? "",
+                        currentThumbnailURL: viewModel.currentThumbnailURL ?? "Image"
+                      )
+                      .allowsHitTesting(false)
+                      .opacity(animateContent ? 0 : 1)
                     }
                     .matchedGeometryEffect(id: "Background", in: animation)
                 
@@ -65,11 +71,11 @@ struct Lyrics: View {
                         .padding(.vertical, size.height < 700 ? 10 : 15)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Song Name")
+                            Text("Not Playing")
                                 .font(.title3)
                                 .fontWeight(.semibold)
 
-                            Text("Artist")
+                            Text("")
                                 .foregroundColor(.gray)
                         }
                         .padding(.top, -15)
@@ -126,19 +132,8 @@ struct Lyrics: View {
             .offset(y: offsetY)
             .gesture(
                 DragGesture()
-                    .onChanged({ value in
-                        let translationY = value.translation.height
-                        offsetY = (translationY > 0 ? translationY : 0)
-                    })
-                    .onEnded({ value in
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            if offsetY > size.height * 0.4 {
-                                expandPlayer = false
-                                animateContent = false
-                            } else {
-                                offsetY = .zero
-                            }
-                        }
+                    .onChanged({ _ in
+                        offsetY = .zero
                     })
             )
             .ignoresSafeArea(.container, edges: .all)
@@ -243,24 +238,22 @@ struct Lyrics: View {
                     }
                     
                     HStack(alignment: .top, spacing: size.width * 0.18) {
-                        Button {
-                            
-                        } label: {
+                      NavigationLink(
+                        destination: Player(viewModel: _viewModel, videoID: viewModel.currentVideoID ?? "", animation: animation), label: {
                             Image(systemName: "quote.bubble")
                                 .font(.title2)
-                        }
-                        
+                        })
+
                         AirPlayButton()
                             .frame(width: 50, height: 50)
                             .padding(.top, -13)
                         .padding(.horizontal, 25)
                         
-                        Button {
-                            
-                        } label: {
-                            Image(systemName: "list.bullet")
-                                .font(.title2)
-                        }
+                      NavigationLink(
+                        destination: Player(viewModel: _viewModel, videoID: viewModel.currentVideoID ?? "", animation: animation), label: {
+                        Image(systemName: "list.bullet")
+                          .font(.title2)
+                      })
                         .padding(.top, 3)
                     }
                     .foregroundColor(.white)

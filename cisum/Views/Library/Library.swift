@@ -15,8 +15,9 @@ struct Library: View {
                 List {
                     // MARK: - Playlists
 
-                    Button(action: { print("Playlist button pressed")
-                    }, label: {
+                  NavigationLink(destination: {
+                    Playlists()
+                  }, label: {
                         HStack {
                             Label("Playlists", systemImage: "music.note.list")
                             Spacer()
@@ -27,10 +28,10 @@ struct Library: View {
                     })
                     .padding(.vertical, 8)
 
-                    // MARK: - Artist
-
-                    Button(action: { print("Artist button pressed") },
-                           label: {
+                    // MARK: - Artists
+                  NavigationLink(destination: {
+                    Artists()
+                  }, label: {
                         HStack {
                             Label("Artist", systemImage: "music.mic")
                             Spacer()
@@ -42,9 +43,9 @@ struct Library: View {
                     .padding(.vertical, 8)
 
                     // MARK: - Albums
-
-                    Button(action: { print("Album button pressed") },
-                           label: {
+                  NavigationLink(destination: {
+                    Albums()
+                  }, label: {
                         HStack {
                             Label("Album", systemImage: "square.stack")
                             Spacer()
@@ -54,23 +55,12 @@ struct Library: View {
                     })
                     .padding(.vertical, 8)
 
-                    // MARK: - Genres
-
-                    Button(action: { print("guitars button pressed") }, label: {
-                        HStack {
-                            Label("Genres", systemImage: "guitars")
-                            Spacer()
-                            Image(systemName: "chevron.right").font(.callout)
-                                .foregroundColor(.secondary)
-                        }
-                    })
-                    .padding(.vertical, 8)
-
                     // MARK: - Downloaded
-
-                    Button(action: { print("Download button pressed") }, label: {
+                  NavigationLink(destination: {
+                    Downloads()
+                  }, label: {
                         HStack {
-                            Label("Downloaded", systemImage: "arrow.down.circle")
+                            Label("Downloads", systemImage: "arrow.down.circle")
                             Spacer()
                             Image(systemName: "chevron.right").font(.callout)
                                 .foregroundColor(.secondary)

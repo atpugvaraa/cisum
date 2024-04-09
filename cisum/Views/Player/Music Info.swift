@@ -13,7 +13,9 @@ struct MusicInfo: View {
     @State private var animateContent: Bool = false
     @State private var offsetY: CGFloat = 0
     @State private var isPlaying: Bool = false
-    
+    var currentTitle: String
+    var currentArtist: String
+    var currentThumbnailURL: String
     var body: some View {
         HStack(spacing: 0) {
             //MARK: Expand Animation
@@ -21,29 +23,40 @@ struct MusicInfo: View {
                 if !expandPlayer {
                     GeometryReader { geometry in
                         let size = geometry.size // Capture size here
-                        
-                        Image("Image")
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
+
+                        // Use AsyncImage to load and display the thumbnail image
+                        if let url = URL(string: currentThumbnailURL), !expandPlayer {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image.resizable().aspectRatio(contentMode: .fill)
+                                case .empty, .failure:
+                                    ProgressView() // Placeholder or fallback content
+                                @unknown default:
+                                    EmptyView()
+                                }
+                            }
                             .frame(width: 40, height: 40)
                             .clipShape(RoundedRectangle(cornerRadius: expandPlayer ? 15 : 5, style: .continuous))
+                            .matchedGeometryEffect(id: "Album Cover", in: animation)
+                        }
                     }
                     .matchedGeometryEffect(id: "Album Cover", in: animation)
                 }
             }
             .padding(.leading, -5)
             .frame(width: 40, height: 40)
-            
-            Text("Song Name")
+
+            Text(currentTitle)
                 .fontWeight(.semibold)
                 .lineLimit(1)
                 .padding(.horizontal, 10)
-            
+
             Spacer(minLength: 0)
-            
+
             AirPlayButton()
                 .frame(width: 50, height: 50)
-            
+
             PlayPauseButton()
                 .padding(.leading, 5)
         }

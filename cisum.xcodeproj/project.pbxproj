@@ -22,7 +22,11 @@
 		9630B2D62BB7BA29008C0516 /* Player Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9630B2D52BB7BA29008C0516 /* Player Controls.swift */; };
 		9630B2DA2BB85E25008C0516 /* Profile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9630B2D92BB85E25008C0516 /* Profile.swift */; };
 		9630B2DC2BB85E85008C0516 /* Downloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9630B2DB2BB85E85008C0516 /* Downloads.swift */; };
+		968CB89B2BC52D790035EE6E /* Playlists.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968CB89A2BC52D790035EE6E /* Playlists.swift */; };
+		968CB89D2BC52DD10035EE6E /* Artists.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968CB89C2BC52DD10035EE6E /* Artists.swift */; };
+		968CB89F2BC52DD90035EE6E /* Albums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968CB89E2BC52DD90035EE6E /* Albums.swift */; };
 		969FECE42BB7132100864B61 /* Animated Side Bar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969FECE32BB7132100864B61 /* Animated Side Bar.swift */; };
+		96BD7BBE2BC428DA000D6824 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96BD7BBD2BC428DA000D6824 /* Extensions.swift */; };
 		96F936C02BBAD6A10099FAF5 /* API Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96F936BB2BBAD6A10099FAF5 /* API Player.swift */; };
 		96F936C12BBAD6A10099FAF5 /* API Service.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96F936BC2BBAD6A10099FAF5 /* API Service.swift */; };
 		96F936C22BBAD6A10099FAF5 /* API Video.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96F936BD2BBAD6A10099FAF5 /* API Video.swift */; };
@@ -46,7 +50,11 @@
 		9630B2D52BB7BA29008C0516 /* Player Controls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Player Controls.swift"; sourceTree = "<group>"; };
 		9630B2D92BB85E25008C0516 /* Profile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Profile.swift; sourceTree = "<group>"; };
 		9630B2DB2BB85E85008C0516 /* Downloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Downloads.swift; sourceTree = "<group>"; };
+		968CB89A2BC52D790035EE6E /* Playlists.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Playlists.swift; sourceTree = "<group>"; };
+		968CB89C2BC52DD10035EE6E /* Artists.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Artists.swift; sourceTree = "<group>"; };
+		968CB89E2BC52DD90035EE6E /* Albums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Albums.swift; sourceTree = "<group>"; };
 		969FECE32BB7132100864B61 /* Animated Side Bar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Animated Side Bar.swift"; sourceTree = "<group>"; };
+		96BD7BBD2BC428DA000D6824 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		96F936BB2BBAD6A10099FAF5 /* API Player.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "API Player.swift"; sourceTree = "<group>"; };
 		96F936BC2BBAD6A10099FAF5 /* API Service.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "API Service.swift"; sourceTree = "<group>"; };
 		96F936BD2BBAD6A10099FAF5 /* API Video.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "API Video.swift"; sourceTree = "<group>"; };
@@ -116,6 +124,7 @@
 		77EAFCB32BABFD5F0013DC5E /* Library */ = {
 			isa = PBXGroup;
 			children = (
+				968CB8A02BC52E010035EE6E /* Library Views */,
 				77EAFCB42BABFD5F0013DC5E /* Library.swift */,
 				77EAFCB52BABFD5F0013DC5E /* Playlist.swift */,
 			);
@@ -133,10 +142,10 @@
 		77EAFCBA2BABFD5F0013DC5E /* Player */ = {
 			isa = PBXGroup;
 			children = (
-				77EAFCBB2BABFD5F0013DC5E /* Lyrics.swift */,
-				77EAFCBC2BABFD5F0013DC5E /* UpNext.swift */,
 				77EAFCBD2BABFD5F0013DC5E /* Music Info.swift */,
 				77EAFCBE2BABFD5F0013DC5E /* Player.swift */,
+				77EAFCBB2BABFD5F0013DC5E /* Lyrics.swift */,
+				77EAFCBC2BABFD5F0013DC5E /* UpNext.swift */,
 			);
 			path = Player;
 			sourceTree = "<group>";
@@ -145,10 +154,20 @@
 			isa = PBXGroup;
 			children = (
 				9630B2D92BB85E25008C0516 /* Profile.swift */,
-				9630B2DB2BB85E85008C0516 /* Downloads.swift */,
 				77EAFCB82BABFD5F0013DC5E /* Settings.swift */,
 			);
 			path = "Side Bar Views";
+			sourceTree = "<group>";
+		};
+		968CB8A02BC52E010035EE6E /* Library Views */ = {
+			isa = PBXGroup;
+			children = (
+				968CB89A2BC52D790035EE6E /* Playlists.swift */,
+				968CB89C2BC52DD10035EE6E /* Artists.swift */,
+				968CB89E2BC52DD90035EE6E /* Albums.swift */,
+				9630B2DB2BB85E85008C0516 /* Downloads.swift */,
+			);
+			path = "Library Views";
 			sourceTree = "<group>";
 		};
 		969FECE52BB7132D00864B61 /* Helpers */ = {
@@ -156,6 +175,7 @@
 			children = (
 				969FECE32BB7132100864B61 /* Animated Side Bar.swift */,
 				9630B2D52BB7BA29008C0516 /* Player Controls.swift */,
+				96BD7BBD2BC428DA000D6824 /* Extensions.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -187,6 +207,8 @@
 			dependencies = (
 			);
 			name = cisum;
+			packageProductDependencies = (
+			);
 			productName = cisum;
 			productReference = 77035D712B8E4F4300F33751 /* cisum.app */;
 			productType = "com.apple.product-type.application";
@@ -216,6 +238,8 @@
 				Base,
 			);
 			mainGroup = 77035D682B8E4F4300F33751;
+			packageReferences = (
+			);
 			productRefGroup = 77035D722B8E4F4300F33751 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -243,8 +267,10 @@
 			files = (
 				969FECE42BB7132100864B61 /* Animated Side Bar.swift in Sources */,
 				9630B2DC2BB85E85008C0516 /* Downloads.swift in Sources */,
+				968CB89F2BC52DD90035EE6E /* Albums.swift in Sources */,
 				96F936C12BBAD6A10099FAF5 /* API Service.swift in Sources */,
 				96F936C02BBAD6A10099FAF5 /* API Player.swift in Sources */,
+				968CB89D2BC52DD10035EE6E /* Artists.swift in Sources */,
 				77EAFCCB2BABFD5F0013DC5E /* Music Info.swift in Sources */,
 				77EAFCC82BABFD5F0013DC5E /* Main.swift in Sources */,
 				9630B2DA2BB85E25008C0516 /* Profile.swift in Sources */,
@@ -256,10 +282,12 @@
 				77EAFCC42BABFD5F0013DC5E /* Library.swift in Sources */,
 				77EAFCCA2BABFD5F0013DC5E /* UpNext.swift in Sources */,
 				77EAFCC32BABFD5F0013DC5E /* Home.swift in Sources */,
+				96BD7BBE2BC428DA000D6824 /* Extensions.swift in Sources */,
 				96F936C22BBAD6A10099FAF5 /* API Video.swift in Sources */,
 				77EAFCC52BABFD5F0013DC5E /* Playlist.swift in Sources */,
 				96F936C32BBAD6A10099FAF5 /* AudioPlayerManager.swift in Sources */,
 				77EAFCC62BABFD5F0013DC5E /* Search.swift in Sources */,
+				968CB89B2BC52D790035EE6E /* Playlists.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
