@@ -238,8 +238,9 @@ struct Lyrics: View {
                     }
                     
                     HStack(alignment: .top, spacing: size.width * 0.18) {
-                      NavigationLink(
-                        destination: Player(viewModel: _viewModel, videoID: viewModel.currentVideoID ?? "", animation: animation), label: {
+//                      NavigationLink(
+//                        destination: Player(viewModel: _viewModel, videoID: viewModel.currentVideoID ?? "", animation: animation)
+                      Button(action: {}, label: {
                             Image(systemName: "quote.bubble")
                                 .font(.title2)
                         })
@@ -249,8 +250,9 @@ struct Lyrics: View {
                             .padding(.top, -13)
                         .padding(.horizontal, 25)
                         
-                      NavigationLink(
-                        destination: Player(viewModel: _viewModel, videoID: viewModel.currentVideoID ?? "", animation: animation), label: {
+//                      NavigationLink(
+//                        destination: Player(viewModel: _viewModel, videoID: viewModel.currentVideoID ?? "", animation: animation), label: 
+                      Button(action: {}, label: {
                         Image(systemName: "list.bullet")
                           .font(.title2)
                       })

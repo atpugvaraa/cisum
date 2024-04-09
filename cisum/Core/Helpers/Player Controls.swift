@@ -327,7 +327,7 @@ struct BackwardButton: View {
     }
 }
 
-
+//MARK: Segmented Control
 struct SongOrVideo<Indicator: View>: View {
     var tabs: [songorvideo]
     @Binding var activeTab: songorvideo
@@ -389,7 +389,6 @@ struct SongOrVideo<Indicator: View>: View {
         }
     }
 }
-
 
 enum songorvideo: String, CaseIterable {
   case song = "Song"

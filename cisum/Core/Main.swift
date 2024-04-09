@@ -140,6 +140,13 @@ struct Main: View {
       sideMenuTabs(.settings) {
         Settings()
       }
+
+      Spacer()
+
+      sideMenuTabs(.loginsignup) {
+        LoginSignup()
+      }
+      .padding(.bottom, 105)
     }
     .padding(.horizontal, 15)
     .padding(.vertical, 20)
@@ -175,6 +182,9 @@ struct Main: View {
     case downloads = "arrow.down.circle"
     case settings = "gear"
 
+    case loginsignup = "person.crop.circle.badge.plus"
+    case logout = "rectangle.portrait.and.arrow.right"
+
     func view() -> some View {
       switch self {
       case .profile:
@@ -183,6 +193,10 @@ struct Main: View {
         return AnyView(Downloads())
       case .settings:
         return AnyView(Settings())
+      case .loginsignup:
+        return AnyView(LoginSignup())
+      case .logout:
+        return AnyView(Logout())
       }
     }
 
@@ -194,6 +208,10 @@ struct Main: View {
         return "Downloads"
       case .settings:
         return "Settings"
+      case .loginsignup:
+        return "Login"
+      case .logout:
+        return "Logout"
       }
     }
   }
