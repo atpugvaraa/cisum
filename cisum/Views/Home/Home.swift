@@ -8,6 +8,14 @@
 import SwiftUI
 
 struct Home: View {
+//  @State var image: UIImage?
+//  @State private var showMenu: Bool = false
+//  @State private var offsetX: CGFloat = 0
+//  @State private var lastOffsetX: CGFloat = 0
+//  @State private var progress: CGFloat = 0
+//  var sideMenuWidth: CGFloat = 200
+  let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
+
     var body: some View {
         NavigationView {
             ScrollView(.vertical , showsIndicators: false) {

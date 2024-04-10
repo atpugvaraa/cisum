@@ -86,15 +86,15 @@ struct AnimatedSideBar<Content: View, MenuView: View, Background: View>: View {
             }
             .onChanged { value in
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
-                    guard value.startLocation.x > 10, isDragged else { return }
-                    
+                    guard value.startLocation.x > 15, isDragged else { return }
+
                     let translationX = isDragged ? max(min(value.translation.width + lastOffsetX, sideMenuWidth), 0) : 0
                     offsetX = translationX
                     dragProgress()
                 }
             }
             .onEnded { value in
-                guard value.startLocation.x > 10 else {return}
+                guard value.startLocation.x > 15 else {return}
                 
                 withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
                     let velocityX = value.predictedEndTranslation.width / 8

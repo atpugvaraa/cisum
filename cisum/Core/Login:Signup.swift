@@ -6,86 +6,115 @@
 //
 
 import SwiftUI
+import Firebase
+import FirebaseAuth
+import FirebaseStorage
+import FirebaseCore
+
+class FirebaseManager: NSObject {
+  let auth: Auth
+  var storage = Storage.storage()
+
+  static let shared = FirebaseManager()
+
+  override init() {
+    FirebaseApp.configure()
+
+    self.auth = Auth.auth()
+    self.storage = Storage.storage()
+
+    super.init()
+  }
+}
 
 struct LoginSignup: View {
   let accentColor = Color(red: 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
   @State private var activeTab: loginorsignup = .signup
-  @State private var offsetY: CGFloat = 0
   @State var email = ""
   @State var password = ""
+  @State var showImagePicker = false
+  @State var image: UIImage?
 
   var body: some View {
-    NavigationView{
-        ScrollView {
-          VStack(spacing: 16)  {
-            VStack(spacing: 15) {
-              LoginOrSignup(tabs: loginorsignup.allCases, activeTab: $activeTab, height: 35, font: .body, activeTint: .primary, inActiveTint: .gray.opacity(0.5)) { size in
-                RoundedRectangle(cornerRadius: 30)
-                  .fill(accentColor)
-                  .frame(height: size.height)
-                  .frame(maxHeight: .infinity, alignment: .bottom)
-              }
-              .padding(.horizontal, 50)
-              .toolbarBackground(.hidden, for: .navigationBar)
-            }
-            .padding(.top)
+    ScrollView {
+      VStack(spacing: 16)  {
+        VStack(spacing: 15) {
+          LoginOrSignup(tabs: loginorsignup.allCases, activeTab: $activeTab, height: 35, font: .body, activeTint: .primary, inActiveTint: .gray.opacity(0.5)) { size in
+            RoundedRectangle(cornerRadius: 30)
+              .fill(accentColor)
+              .frame(height: size.height)
+              .frame(maxHeight: .infinity, alignment: .bottom)
+          }
+          .padding(.horizontal, 50)
+          .toolbarBackground(.hidden, for: .navigationBar)
+        }
+        .padding(.top)
 
-            VStack {
-              if activeTab == .signup {
-                Button {
-
-                } label: {
+        VStack {
+          //Profile Image Button
+          if activeTab == .signup {
+            Button {
+              showImagePicker.toggle()
+            } label: {
+              VStack {
+                if let image = self.image {
+                  Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 84, height: 84)
+                    .clipShape(Circle())
+                } else {
                   Image(systemName: "person.crop.circle")
                     .font(.system(size: 84))
                     .foregroundColor(.primary)
                 }
-                .padding(.top, 50)
               }
-
-              VStack {
-                TextField("Email", text: $email)
-                  .keyboardType(.emailAddress)
-                  .padding(.vertical)
-                SecureField("Password", text: $password)
-                  .padding(.vertical)
-              }
-              .padding(.horizontal)
-              .padding(6)
-              .autocorrectionDisabled()
-              .autocapitalization(.none)
             }
-
-            // Conditionally show different views based on activeTab
-            if activeTab == .signup {
-              Signup(email: $email, password: $password)
-            } else {
-              Login(email: $email, password: $password)
-            }
+            .padding(.top, 50)
           }
+
+          VStack {
+            TextField("Email", text: $email)
+              .keyboardType(.emailAddress)
+              .padding(.vertical)
+            SecureField("Password", text: $password)
+              .padding(.vertical)
+          }
+          .padding(.horizontal)
+          .padding(6)
+          .autocorrectionDisabled()
+          .autocapitalization(.none)
         }
-        .offset(y: offsetY)
-        .gesture(
-            DragGesture()
-                .onChanged({ _ in
-                    offsetY = .zero
-                })
-        )
-        .navigationTitle(activeTab.rawValue)
-        .padding()
+
+        // Conditionally show different views based on activeTab
+        if activeTab == .signup {
+          Signup(email: $email, password: $password)
+        } else if activeTab == .login {
+          Login(email: $email, password: $password)
+        }
+      }
+    }
+    .scrollDisabled(true)
+    .padding()
+    .fullScreenCover(isPresented: $showImagePicker, onDismiss: nil) {
+      ImagePicker(image: $image)
     }
   }
 }
 
 // Signup View
 struct Signup: View {
+  @State private var activeTab: loginorsignup = .signup
   let accentColor = Color(red: 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
   @Binding var email: String
   @Binding var password: String
+  @State var image: UIImage?
 
   var body: some View {
     VStack {
       Button {
         // Add action for signup button
+        signup()
       } label: {
         HStack {
           Text("Sign up")
@@ -101,10 +130,46 @@ struct Signup: View {
       // Add other signup related UI components here
     }
   }
+
+  private func signup() {
+    if activeTab == .signup {
+      FirebaseManager.shared.auth.createUser(withEmail: email, password: password) {result, error in
+        if let error = error {
+          print("Failed to create user:", error)
+          return
+        }
+        print("Success! User Created: \(result?.user.uid ?? "")")
+
+        self.persistImage()
+        // MARK: - In-app Toast - Kavsoft
+      }
+    }
+  }
+
+  private func persistImage() {
+//    let filename = UUID().uuidString
+    guard let uid = FirebaseManager.shared.auth.currentUser?.uid else {return}
+    let ref = FirebaseManager.shared.storage.reference(withPath: uid)
+    guard let imageData = self.image?.jpegData(compressionQuality: 0.5) else {return}
+    ref.putData(imageData, metadata: nil) { metadata, error in
+      if let error = error {
+        //In-App Toast
+        return
+      }
+      
+      ref.downloadURL { url , error in
+        //In-app Toast
+        return
+      }
+
+      //Success In-app Toast
+    }
+  }
 }
 
 // Login View
 struct Login: View {
+  @State private var activeTab: loginorsignup = .login
   let accentColor = Color(red: 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
   @Binding var email: String
   @Binding var password: String
@@ -113,6 +178,7 @@ struct Login: View {
     VStack {
       Button {
         // Add action for login button
+        login()
       } label: {
         HStack {
           Text("Login")
@@ -126,6 +192,19 @@ struct Login: View {
       .clipShape(RoundedRectangle(cornerRadius: 100))
 
       // Add other login related UI components here
+    }
+  }
+
+  private func login() {
+    if activeTab == .login {
+      FirebaseManager.shared.auth.signIn(withEmail: email, password: password) {result, error in
+        if let error = error {
+          print("Failed to login user:", error)
+          return
+        }
+        print("Success! Logged in as: \(result?.user.uid ?? "")")
+        //In-app Toast - Kavsoft
+      }
     }
   }
 }

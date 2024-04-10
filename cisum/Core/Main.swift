@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct Main: View {
+  @State var isLoggedin: Bool = false
   var videoID: String
   let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
   @State private var selectedTab = 0
@@ -22,6 +23,7 @@ struct Main: View {
   @Namespace var animation
   @State private var showMenu: Bool = false
   @EnvironmentObject var viewModel: PlayerViewModel
+  @State var image: UIImage?
 
   var body: some View {
     NavigationView {
@@ -143,8 +145,30 @@ struct Main: View {
 
       Spacer()
 
-      sideMenuTabs(.loginsignup) {
-        LoginSignup()
+      VStack(spacing: 21) {
+        NavigationLink(destination: LoginSignup(), label: {
+          HStack(spacing: 12) {
+            Image(systemName: isLoggedin ? "person.crop.circle.badge.plus" : "person.crop.circle")
+              .font(.title3)
+            Text(isLoggedin ? "Login" : "Sign up")
+              .font(.callout)
+
+            Spacer(minLength: 0)
+          }
+        })
+
+        Button {
+
+        } label: {
+          HStack(spacing: 12) {
+            Image(systemName: "rectangle.portrait.and.arrow.right")
+              .font(.title3)
+            Text("Logout")
+              .font(.callout)
+
+            Spacer(minLength: 0)
+          }
+        }
       }
       .padding(.bottom, 105)
     }
@@ -182,9 +206,6 @@ struct Main: View {
     case downloads = "arrow.down.circle"
     case settings = "gear"
 
-    case loginsignup = "person.crop.circle.badge.plus"
-//    case logout = "rectangle.portrait.and.arrow.right"
-
     func view() -> some View {
       switch self {
       case .profile:
@@ -193,10 +214,6 @@ struct Main: View {
         return AnyView(Downloads())
       case .settings:
         return AnyView(Settings())
-      case .loginsignup:
-        return AnyView(LoginSignup())
-//      case .logout:
-//        return AnyView(Logout())
       }
     }
 
@@ -208,10 +225,6 @@ struct Main: View {
         return "Downloads"
       case .settings:
         return "Settings"
-      case .loginsignup:
-        return "Login"
-//      case .logout:
-//        return "Logout"
       }
     }
   }
@@ -250,10 +263,16 @@ struct Main: View {
         }
       }
     }, label: {
-      Image("Image")
-        .resizable()
-        .frame(width: 40, height: 40)
-        .clipShape(RoundedRectangle(cornerRadius: 25.0))
+      if let image = self.image {
+        Image(uiImage: image)
+          .resizable()
+          .frame(width: 40, height: 40)
+          .clipShape(RoundedRectangle(cornerRadius: 25.0))
+      } else {
+        Image(systemName: "person.crop.circle")
+          .font(.system(size: 40))
+          .foregroundColor(AccentColor)
+      }
     })
   }
 }
