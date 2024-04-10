@@ -14,7 +14,7 @@ struct cisumApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Main(videoID: "")
+          Main(videoID: "")
             .accentColor(AccentColor)
             .preferredColorScheme(.dark)
             .environmentObject(playerViewModel)

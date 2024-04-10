@@ -148,10 +148,10 @@ struct SearchView: View {
           .clipShape(RoundedRectangle(cornerRadius: 12))
           .matchedGeometryEffect(id: video.id, in: animation)
       case .failure:
-        Image(systemName: "music.note")
+        Image(systemName: "musicnote")
           .resizable()
-          .aspectRatio(contentMode: .fit)
-          .frame(width: 90, height: 90)
+          .aspectRatio(contentMode: .fill)
+          .frame(width: 171.5, height: 171.5)
           .clipShape(RoundedRectangle(cornerRadius: 8))
       @unknown default:
         EmptyView()

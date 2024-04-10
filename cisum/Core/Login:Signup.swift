@@ -10,55 +10,66 @@ import SwiftUI
 struct LoginSignup: View {
   let accentColor = Color(red: 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
   @State private var activeTab: loginorsignup = .signup
+  @State private var offsetY: CGFloat = 0
   @State var email = ""
   @State var password = ""
 
   var body: some View {
     NavigationView{
-        VStack {
-          VStack(spacing: 15) {
-            LoginOrSignup(tabs: loginorsignup.allCases, activeTab: $activeTab, height: 35, font: .body, activeTint: .primary, inActiveTint: .gray.opacity(0.5)) { size in
-              RoundedRectangle(cornerRadius: 30)
-                .fill(accentColor)
-                .frame(height: size.height)
-                .frame(maxHeight: .infinity, alignment: .bottom)
-            }
-            .padding(.horizontal, 50)
-            .toolbarBackground(.hidden, for: .navigationBar)
-          }
-          .padding(.top)
-
-          VStack {
-            if activeTab == .signup {
-              Button {
-
-              } label: {
-                Image(systemName: "person.crop.circle")
-                  .font(.system(size: 84))
-                  .foregroundColor(.primary)
+        ScrollView {
+          VStack(spacing: 16)  {
+            VStack(spacing: 15) {
+              LoginOrSignup(tabs: loginorsignup.allCases, activeTab: $activeTab, height: 35, font: .body, activeTint: .primary, inActiveTint: .gray.opacity(0.5)) { size in
+                RoundedRectangle(cornerRadius: 30)
+                  .fill(accentColor)
+                  .frame(height: size.height)
+                  .frame(maxHeight: .infinity, alignment: .bottom)
               }
+              .padding(.horizontal, 50)
+              .toolbarBackground(.hidden, for: .navigationBar)
             }
+            .padding(.top)
 
             VStack {
-              TextField("Email", text: $email)
-                .keyboardType(.emailAddress)
-                .padding(.top)
-              SecureField("Password", text: $password)
-                .padding(.vertical)
-            }
-            .autocorrectionDisabled()
-            .autocapitalization(.none)
-            .padding(.horizontal)
-          }
-          .padding(.bottom, 255)
+              if activeTab == .signup {
+                Button {
 
-          // Conditionally show different views based on activeTab
-          if activeTab == .signup {
-            Signup(email: $email, password: $password)
-          } else {
-            Login(email: $email, password: $password)
+                } label: {
+                  Image(systemName: "person.crop.circle")
+                    .font(.system(size: 84))
+                    .foregroundColor(.primary)
+                }
+                .padding(.top, 50)
+              }
+
+              VStack {
+                TextField("Email", text: $email)
+                  .keyboardType(.emailAddress)
+                  .padding(.vertical)
+                SecureField("Password", text: $password)
+                  .padding(.vertical)
+              }
+              .padding(.horizontal)
+              .padding(6)
+              .autocorrectionDisabled()
+              .autocapitalization(.none)
+            }
+
+            // Conditionally show different views based on activeTab
+            if activeTab == .signup {
+              Signup(email: $email, password: $password)
+            } else {
+              Login(email: $email, password: $password)
+            }
           }
         }
+        .offset(y: offsetY)
+        .gesture(
+            DragGesture()
+                .onChanged({ _ in
+                    offsetY = .zero
+                })
+        )
         .navigationTitle(activeTab.rawValue)
         .padding()
     }

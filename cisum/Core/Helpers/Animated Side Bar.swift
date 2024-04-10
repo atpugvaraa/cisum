@@ -130,7 +130,3 @@ struct AnimatedSideBar<Content: View, MenuView: View, Background: View>: View {
         progress = max(min(offsetX / sideMenuWidth, 1), 0)
     }
 }
-
-#Preview {
-    Main(videoID: "")
-}

@@ -83,8 +83,3 @@ struct MusicInfo: View {
         )
     }
 }
-
-#Preview {
-    Main(videoID: "")
-    .preferredColorScheme(.dark)
-}

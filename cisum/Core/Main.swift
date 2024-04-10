@@ -90,7 +90,7 @@ struct Main: View {
                     animation: animation,
                     currentTitle: viewModel.currentTitle ?? "Not Playing",
                     currentArtist: viewModel.currentArtist ?? "",
-                    currentThumbnailURL: viewModel.currentThumbnailURL ?? "Image"
+                    currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote"
                   )
                   .allowsHitTesting(false)
                   .opacity(animateContent ? 0 : 1)
@@ -98,7 +98,7 @@ struct Main: View {
                 .matchedGeometryEffect(id: "Background", in: animation, isSource: false)
                 .edgesIgnoringSafeArea(.all)
               // Your Player view
-              Player(viewModel: _viewModel, videoID: viewModel.currentVideoID ?? "", animation: animation)
+              Player(videoID: videoID, animation: animation, currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
                 .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
             }
             .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
@@ -183,7 +183,7 @@ struct Main: View {
     case settings = "gear"
 
     case loginsignup = "person.crop.circle.badge.plus"
-    case logout = "rectangle.portrait.and.arrow.right"
+//    case logout = "rectangle.portrait.and.arrow.right"
 
     func view() -> some View {
       switch self {
@@ -195,8 +195,8 @@ struct Main: View {
         return AnyView(Settings())
       case .loginsignup:
         return AnyView(LoginSignup())
-      case .logout:
-        return AnyView(Logout())
+//      case .logout:
+//        return AnyView(Logout())
       }
     }
 
@@ -210,8 +210,8 @@ struct Main: View {
         return "Settings"
       case .loginsignup:
         return "Login"
-      case .logout:
-        return "Logout"
+//      case .logout:
+//        return "Logout"
       }
     }
   }
@@ -229,7 +229,7 @@ struct Main: View {
           .fill(.thickMaterial)
           .overlay {
             //Music Info
-            MusicInfo(expandPlayer: $viewModel.expandPlayer, animation: animation, currentTitle: viewModel.currentTitle ?? "Not Playing", currentArtist: viewModel.currentArtist ?? "", currentThumbnailURL: viewModel.currentThumbnailURL ?? "")
+            MusicInfo(expandPlayer: $viewModel.expandPlayer, animation: animation, currentTitle: viewModel.currentTitle ?? "Not Playing", currentArtist: viewModel.currentArtist ?? "", currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
           }
           .matchedGeometryEffect(id: "Background", in: animation)
       }
@@ -259,6 +259,6 @@ struct Main: View {
 }
 
 #Preview {
-    Main(videoID: "")
+  Main(videoID: "")
     .preferredColorScheme(.dark)
 }

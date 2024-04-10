@@ -36,7 +36,7 @@ struct UpNext: View {
                         animation: animation,
                         currentTitle: viewModel.currentTitle ?? "Not Playing",
                         currentArtist: viewModel.currentArtist ?? "",
-                        currentThumbnailURL: viewModel.currentThumbnailURL ?? "Image"
+                        currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote"
                       )
                       .allowsHitTesting(false)
                       .opacity(animateContent ? 0 : 1)
@@ -266,8 +266,4 @@ struct UpNext: View {
             }
         }
     }
-}
-
-#Preview {
-    Main(videoID: "")
 }
