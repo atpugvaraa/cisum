@@ -37,7 +37,7 @@ struct Main: View {
         //MARK: Tab View
         TabView(selection: $selectedTab) {
           //Tabs
-          Home()
+          Home(videoID: videoID)
             .tabItem {
               if selectedTab == 0 {
                 Image("home.fill")
@@ -69,61 +69,7 @@ struct Main: View {
           .fill(.sideMenu)
       }
       .accentColor(AccentColor)
-      //Hiding tab bar
-      .toolbar(expandPlayer ? .hidden : .visible, for: .tabBar)
-      .safeAreaInset(edge: .bottom) {
-        FloatingPlayer()
-      }
-      .overlay {
-        Group {
-          if viewModel.expandPlayer {
-            ZStack {
-              // Use UltraThickMaterial as the background
-              RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
-                .fill(.ultraThickMaterial)
-                .overlay(content: {
-                  RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
-                    .fill(.ultraThickMaterial)
-                    .opacity(animateContent ? 1 : 0)
-                })
-                .overlay(alignment: .top) {
-                  MusicInfo(
-                    expandPlayer: $viewModel.expandPlayer,
-                    animation: animation,
-                    currentTitle: viewModel.currentTitle ?? "Not Playing",
-                    currentArtist: viewModel.currentArtist ?? "",
-                    currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote"
-                  )
-                  .allowsHitTesting(false)
-                  .opacity(animateContent ? 0 : 1)
-                }
-                .matchedGeometryEffect(id: "Background", in: animation, isSource: false)
-                .edgesIgnoringSafeArea(.all)
-              // Your Player view
-              Player(videoID: videoID, animation: animation, currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
-                .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
-            }
-            .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
-          }
-        }
-      }
     }
-  }
-
-  //MARK: Show Side Bar
-  func showSideBar() {
-    offsetX = sideMenuWidth
-    lastOffsetX = offsetX
-    showMenu = true
-    progress = 1 //complete the progress
-  }
-
-  //MARK: Reset to initial state
-  func reset() {
-    offsetX = 0
-    lastOffsetX = 0
-    showMenu = false
-    progress = 0 // Reset the progress
   }
 
   //MARK: Side Bar Menu
@@ -227,53 +173,6 @@ struct Main: View {
         return "Settings"
       }
     }
-  }
-
-  //MARK: Floating Player
-  @ViewBuilder
-  func FloatingPlayer() -> some View {
-    //MARK: Player Expand Animation
-    ZStack {
-      if expandPlayer {
-        Rectangle()
-          .fill(.clear)
-      } else {
-        RoundedRectangle(cornerRadius: 12)
-          .fill(.thickMaterial)
-          .overlay {
-            //Music Info
-            MusicInfo(expandPlayer: $viewModel.expandPlayer, animation: animation, currentTitle: viewModel.currentTitle ?? "Not Playing", currentArtist: viewModel.currentArtist ?? "", currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
-          }
-          .matchedGeometryEffect(id: "Background", in: animation)
-      }
-    }
-    .frame(width: 370, height: 58)
-    .offset(y: -49)
-  }
-
-  //MARK: SideMenuButton
-  @ViewBuilder
-  var sideMenuButton: some View {
-    Button(action: {
-      withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
-        if showMenu {
-          reset()
-        } else {
-          showSideBar()
-        }
-      }
-    }, label: {
-      if let image = self.image {
-        Image(uiImage: image)
-          .resizable()
-          .frame(width: 40, height: 40)
-          .clipShape(RoundedRectangle(cornerRadius: 25.0))
-      } else {
-        Image(systemName: "person.crop.circle")
-          .font(.system(size: 40))
-          .foregroundColor(AccentColor)
-      }
-    })
   }
 }
 

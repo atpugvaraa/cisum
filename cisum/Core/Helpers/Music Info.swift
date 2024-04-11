@@ -30,8 +30,9 @@ struct MusicInfo: View {
                                 switch phase {
                                 case .success(let image):
                                     image.resizable().aspectRatio(contentMode: .fill)
-                                case .empty, .failure:
-                                    ProgressView() // Placeholder or fallback content
+                                case .failure, .empty:
+                                  Image("musicnote")
+                                    .resizable().aspectRatio(contentMode: .fill)
                                 @unknown default:
                                     EmptyView()
                                 }
