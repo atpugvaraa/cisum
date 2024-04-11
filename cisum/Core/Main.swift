@@ -98,8 +98,6 @@ struct Main: View {
               .font(.title3)
             Text(isLoggedin ? "Login" : "Sign up")
               .font(.callout)
-
-            Spacer(minLength: 0)
           }
         })
 
@@ -111,12 +109,10 @@ struct Main: View {
               .font(.title3)
             Text("Logout")
               .font(.callout)
-
-            Spacer(minLength: 0)
           }
         }
       }
-      .padding(.bottom, 105)
+      .padding(.bottom, 50)
     }
     .padding(.horizontal, 15)
     .padding(.vertical, 20)
