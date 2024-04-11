@@ -30,8 +30,8 @@ struct Main: View {
     NavigationView {
       AnimatedSideBar(
         rotatesWhenExpanded: true,
-        disablesInteraction: false,
-        sideMenuWidth: 200,
+        disablesInteraction: true,
+        sideMenuWidth: 180,
         cornerRadius: 25,
         showMenu: $showMenu
       ) { safeArea in
@@ -49,14 +49,14 @@ struct Main: View {
             }
             .tag(0)
 
-          Library()
+          Library(videoID: videoID)
             .tabItem {
               Image(systemName: "play.square.stack")
               Text("Library")
             }
             .tag(1)
 
-          SearchView(expandPlayer: $expandPlayer)
+          SearchView(videoID: videoID, expandPlayer: expandPlayer)
             .tabItem {
               Image(systemName: "magnifyingglass")
               Text("Search")
@@ -67,7 +67,7 @@ struct Main: View {
         sideMenuView(safeArea)
       } background: {
         Rectangle()
-          .fill(.black)
+          .fill(.sideMenu)
       }
       .accentColor(AccentColor)
     }

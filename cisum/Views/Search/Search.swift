@@ -57,11 +57,24 @@ struct AlertMessage: Identifiable {
 }
 
 struct SearchView: View {
+  @State var isLoggedin: Bool = false
+  var videoID: String
+  let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
+  @State private var selectedTab = 0
+  //Side Menu Properties
+  var sideMenuWidth: CGFloat = 200
+  @State private var offsetX: CGFloat = 0
+  @State private var lastOffsetX: CGFloat = 0
+  @State private var progress: CGFloat = 0
+  //Animation Properties
+  @State private var animateContent: Bool = false
+  @State var expandPlayer: Bool = false
+  @Namespace var animation
+  @State private var showMenu: Bool = false
   @EnvironmentObject var viewModel: PlayerViewModel
+  @State var image: UIImage?
   @StateObject private var searchViewModel = SearchViewModel()
   @StateObject private var audioPlayerManager = AudioPlayerManager()
-  @Binding var expandPlayer: Bool
-  @Namespace private var animation
   private let gridLayout = [
     GridItem(.flexible()),
     GridItem(.flexible())
@@ -79,12 +92,110 @@ struct SearchView: View {
           listContent
         }
       }
-      .navigationTitle("Search")
       .searchable(text: $searchViewModel.searchText)
       .alert(item: $searchViewModel.errorMessage) { errorMessage in
-        Alert(title: Text("Error"), message: Text(errorMessage.message), dismissButton: .default(Text("OK")))
+        Alert(title: Text("Error"), message: Text(errorMessage.message), dismissButton: .default(Text("OK")))}
+      .safeAreaInset(edge: .bottom) {
+        FloatingPlayer()
+      }
+      .overlay {
+        Group {
+          if viewModel.expandPlayer {
+            ZStack {
+              // Use UltraThickMaterial as the background
+              RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
+                .fill(.ultraThickMaterial)
+                .overlay(content: {
+                  RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
+                    .fill(.ultraThickMaterial)
+                    .opacity(animateContent ? 1 : 0)
+                })
+                .overlay(alignment: .top) {
+                  MusicInfo(
+                    expandPlayer: $viewModel.expandPlayer,
+                    animation: animation,
+                    currentTitle: viewModel.currentTitle ?? "Not Playing",
+                    currentArtist: viewModel.currentArtist ?? "",
+                    currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote"
+                  )
+                  .allowsHitTesting(false)
+                  .opacity(animateContent ? 0 : 1)
+                }
+                .matchedGeometryEffect(id: "Background", in: animation, isSource: false)
+                .edgesIgnoringSafeArea(.all)
+              // Your Player view
+              Player(videoID: videoID, animation: animation, currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
+                .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
+            }
+            .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
+          }
+        }
+      }
+      .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .navigationBar)
+      .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .tabBar)
+      .navigationTitle("Search")
+      .navigationBarTitleDisplayMode(.automatic)
+      .navigationBarLargeTitleItems(visible: true) {
+        Button(action: {
+          withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
+            if showMenu {
+              reset()
+            } else {
+              showSideBar()
+            }
+          }
+        }, label: {
+          if let image = self.image {
+            Image(uiImage: image)
+              .resizable()
+              .frame(width: 40, height: 40)
+              .clipShape(Circle())
+          } else {
+            Image(systemName: "person.crop.circle")
+              .font(.system(size: 30))
+              .foregroundColor(AccentColor)
+          }
+        })
+        .padding(.trailing)
       }
     }
+  }
+
+  //MARK: Floating Player
+  @ViewBuilder
+  func FloatingPlayer() -> some View {
+    //MARK: Player Expand Animation
+    ZStack {
+      if expandPlayer {
+        Rectangle()
+          .fill(.clear)
+      } else {
+        RoundedRectangle(cornerRadius: 12)
+          .fill(.thickMaterial)
+          .overlay {
+            //Music Info
+            MusicInfo(expandPlayer: $viewModel.expandPlayer, animation: animation, currentTitle: viewModel.currentTitle ?? "Not Playing", currentArtist: viewModel.currentArtist ?? "", currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
+          }
+          .matchedGeometryEffect(id: "Background", in: animation)
+      }
+    }
+    .frame(width: 370, height: 58)
+  }
+
+  //MARK: Show Side Bar
+  func showSideBar() {
+    offsetX = sideMenuWidth
+    lastOffsetX = offsetX
+    showMenu = true
+    progress = 1 //complete the progress
+  }
+
+  //MARK: Reset to initial state
+  func reset() {
+    offsetX = 0
+    lastOffsetX = 0
+    showMenu = false
+    progress = 0 // Reset the progress
   }
 
   private var loadingView: some View {

@@ -9,8 +9,8 @@ import SwiftUI
 
 struct AnimatedSideBar<Content: View, MenuView: View, Background: View>: View {
     var rotatesWhenExpanded: Bool = true
-    var disablesInteraction: Bool = false
-    var sideMenuWidth: CGFloat = 200
+    var disablesInteraction: Bool = true
+    var sideMenuWidth: CGFloat = 180
     var cornerRadius: CGFloat = 25
     @Binding var showMenu: Bool
     @ViewBuilder var content: (UIEdgeInsets) -> Content
@@ -32,7 +32,7 @@ struct AnimatedSideBar<Content: View, MenuView: View, Background: View>: View {
                 .frame(width: sideMenuWidth)
                 //Clipping menu interaction beyond its width
                 .contentShape(.rect)
-                .scaleEffect(rotatesWhenExpanded ? 1 - (progress * 0.1) : 1, anchor: .trailing)
+                .scaleEffect(rotatesWhenExpanded ? 1 - (progress * 0.1) : 1, anchor: .leading)
                 .rotation3DEffect(
                     .init(degrees: rotatesWhenExpanded ? (Double(progress) * 15) : 0),
                     axis: (x: 0.0, y: 1.0, z: 0.0)
@@ -42,6 +42,25 @@ struct AnimatedSideBar<Content: View, MenuView: View, Background: View>: View {
                     content(safeArea)
                 }
                 .frame(width: size.width)
+                .overlay {
+                    if disablesInteraction && progress > 0 {
+                        Rectangle()
+                            .fill(Color.black.opacity(Double(progress) * 0.4))
+                            .onTapGesture {
+                                withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
+                                    reset()
+                                }
+                            }
+                    }
+                }
+                .mask {
+                    RoundedRectangle(cornerRadius: CGFloat(progress) * cornerRadius)
+                }
+                .scaleEffect(rotatesWhenExpanded ? 1 - (progress * 0.1) : 1, anchor: .trailing)
+                .rotation3DEffect(
+                    .init(degrees: rotatesWhenExpanded ? (Double(progress) * -15) : 0),
+                    axis: (x: 0.0, y: 1.0, z: 0.0)
+                )
             }
             .frame(width: size.width + sideMenuWidth, height: size.height)
             .offset(x: -sideMenuWidth)
