@@ -109,6 +109,8 @@ struct Home: View {
           }
         }
       }
+      .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .navigationBar)
+      .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .tabBar)
       .navigationTitle("Home")
       .navigationBarTitleDisplayMode(.automatic)
       .navigationBarLargeTitleItems(visible: true) {

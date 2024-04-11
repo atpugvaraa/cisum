@@ -11,6 +11,7 @@ struct Main: View {
   @State var isLoggedin: Bool = false
   var videoID: String
   let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
+  let accentColor = Color(red: 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
   @State private var selectedTab = 0
   //Side Menu Properties
   var sideMenuWidth: CGFloat = 200
@@ -29,7 +30,7 @@ struct Main: View {
     NavigationView {
       AnimatedSideBar(
         rotatesWhenExpanded: true,
-        disablesInteraction: true,
+        disablesInteraction: false,
         sideMenuWidth: 200,
         cornerRadius: 25,
         showMenu: $showMenu
@@ -66,7 +67,7 @@ struct Main: View {
         sideMenuView(safeArea)
       } background: {
         Rectangle()
-          .fill(.sideMenu)
+          .fill(.black)
       }
       .accentColor(AccentColor)
     }
@@ -95,10 +96,18 @@ struct Main: View {
         NavigationLink(destination: LoginSignup(), label: {
           HStack(spacing: 12) {
             Image(systemName: isLoggedin ? "person.crop.circle.badge.plus" : "person.crop.circle")
+              .padding(.vertical, 8)
+              .padding(.leading)
               .font(.title3)
             Text(isLoggedin ? "Login" : "Sign up")
+              .padding(.vertical, 8)
+              .padding(.trailing)
               .font(.callout)
           }
+          .background(
+            RoundedRectangle(cornerRadius: 12)
+              .foregroundColor(accentColor)
+          )
         })
 
         Button {
@@ -106,10 +115,18 @@ struct Main: View {
         } label: {
           HStack(spacing: 12) {
             Image(systemName: "rectangle.portrait.and.arrow.right")
+              .padding(.vertical, 8)
+              .padding(.leading)
               .font(.title3)
             Text("Logout")
+              .padding(.vertical, 8)
+              .padding(.trailing)
               .font(.callout)
           }
+          .background(
+            RoundedRectangle(cornerRadius: 12)
+              .foregroundColor(accentColor)
+          )
         }
       }
       .padding(.bottom, 50)
@@ -129,13 +146,19 @@ struct Main: View {
       destination: tab.view, label: {
         HStack(spacing: 12) {
           Image(systemName: tab.rawValue)
+            .padding(.vertical, 8)
+            .padding(.leading)
             .font(.title3)
 
           Text(tab.title)
+            .padding(.vertical, 8)
+            .padding(.trailing)
             .font(.callout)
-
-          Spacer(minLength: 0)
         }
+        .background(
+          RoundedRectangle(cornerRadius: 12)
+            .foregroundColor(accentColor)
+        )
         .padding(.vertical, 10)
         .contentShape(.rect)
         .foregroundColor(AccentColor)
