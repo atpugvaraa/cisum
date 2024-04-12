@@ -13,7 +13,7 @@ struct Home: View {
   let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
   @State private var selectedTab = 0
   //Side Menu Properties
-  var sideMenuWidth: CGFloat = 200
+  var sideMenuWidth: CGFloat = 180
   @State private var offsetX: CGFloat = 0
   @State private var lastOffsetX: CGFloat = 0
   @State private var progress: CGFloat = 0
@@ -88,19 +88,18 @@ struct Home: View {
                     .fill(.ultraThickMaterial)
                     .opacity(animateContent ? 1 : 0)
                 })
-                .overlay(alignment: .top) {
-                  MusicInfo(
-                    expandPlayer: $viewModel.expandPlayer,
-                    animation: animation,
-                    currentTitle: viewModel.currentTitle ?? "Not Playing",
-                    currentArtist: viewModel.currentArtist ?? "",
-                    currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote"
-                  )
-                  .allowsHitTesting(false)
-                  .opacity(animateContent ? 0 : 1)
-                }
-                .matchedGeometryEffect(id: "Background", in: animation, isSource: false)
-                .edgesIgnoringSafeArea(.all)
+              MusicInfo(
+                expandPlayer: $viewModel.expandPlayer,
+                animation: animation,
+                currentTitle: viewModel.currentTitle ?? "Not Playing",
+                currentArtist: viewModel.currentArtist ?? "",
+                currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote"
+              )
+              .clipped()
+              .allowsHitTesting(false)
+              .opacity(animateContent ? 0 : 1)
+              .matchedGeometryEffect(id: "Background", in: animation, isSource: false)
+              .edgesIgnoringSafeArea(.all)
               // Your Player view
               Player(videoID: videoID, animation: animation, currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
                 .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))

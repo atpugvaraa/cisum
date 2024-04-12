@@ -13,7 +13,7 @@ import FirebaseCore
 
 class FirebaseManager: NSObject {
   let auth: Auth
-  var storage = Storage.storage()
+  let storage: Storage
 
   static let shared = FirebaseManager()
 
@@ -70,6 +70,9 @@ struct LoginSignup: View {
                 }
               }
             }
+            .onTapGesture {
+              UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
             .padding(.top, 50)
           }
 
@@ -113,8 +116,8 @@ struct Signup: View {
   var body: some View {
     VStack {
       Button {
-        // Add action for signup button
         signup()
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
       } label: {
         HStack {
           Text("Sign up")
@@ -123,11 +126,9 @@ struct Signup: View {
             .padding(.vertical, 10)
         }
         .frame(width: 120)
-        .background(accentColor) // Change color as needed
+        .background(accentColor)
       }
       .clipShape(RoundedRectangle(cornerRadius: 100))
-
-      // Add other signup related UI components here
     }
   }
 
@@ -135,34 +136,37 @@ struct Signup: View {
     if activeTab == .signup {
       FirebaseManager.shared.auth.createUser(withEmail: email, password: password) {result, error in
         if let error = error {
-          print("Failed to create user:", error)
+          Toast.shared.present(title: "Failed to create user: \(error)", isUserInteractionEnabled: true, timing: .medium)
           return
         }
-        print("Success! User Created: \(result?.user.uid ?? "")")
+        Toast.shared.present(title: "Success! User Created: \(result?.user.uid ?? "")", isUserInteractionEnabled: true, timing: .medium)
 
         self.persistImage()
-        // MARK: - In-app Toast - Kavsoft
+
+        Toast.shared.present(title: "Failed to save image: \(String(describing: error))", isUserInteractionEnabled: true, timing: .medium)
       }
     }
   }
 
   private func persistImage() {
-//    let filename = UUID().uuidString
+    //    let filename = UUID().uuidString
     guard let uid = FirebaseManager.shared.auth.currentUser?.uid else {return}
     let ref = FirebaseManager.shared.storage.reference(withPath: uid)
     guard let imageData = self.image?.jpegData(compressionQuality: 0.5) else {return}
     ref.putData(imageData, metadata: nil) { metadata, error in
       if let error = error {
-        //In-App Toast
-        return
-      }
-      
-      ref.downloadURL { url , error in
-        //In-app Toast
+        Toast.shared.present(title: "Failed to save image: \(error)", isUserInteractionEnabled: true, timing: .medium)
         return
       }
 
-      //Success In-app Toast
+      ref.downloadURL {url, error in
+        if let error = error {
+          Toast.shared.present(title: "Failed to retrieve image: \(error)", isUserInteractionEnabled: true, timing: .medium)
+          return
+        }
+
+        Toast.shared.present(title: "Saved image and url! \(url?.absoluteString ?? "")", isUserInteractionEnabled: true, timing: .medium)
+      }
     }
   }
 }
@@ -177,8 +181,8 @@ struct Login: View {
   var body: some View {
     VStack {
       Button {
-        // Add action for login button
         login()
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
       } label: {
         HStack {
           Text("Login")
@@ -187,11 +191,9 @@ struct Login: View {
             .padding(.vertical, 10)
         }
         .frame(width: 120)
-        .background(accentColor) // Change color as needed
+        .background(accentColor)
       }
       .clipShape(RoundedRectangle(cornerRadius: 100))
-
-      // Add other login related UI components here
     }
   }
 
@@ -199,11 +201,10 @@ struct Login: View {
     if activeTab == .login {
       FirebaseManager.shared.auth.signIn(withEmail: email, password: password) {result, error in
         if let error = error {
-          print("Failed to login user:", error)
+          Toast.shared.present(title: "Failed to login user: \(error)", isUserInteractionEnabled: true, timing: .medium)
           return
         }
-        print("Success! Logged in as: \(result?.user.uid ?? "")")
-        //In-app Toast - Kavsoft
+        Toast.shared.present(title:"Success! Logged in as: \(result?.user.uid ?? "")", isUserInteractionEnabled: true, timing: .medium)
       }
     }
   }

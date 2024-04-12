@@ -62,7 +62,7 @@ struct SearchView: View {
   let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
   @State private var selectedTab = 0
   //Side Menu Properties
-  var sideMenuWidth: CGFloat = 200
+  var sideMenuWidth: CGFloat = 180
   @State private var offsetX: CGFloat = 0
   @State private var lastOffsetX: CGFloat = 0
   @State private var progress: CGFloat = 0

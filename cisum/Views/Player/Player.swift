@@ -30,11 +30,48 @@ struct Player: View {
 
   var body: some View {
     NavigationView {
-      GeometryReader { geometry in
-        contentLayer(size: geometry.size, safeArea: geometry.safeAreaInsets)
+      GeometryReader {
+        let size = $0.size
+        let safeArea = $0.safeAreaInsets
+
+        ZStack {
+          RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
+            .fill(.bg)
+            .overlay(content: {
+              RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
+                .fill(.bg)
+                .opacity(animateContent ? 1 : 0)
+            })
+            .overlay(alignment: .top) {
+              MusicInfo(expandPlayer: $viewModel.expandPlayer, animation: animation, currentTitle: viewModel.currentTitle ?? "Not Playing", currentArtist: viewModel.currentArtist ?? "", currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
+                .allowsHitTesting(false)
+                .opacity(animateContent ? 0 : 1)
+            }
+            .padding(.trailing, 3)
+            .matchedGeometryEffect(id: "Background", in: animation)
+
+          VStack(spacing: 15) {
+            songorvideoTab
+
+            albumArtwork
+              .matchedGeometryEffect(id: "Album Cover", in: animation, isSource: false)
+              .offset(x: isPlaying ? 0 : 47, y: isPlaying ? 0 : 47)
+              .frame(width: 343, height: 343)
+              .padding(.top, 5)
+              .padding(.vertical, size.height < 700 ? 10 : 15)
+
+            playerButtons(size: size)
+              .offset(y: animateContent ? 0 : size.height)
+          }
+          .padding(.top, safeArea.top + (viewModel.expandPlayer ? 10 : 0))
+          .padding(.bottom, safeArea.bottom == 0 ? 10 : safeArea.bottom)
+          .padding(.horizontal, 25)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+          .clipped()
+        }
           .contentShape(Rectangle())
           .offset(y: offsetY)
-          .gesture(dragGesture(size: geometry.size))
+          .gesture(dragGesture(size: size))
           .ignoresSafeArea(.container, edges: .all)
           .onAppear {
             withAnimation(.easeInOut(duration: 0.35)) {
@@ -42,43 +79,6 @@ struct Player: View {
             }
           }
       }
-    }
-  }
-
-  private func contentLayer(size: CGSize, safeArea: EdgeInsets) -> some View {
-    ZStack {
-      RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
-        .fill(.bg)
-        .overlay(content: {
-          RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
-            .fill(.bg)
-            .opacity(animateContent ? 1 : 0)
-        })
-        .overlay(alignment: .top) {
-          MusicInfo(expandPlayer: $viewModel.expandPlayer, animation: animation, currentTitle: viewModel.currentTitle ?? "Not Playing", currentArtist: viewModel.currentArtist ?? "", currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
-            .allowsHitTesting(false)
-            .opacity(animateContent ? 0 : 1)
-        }
-        .matchedGeometryEffect(id: "Background", in: animation)
-
-      VStack(spacing: 15) {
-        songorvideoTab
-
-        albumArtwork
-          .matchedGeometryEffect(id: "Album Cover", in: animation, isSource: false)
-          .offset(x: isPlaying ? 0 : 47, y: isPlaying ? 0 : 47)
-          .frame(width: 343, height: 343)
-          .padding(.top, 5)
-          .padding(.vertical, size.height < 700 ? 10 : 15)
-
-        playerButtons(size: size)
-          .offset(y: animateContent ? 0 : size.height)
-      }
-      .padding(.top, safeArea.top + (viewModel.expandPlayer ? 10 : 0))
-      .padding(.bottom, safeArea.bottom == 0 ? 10 : safeArea.bottom)
-      .padding(.horizontal, 25)
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-      .clipped()
     }
   }
   
@@ -155,8 +155,9 @@ struct Player: View {
 
   private func playerButtons(size: CGSize) -> some View {
     VStack(spacing: size.height * 0.04) {
-      GeometryReader { proxy in
-        let spacing = proxy.size.height * 0.04
+      GeometryReader {
+        let size = $0.size
+        let spacing = size.height * 0.04
 
         VStack(spacing: spacing) {
           VStack(spacing: spacing) {
@@ -166,7 +167,7 @@ struct Player: View {
                   .font(.title3)
                   .fontWeight(.semibold)
 
-                Text(viewModel.currentArtist ?? "")
+                Text(viewModel.currentArtist ?? "Artist")
                   .foregroundColor(.gray)
               }
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -177,6 +178,9 @@ struct Player: View {
                 Image(liked ? "liked" : "unliked")
                   .foregroundColor(.white)
                   .font(.title)
+              }
+              .onTapGesture {
+                Toast.shared.present(title: liked ? "Favourited" : "Unfavourited", isUserInteractionEnabled: false, timing: .short)
               }
 
               Menu {
@@ -213,10 +217,10 @@ struct Player: View {
             }
             .padding(.top, spacing)
           }
-          .frame(height: proxy.size.height / 2.5, alignment: .top)
+          .frame(height: size.height / 2.5, alignment: .top)
 
           //MARK: Playback Controls
-          HStack(spacing: proxy.size.width * 0.18) {
+          HStack(spacing: size.width * 0.18) {
             BackwardButton()
 
             Button {
@@ -255,7 +259,7 @@ struct Player: View {
           VStack(spacing: spacing) {
             VolumeSlider(value: $volume, inRange: 0...maxVolume, activeFillColor: color, fillColor: normalFillColor, emptyColor: emptyColor, height: 8) { started in }
 
-            HStack(alignment: .top, spacing: proxy.size.width * 0.18) {
+            HStack(alignment: .top, spacing: size.width * 0.18) {
               Button(action: {
 
               }) {
@@ -275,32 +279,14 @@ struct Player: View {
                 Image(systemName: "list.bullet")
                   .font(.title2)
               }
-              .padding(.top, 3)
-              //              NavigationLink(
-              //                destination: Lyrics(animation: animation), label: {
-              //                  Image(systemName: "quote.bubble")
-              //                    .font(.title2)
-              //                })
-              //              .padding(.top, 3)
-              //
-              //              AirPlayButton()
-              //                .frame(width: 50, height: 50)
-              //                .padding(.top, -13)
-              //                .padding(.horizontal, 25)
-              //
-              //              NavigationLink(
-              //                destination: UpNext(animation: animation), label: {
-              //                  Image(systemName: "list.bullet")
-              //                    .font(.title2)
-              //                })
-              //              .padding(.top, 3)
+              .padding(.top, 5)
             }
             .foregroundColor(.white)
             .blendMode(.overlay)
             .padding(.top, spacing)
           }
           .padding(.bottom, 30)
-          .frame(height: proxy.size.height / 2.5, alignment: .bottom)
+          .frame(height: size.height / 2.5, alignment: .bottom)
         }
       }
     }

@@ -14,7 +14,7 @@ struct Main: View {
   let accentColor = Color(red: 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
   @State private var selectedTab = 0
   //Side Menu Properties
-  var sideMenuWidth: CGFloat = 200
+  var sideMenuWidth: CGFloat = 180
   @State private var offsetX: CGFloat = 0
   @State private var lastOffsetX: CGFloat = 0
   @State private var progress: CGFloat = 0
