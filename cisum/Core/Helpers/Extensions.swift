@@ -9,6 +9,15 @@ import Foundation
 import SwiftUI
 import UIKit
 
+extension UIApplication {
+  func rootController() -> UIViewController {
+    guard let window = connectedScenes.first as? UIWindowScene else {return .init()}
+    guard let viewcontroller = window.windows.last?.rootViewController else {return .init()}
+
+    return viewcontroller
+  }
+}
+
 class PlayerViewModel: ObservableObject {
     @Published var currentVideoID: String?
     @Published var expandPlayer: Bool = false

@@ -111,7 +111,7 @@ struct Main: View {
         })
 
         Button {
-
+          
         } label: {
           HStack(spacing: 12) {
             Image(systemName: "rectangle.portrait.and.arrow.right")

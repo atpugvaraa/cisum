@@ -7,11 +7,10 @@
 
 import SwiftUI
 import Firebase
-import FirebaseAuth
 import FirebaseStorage
-import FirebaseCore
 
 class FirebaseManager: NSObject {
+
   let auth: Auth
   let storage: Storage
 
@@ -28,6 +27,8 @@ class FirebaseManager: NSObject {
 }
 
 struct LoginSignup: View {
+  @State var errorMessage: String = ""
+  @State var showError: Bool = false
   let accentColor = Color(red: 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
   @State private var activeTab: loginorsignup = .signup
   @State var email = ""
