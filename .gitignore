@@ -1,6 +1,6 @@
 
 *.xcodeproj
-._.gitignorecisum/._.gitignore
+._.gitignore
 /cisum.xcodeproj
 /cisum/._cisumApp.swift
 /cisum/Core/._LoginSignup.swift
