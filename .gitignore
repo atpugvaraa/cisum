@@ -3,7 +3,7 @@
 ._.gitignore
 /cisum.xcodeproj
 /cisum/._cisumApp.swift
-/cisum/Core/._LoginSignup.swift
+/cisum/Core/._Login Signup.swift
 /cisum/Core/._Main.swift
 /cisum/Core/._Profile.swift
 /cisum/Core/._Settings.swift
