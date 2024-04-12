@@ -1,5 +1,6 @@
 
 *.xcodeproj
+._README.md
 ._.gitignore
 /cisum.xcodeproj
 /cisum/._cisumApp.swift
