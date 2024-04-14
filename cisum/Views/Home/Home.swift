@@ -11,6 +11,7 @@ struct Home: View {
   @State var isLoggedin: Bool = false
   var videoID: String
   let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
+  let accentColor = Color(red: 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
   @State private var selectedTab = 0
   //Side Menu Properties
   var sideMenuWidth: CGFloat = 180
@@ -27,52 +28,71 @@ struct Home: View {
 
   var body: some View {
     NavigationView {
-      //MARK: Tab View
-      ScrollView(.vertical , showsIndicators: false) {
-        HStack(alignment: .center,spacing: 0 ,content: {
-          Text("Top Picks")
-            .fontWeight(.bold)
+      AnimatedSideBar(
+        rotatesWhenExpanded: true,
+        disablesInteraction: true,
+        sideMenuWidth: 180,
+        cornerRadius: 25,
+        showMenu: $showMenu
+      ) { safeArea in
+        ScrollView(.vertical , showsIndicators: false) {
+          HStack(alignment: .center, spacing: 0, content: {
+            VStack(alignment: .leading) {
+              Text("Home")
+                .fontWeight(.bold)
+                .font(.largeTitle)
+              Text("Top Picks")
+                .fontWeight(.bold)
+                .font(.title3)
+            }
+            Spacer()
+          })
+          .padding(.top, 90)
+          .padding(.leading)
+
+          TopPicksScroll()
+            .padding(.bottom)
+
+          HStack(alignment:.center){
+            Text("Recently Played")
+            Spacer()
+          }.padding(.leading)
             .font(.title3)
-          Spacer()
-        })
-        .frame(height: 24)
-        .padding(.leading)
+            .bold()
+            .foregroundColor(.primary)
 
-        TopPicksScroll()
-          .padding(.bottom)
+          Recents()
 
-        HStack(alignment:.center){
-          Text("Recently Played")
-          Spacer()
-        }.padding(.leading)
+          HStack(alignment:.center){
+            Text("Try something else")
+            Spacer()
+          }
+          .padding(.leading)
           .font(.title3)
           .bold()
           .foregroundColor(.primary)
 
-        Recents()
+          HorizontalScrollBottom2()
 
-        HStack(alignment:.center){
-          Text("Try something else")
-          Spacer()
+          HStack(alignment:.center){
+            Text("Made For You")
+            Spacer()
+          }
+          .padding(.leading)
+          .font(.title3)
+          .bold()
+          .foregroundColor(.primary)
+
+          TopPicksScroll().padding(.bottom)
         }
-        .padding(.leading)
-        .font(.title3)
-        .bold()
-        .foregroundColor(.primary)
-
-        HorizontalScrollBottom2()
-
-        HStack(alignment:.center){
-          Text("Made For You")
-          Spacer()
-        }
-        .padding(.leading)
-        .font(.title3)
-        .bold()
-        .foregroundColor(.primary)
-
-        TopPicksScroll().padding(.bottom)
+        .background(Color.black)
+      } menuView: { safeArea in
+        sideMenuView(safeArea)
+      } background: {
+        Rectangle()
+          .fill(.sideMenu)
       }
+      .accentColor(AccentColor)
       .safeAreaInset(edge: .bottom) {
         FloatingPlayer()
       }
@@ -98,7 +118,7 @@ struct Home: View {
               .clipped()
               .allowsHitTesting(false)
               .opacity(animateContent ? 0 : 1)
-              .matchedGeometryEffect(id: "Background", in: animation, isSource: false)
+              .matchedGeometryEffect(id: "Background", in: animation)
               .edgesIgnoringSafeArea(.all)
               // Your Player view
               Player(videoID: videoID, animation: animation, currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
@@ -110,17 +130,16 @@ struct Home: View {
       }
       .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .navigationBar)
       .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .tabBar)
-      .navigationTitle("Home")
       .navigationBarTitleDisplayMode(.automatic)
-      .navigationBarLargeTitleItems(visible: true) {
+      .navigationBarLargeTitleItems(visible: showMenu ? false : true) {
         Button(action: {
-          withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
+            showMenu.toggle()
+
             if showMenu {
-              reset()
-            } else {
               showSideBar()
+            } else {
+              reset()
             }
-          }
         }, label: {
           if let image = self.image {
             Image(uiImage: image)
@@ -156,7 +175,129 @@ struct Home: View {
           .matchedGeometryEffect(id: "Background", in: animation)
       }
     }
+    .offset(y: -10.5)
     .frame(width: 370, height: 58)
+  }
+
+  //MARK: Side Bar Menu
+  @ViewBuilder
+  func sideMenuView(_ safeArea: UIEdgeInsets) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("cisum")
+        .font(.largeTitle.bold())
+        .padding(.bottom, 10)
+      sideMenuTabs(.profile) {
+        Profile()
+      }
+      sideMenuTabs(.downloads) {
+        Downloads()
+      }
+      sideMenuTabs(.settings) {
+        Settings()
+      }
+
+      Spacer()
+
+      VStack(spacing: 21) {
+        NavigationLink(destination: LoginSignup(), label: {
+          HStack(spacing: 12) {
+            Image(systemName: isLoggedin ? "person.crop.circle.badge.plus" : "person.crop.circle")
+              .padding(.vertical, 8)
+              .padding(.leading)
+              .font(.title3)
+            Text(isLoggedin ? "Login" : "Sign up")
+              .padding(.vertical, 8)
+              .padding(.trailing)
+              .font(.callout)
+          }
+          .background(
+            RoundedRectangle(cornerRadius: 12)
+              .foregroundColor(accentColor)
+          )
+        })
+
+        Button {
+
+        } label: {
+          HStack(spacing: 12) {
+            Image(systemName: "rectangle.portrait.and.arrow.right")
+              .padding(.vertical, 8)
+              .padding(.leading)
+              .font(.title3)
+            Text("Logout")
+              .padding(.vertical, 8)
+              .padding(.trailing)
+              .font(.callout)
+          }
+          .background(
+            RoundedRectangle(cornerRadius: 12)
+              .foregroundColor(accentColor)
+          )
+        }
+      }
+      .padding(.bottom, 105)
+    }
+    .padding(.horizontal, 15)
+    .padding(.vertical, 20)
+    .padding(.top, safeArea.top)
+    .padding(.bottom, safeArea.bottom)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .environment(\.colorScheme, .dark)
+  }
+
+  //sideMenuTabs
+  @ViewBuilder
+  func sideMenuTabs<Content: View>(_ tab: Tab, onTap: @escaping () -> Content) -> some View {
+    NavigationLink(
+      destination: tab.view, label: {
+        HStack(spacing: 12) {
+          Image(systemName: tab.rawValue)
+            .padding(.vertical, 8)
+            .padding(.leading)
+            .font(.title3)
+
+          Text(tab.title)
+            .padding(.vertical, 8)
+            .padding(.trailing)
+            .font(.callout)
+        }
+        .background(
+          RoundedRectangle(cornerRadius: 12)
+            .foregroundColor(accentColor)
+        )
+        .padding(.vertical, 10)
+        .contentShape(.rect)
+        .foregroundColor(AccentColor)
+      })
+  }
+
+  //Tabs
+  enum Tab: String, CaseIterable {
+    case profile = "person.crop.circle"
+    case downloads = "arrow.down.circle"
+    case settings = "gear"
+
+    func view() -> some View {
+      switch self {
+      case .profile:
+        return AnyView(Profile())
+      case .downloads:
+        return AnyView(Downloads())
+      case .settings:
+        return AnyView(Settings())
+      }
+    }
+
+    var title: String {
+      switch self {
+      case .profile:
+        return "Profile"
+      case .downloads:
+        return "Downloads"
+      case .settings:
+        return "Settings"
+      }
+    }
   }
 
   //MARK: Show Side Bar
@@ -222,34 +363,38 @@ struct TopPicksCard: View {
   let colorBlock: Color
 
   var body: some View {
-    VStack {
-      HStack {
-        Text(headLine).font(.caption).foregroundColor(.gray)
-          .padding(.leading, -1)
-        Spacer()
-      }.frame(width: 260)
-      ZStack {
-        Rectangle()
-          .foregroundStyle(colorBlock.gradient).opacity(0.6)
-          .frame(width: 260,height: 346)
-
-        VStack {
-          Image(imageName)
-            .resizable()
-            .scaledToFit()
-            .frame(width: 260 ,height: 260)
+    NavigationLink(destination: {
+      Playlist()
+    }, label: {
+      VStack {
+        HStack {
+          Text(headLine).font(.caption).foregroundColor(.gray)
+            .padding(.leading, -1)
           Spacer()
+        }.frame(width: 260)
+        ZStack {
+          Rectangle()
+            .foregroundStyle(colorBlock.gradient).opacity(0.6)
+            .frame(width: 260,height: 346)
 
-          Text(artistName)
-            .font(.subheadline)
-            .foregroundStyle(Color.white)
-            .multilineTextAlignment(.center)
-            .padding([.trailing ,.leading])
-          Spacer()
+          VStack {
+            Image(imageName)
+              .resizable()
+              .scaledToFit()
+              .frame(width: 260 ,height: 260)
+            Spacer()
 
-        }.frame(width: 260,height: 346)
-      }.cornerRadius(10)
-    }
+            Text(artistName)
+              .font(.subheadline)
+              .foregroundStyle(Color.white)
+              .multilineTextAlignment(.center)
+              .padding([.trailing ,.leading])
+            Spacer()
+
+          }.frame(width: 260,height: 346)
+        }.cornerRadius(10)
+      }
+    })
   }
 }
 
@@ -277,23 +422,27 @@ struct HorizontalScollBottomCard: View {
 
 
   var body: some View {
-    VStack(alignment: .leading) {
-      Image(imageName)
-        .resizable()
-        .scaledToFit()
-        .frame(width: 170  ,height: 170)
-        .cornerRadius(10)
-
+    NavigationLink(destination: {
+      Playlist()
+    }, label: {
       VStack(alignment: .leading) {
-        Text(artistName)
-          .font(.caption)
-          .foregroundStyle(Color.primary)
+        Image(imageName)
+          .resizable()
+          .scaledToFit()
+          .frame(width: 170  ,height: 170)
+          .cornerRadius(10)
 
-        Text(SubartistName ?? "")
-          .font(.caption)
-          .foregroundStyle(Color.gray)
-      }.padding(.leading ,10)
-    }.frame(width: 170,height: 215)
+        VStack(alignment: .leading) {
+          Text(artistName)
+            .font(.caption)
+            .foregroundStyle(Color.primary)
+
+          Text(SubartistName ?? "")
+            .font(.caption)
+            .foregroundStyle(Color.gray)
+        }.padding(.leading ,10)
+      }.frame(width: 170,height: 215)
+    })
   }
 }
 

@@ -67,7 +67,8 @@ struct MusicProgressSlider<T: BinaryFloatingPoint>: View {
             Spacer(minLength: 0)
             Text("-" + (inRange.upperBound - progressDuration).asTimeString(style: .positional))
           }
-          .font(.system(.caption, design: .rounded))
+          .monospaced()
+          .font(.caption)
           .monospacedDigit()
           .foregroundColor(isActive ? fillColor : emptyColor)
         }

@@ -11,6 +11,7 @@ struct Library: View {
   @State var isLoggedin: Bool = false
   var videoID: String
   let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
+  let accentColor = Color(red : 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
   @State private var selectedTab = 0
   //Side Menu Properties
   var sideMenuWidth: CGFloat = 180
@@ -27,56 +28,83 @@ struct Library: View {
 
   var body: some View {
     NavigationView {
-      VStack {
-        List {
-          // MARK: - Playlists
-
-          NavigationLink(destination: {
-            Playlists()
-          }, label: {
-            Label("Playlists", systemImage: "music.note.list")
-          })
-          .padding(.vertical, 8)
-
-          // MARK: - Artists
-          NavigationLink(destination: {
-            Artists()
-          }, label: {
-            Label("Artist", systemImage: "music.mic")
-          })
-          .padding(.vertical, 8)
-
-          // MARK: - Albums
-          NavigationLink(destination: {
-            Albums()
-          }, label: {
-            Label("Album", systemImage: "square.stack")
-          })
-          .padding(.vertical, 8)
-
-          // MARK: - Downloaded
-          NavigationLink(destination: {
-            Downloads()
-          }, label: {
-            Label("Downloads", systemImage: "arrow.down.circle")
-          })
-          .padding(.vertical, 8)
-
+      AnimatedSideBar(
+        rotatesWhenExpanded: true,
+        disablesInteraction: true,
+        sideMenuWidth: 180,
+        cornerRadius: 25,
+        showMenu: $showMenu
+      ) { safeArea in
+        VStack {
           HStack(alignment: .center) {
-            Button(action: {},
-                   label: { Text("Recently Added") })
+            VStack(alignment: .leading) {
+              Text("Library")
+                .fontWeight(.bold)
+                .font(.largeTitle)
+            }
             Spacer()
-          }.font(.title2)
-            .bold()
-            .foregroundColor(.primary)
+          }
+          .padding(.top, 90)
+          .padding(.leading)
 
-          RecentlyAdded()
+          List {
+            // MARK: - Playlists
 
-        }.listStyle(.plain)
+            NavigationLink(destination: {
+              Playlists()
+            }, label: {
+              Label("Playlists", systemImage: "music.note.list")
+            })
+            .padding(.vertical, 8)
+
+            // MARK: - Artists
+            NavigationLink(destination: {
+              Artists()
+            }, label: {
+              Label("Artist", systemImage: "music.mic")
+            })
+            .padding(.vertical, 8)
+
+            // MARK: - Albums
+            NavigationLink(destination: {
+              Albums()
+            }, label: {
+              Label("Album", systemImage: "square.stack")
+            })
+            .padding(.vertical, 8)
+
+            // MARK: - Downloaded
+            NavigationLink(destination: {
+              Downloads()
+            }, label: {
+              Label("Downloads", systemImage: "arrow.down.circle")
+            })
+            .padding(.vertical, 8)
+
+            HStack(alignment: .center) {
+              Button(action: {},
+                     label: { Text("Recently Added") })
+              Spacer()
+            }.font(.title2)
+              .bold()
+              .foregroundColor(.primary)
+
+            RecentlyAdded()
+
+          }
+          .listStyle(.plain)
           .scrollIndicators(.hidden)
           .navigationBarItems(trailing: EditButton())
           .accentColor(AccentColor)
+        }
+        .background(Color.black)
+      } menuView: { safeArea in
+        sideMenuView(safeArea)
+      } background: {
+        Rectangle()
+          .fill(.sideMenu)
       }
+      .accentColor(AccentColor)
       .safeAreaInset(edge: .bottom) {
         FloatingPlayer()
       }
@@ -115,18 +143,23 @@ struct Library: View {
       }
       .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .navigationBar)
       .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .tabBar)
-      .navigationTitle("Library")
       .navigationBarTitleDisplayMode(.automatic)
-      .navigationBarLargeTitleItems(visible: true) {
+      .navigationBarLargeTitleItems(visible: showMenu ? false : true) {
         Button(action: {
+
           withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
+
+            showMenu.toggle()
+
+
             if showMenu {
-              reset()
-            } else {
               showSideBar()
+            } else {
+              reset()
             }
           }
         }, label: {
+
           if let image = self.image {
             Image(uiImage: image)
               .resizable()
@@ -161,7 +194,129 @@ struct Library: View {
           .matchedGeometryEffect(id: "Background", in: animation)
       }
     }
+    .offset(y: -10.5)
     .frame(width: 370, height: 58)
+  }
+
+  //MARK: Side Bar Menu
+  @ViewBuilder
+  func sideMenuView(_ safeArea: UIEdgeInsets) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("cisum")
+        .font(.largeTitle.bold())
+        .padding(.bottom, 10)
+      sideMenuTabs(.profile) {
+        Profile()
+      }
+      sideMenuTabs(.downloads) {
+        Downloads()
+      }
+      sideMenuTabs(.settings) {
+        Settings()
+      }
+
+      Spacer()
+
+      VStack(spacing: 21) {
+        NavigationLink(destination: LoginSignup(), label: {
+          HStack(spacing: 12) {
+            Image(systemName: isLoggedin ? "person.crop.circle.badge.plus" : "person.crop.circle")
+              .padding(.vertical, 8)
+              .padding(.leading)
+              .font(.title3)
+            Text(isLoggedin ? "Login" : "Sign up")
+              .padding(.vertical, 8)
+              .padding(.trailing)
+              .font(.callout)
+          }
+          .background(
+            RoundedRectangle(cornerRadius: 12)
+              .foregroundColor(accentColor)
+          )
+        })
+
+        Button {
+
+        } label: {
+          HStack(spacing: 12) {
+            Image(systemName: "rectangle.portrait.and.arrow.right")
+              .padding(.vertical, 8)
+              .padding(.leading)
+              .font(.title3)
+            Text("Logout")
+              .padding(.vertical, 8)
+              .padding(.trailing)
+              .font(.callout)
+          }
+          .background(
+            RoundedRectangle(cornerRadius: 12)
+              .foregroundColor(accentColor)
+          )
+        }
+      }
+      .padding(.bottom, 105)
+    }
+    .padding(.horizontal, 15)
+    .padding(.vertical, 20)
+    .padding(.top, safeArea.top)
+    .padding(.bottom, safeArea.bottom)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    .environment(\.colorScheme, .dark)
+  }
+
+  //sideMenuTabs
+  @ViewBuilder
+  func sideMenuTabs<Content: View>(_ tab: Tab, onTap: @escaping () -> Content) -> some View {
+    NavigationLink(
+      destination: tab.view, label: {
+        HStack(spacing: 12) {
+          Image(systemName: tab.rawValue)
+            .padding(.vertical, 8)
+            .padding(.leading)
+            .font(.title3)
+
+          Text(tab.title)
+            .padding(.vertical, 8)
+            .padding(.trailing)
+            .font(.callout)
+        }
+        .background(
+          RoundedRectangle(cornerRadius: 12)
+            .foregroundColor(accentColor)
+        )
+        .padding(.vertical, 10)
+        .contentShape(.rect)
+        .foregroundColor(AccentColor)
+      })
+  }
+
+  //Tabs
+  enum Tab: String, CaseIterable {
+    case profile = "person.crop.circle"
+    case downloads = "arrow.down.circle"
+    case settings = "gear"
+
+    func view() -> some View {
+      switch self {
+      case .profile:
+        return AnyView(Profile())
+      case .downloads:
+        return AnyView(Downloads())
+      case .settings:
+        return AnyView(Settings())
+      }
+    }
+
+    var title: String {
+      switch self {
+      case .profile:
+        return "Profile"
+      case .downloads:
+        return "Downloads"
+      case .settings:
+        return "Settings"
+      }
+    }
   }
 
   //MARK: Show Side Bar

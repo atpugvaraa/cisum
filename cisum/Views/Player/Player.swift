@@ -35,18 +35,7 @@ struct Player: View {
         let safeArea = $0.safeAreaInsets
 
         ZStack {
-          RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
-            .fill(.bg)
-            .overlay(content: {
-              RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
-                .fill(.bg)
-                .opacity(animateContent ? 1 : 0)
-            })
-            .overlay(alignment: .top) {
-              MusicInfo(expandPlayer: $viewModel.expandPlayer, animation: animation, currentTitle: viewModel.currentTitle ?? "Not Playing", currentArtist: viewModel.currentArtist ?? "", currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
-                .allowsHitTesting(false)
-                .opacity(animateContent ? 0 : 1)
-            }
+          dynamicBackground
             .padding(.trailing, 3)
             .matchedGeometryEffect(id: "Background", in: animation)
 
@@ -63,255 +52,308 @@ struct Player: View {
             playerButtons(size: size)
               .offset(y: animateContent ? 0 : size.height)
           }
-          .padding(.top, safeArea.top + (viewModel.expandPlayer ? 10 : 0))
+          .padding(.top, safeArea.top + (safeArea.bottom == 0 ? 10 : 0))
           .padding(.bottom, safeArea.bottom == 0 ? 10 : safeArea.bottom)
           .padding(.horizontal, 25)
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
           .clipped()
         }
-          .contentShape(Rectangle())
-          .offset(y: offsetY)
-          .gesture(dragGesture(size: size))
-          .ignoresSafeArea(.container, edges: .all)
-          .onAppear {
-            withAnimation(.easeInOut(duration: 0.35)) {
-              animateContent = true
-            }
+        .contentShape(Rectangle())
+        .offset(y: offsetY)
+        .gesture(dragGesture(size: size))
+        .ignoresSafeArea(.container, edges: .all)
+        .onAppear {
+          withAnimation(.easeInOut(duration: 0.35)) {
+            animateContent = true
           }
-      }
-    }
-  }
-  
-  private var songorvideoTab: some View {
-    VStack(spacing: 15) {
-      SongOrVideo(tabs: songorvideo.allCases, activeTab: $activeTab, height: 35, font: .body, activeTint: .primary, inActiveTint: .gray) { size in
-        RoundedRectangle(cornerRadius: 30)
-          .fill(accentColor)
-          .frame(height: size.height)
-          .frame(maxHeight: .infinity, alignment: .bottom)
-      }
-      .padding(.horizontal, 15)
-      .padding(.vertical, 15)
-      .toolbarBackground(.hidden, for: .navigationBar)
-    }
-    .frame(width: 210, height: 35)
-    .opacity(animateContent ? 1 : 0)
-    .offset(y: animateContent ? 0 : 343)
-  }
-
-  private var albumArtwork: some View {
-    GeometryReader { _ in
-      if activeTab == .song {
-        ZStack {
-          // Use AsyncImage to load and display the thumbnail image
-          APIPlayer(videoID: viewModel.currentVideoID ?? videoID)
-          albumArt(isPlaying: isPlaying, animateContent: animateContent, currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
-        }
-        .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
-        .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
-        .edgesIgnoringSafeArea(.all)
-      } else if activeTab == .video {
-        GeometryReader { _ in
-          APIPlayer(videoID: viewModel.currentVideoID ?? videoID)
-            .edgesIgnoringSafeArea(.all)
-            .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
-            .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
         }
       }
     }
   }
 
-  func albumArt(isPlaying: Bool, animateContent: Bool, currentThumbnailURL: String) -> some View {
-    if let url = URL(string: currentThumbnailURL) {
-      return AnyView(
+  private var dynamicBackground: some View {
+    GeometryReader {
+      let size = $0.size
+
+      let url = URL(string: currentThumbnailURL)
+      AnyView(
         AsyncImage(url: url) { phase in
           switch phase {
           case .success(let image):
-            image.resizable()
-              .scaledToFit()
-              .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
-              .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
+            image
+              .resizable()
+              .scaledToFill()
+              .edgesIgnoringSafeArea(.all)
+              .frame(width: size.width, height: size.height)
+              .clipShape(RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous))
+              .overlay(content: {
+                RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
+                  .fill(.ultraThinMaterial)
+                  .opacity(animateContent ? 1 : 0)
+              })
           case .failure, .empty:
             Image("musicnote")
               .resizable()
-              .scaledToFit()
-              .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
-              .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
+              .edgesIgnoringSafeArea(.all)
+              .scaledToFill()
+              .frame(width: size.width, height: size.height)
+              .clipShape(RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous))
+              .overlay(content: {
+                RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
+                  .fill(.bg)
+                  .opacity(animateContent ? 1 : 0)
+              })
           @unknown default:
             EmptyView()
           }
         }
       )
-    } else {
-      return AnyView(
-        Image("musicnote")
-          .resizable()
-          .aspectRatio(contentMode: .fit)
-          .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
-          .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
-      )
+    }
+    .overlay(alignment: .top) {
+      MusicInfo(expandPlayer: $viewModel.expandPlayer, animation: animation, currentTitle: viewModel.currentTitle ?? "Not Playing", currentArtist: viewModel.currentArtist ?? "", currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
+        .allowsHitTesting(false)
+        .opacity(animateContent ? 0 : 1)
     }
   }
 
-  private func playerButtons(size: CGSize) -> some View {
-    VStack(spacing: size.height * 0.04) {
-      GeometryReader {
-        let size = $0.size
-        let spacing = size.height * 0.04
+    private var songorvideoTab: some View {
+      VStack(spacing: 15) {
+        SongOrVideo(tabs: songorvideo.allCases, activeTab: $activeTab, height: 35, font: .body, activeTint: .primary, inActiveTint: .secondary) { size in
+          RoundedRectangle(cornerRadius: 30)
+            .fill(accentColor)
+            .frame(height: size.height)
+            .frame(maxHeight: .infinity, alignment: .bottom)
+        }
+        .padding(.horizontal, 15)
+        .padding(.vertical, 15)
+        .toolbarBackground(.hidden, for: .navigationBar)
+      }
+      .frame(width: 210, height: 35)
+      .opacity(animateContent ? 1 : 0)
+      .offset(y: animateContent ? 0 : 343)
+    }
 
-        VStack(spacing: spacing) {
-          VStack(spacing: spacing) {
-            HStack(alignment: .center, spacing: 15) {
-              VStack(alignment: .leading, spacing: 4) {
-                Text(viewModel.currentTitle ?? "Not Playing")
-                  .font(.title3)
-                  .fontWeight(.semibold)
-
-                Text(viewModel.currentArtist ?? "Artist")
-                  .foregroundColor(.gray)
-              }
-              .frame(maxWidth: .infinity, alignment: .leading)
-
-              Button {
-                liked.toggle()
-              } label: {
-                Image(liked ? "liked" : "unliked")
-                  .foregroundColor(.white)
-                  .font(.title)
-              }
-              .onTapGesture {
-                Toast.shared.present(title: liked ? "Favourited" : "Unfavourited", isUserInteractionEnabled: false, timing: .short)
-              }
-
-              Menu {
-                Button(action: {
-                  // Action for Add to Playlist button
-                }) {
-                  Label("Add to Playlist", systemImage: "plus")
-                }
-
-                Button(action: {
-                  // Action for Downloading Song
-                }) {
-                  Label("Download", systemImage: "arrow.down.circle")
-                }
-
-                Button(action: {
-                  // Action for Sharing the Song
-                }) {
-                  Label("Share", systemImage: "square.and.arrow.up")
-                }
-              } label: {
-                Label ("", systemImage: "ellipsis")
-                  .font(.system(size: 21))
-                  .foregroundColor(.white)
-                  .padding(12)
-                  .padding(.bottom, 8)
-                  .padding(.leading, 12)
-              }
-            }
-
-            //Song Duration Slider
-            MusicProgressSlider(value: $playerDuration, inRange: TimeInterval.zero...maxDuration, activeFillColor: color, fillColor: normalFillColor, emptyColor: emptyColor, height: 32) { started in
-
-            }
-            .padding(.top, spacing)
+    private var albumArtwork: some View {
+      GeometryReader { _ in
+        if activeTab == .song {
+          ZStack {
+            APIPlayer(videoID: viewModel.currentVideoID ?? videoID)
+            albumArt(isPlaying: isPlaying, animateContent: animateContent, currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
           }
-          .frame(height: size.height / 2.5, alignment: .top)
-
-          //MARK: Playback Controls
-          HStack(spacing: size.width * 0.18) {
-            BackwardButton()
-
-            Button {
-              isPlaying.toggle()
-              transparency = 0.6
-              withAnimation(.easeOut(duration: 0.2)) {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                  transparency = 0.0
-                }
-              }
-            } label: {
-              ZStack {
-                Circle()
-                  .frame(width: 80, height: 80)
-                  .opacity(transparency)
-                Image(systemName: "pause.fill")
-                  .font(.system(size: 50))
-                  .scaleEffect(isPlaying ? 1 : 0)
-                  .opacity(isPlaying ? 1 : 0)
-                  .animation(.interpolatingSpring(stiffness: 170, damping: 15), value: isPlaying)
-                Image(systemName: "play.fill")
-                  .font(.system(size: 50))
-                  .scaleEffect(isPlaying ? 0 : 1)
-                  .opacity(isPlaying ? 0 : 1)
-                  .animation(.interpolatingSpring(stiffness: 170, damping: 15), value: isPlaying)
-              }
-            }
-            .padding(.horizontal, -25)
-            ForwardButton()
+          .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
+          .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
+          .animation(.easeInOut(duration: 0.3), value: isPlaying) // Add animation for smooth expand
+        } else if activeTab == .video {
+          GeometryReader { _ in
+            APIPlayer(videoID: viewModel.currentVideoID ?? videoID)
+              .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
+              .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
           }
-          .padding(.top, -15)
-          .foregroundColor(.white)
-          .frame(maxHeight: .infinity)
-
-          //MARK: Volume Controls
-          VStack(spacing: spacing) {
-            VolumeSlider(value: $volume, inRange: 0...maxVolume, activeFillColor: color, fillColor: normalFillColor, emptyColor: emptyColor, height: 8) { started in }
-
-            HStack(alignment: .top, spacing: size.width * 0.18) {
-              Button(action: {
-
-              }) {
-                Image(systemName: "quote.bubble")
-                  .font(.title2)
-              }
-              .padding(.top, 2.5)
-
-              AirPlayButton()
-                .frame(width: 50, height: 50)
-                .padding(.top, -10)
-                .padding(.horizontal, 25)
-
-              Button(action: {
-
-              }) {
-                Image(systemName: "list.bullet")
-                  .font(.title2)
-              }
-              .padding(.top, 5)
-            }
-            .foregroundColor(.white)
-            .blendMode(.overlay)
-            .padding(.top, spacing)
-          }
-          .padding(.bottom, 30)
-          .frame(height: size.height / 2.5, alignment: .bottom)
+          .edgesIgnoringSafeArea(.all)
+          .animation(.easeInOut(duration: 0.3), value: isPlaying) // Add animation for smooth expand
         }
       }
     }
-  }
 
-  private func dragGesture(size: CGSize) -> some Gesture {
-    DragGesture()
-      .onChanged({ value in
-        let translationY = value.translation.height
-        offsetY = (translationY > 0 ? translationY : 0)
-      })
-      .onEnded({ value in
-        withAnimation(.easeInOut(duration: 0.3)) {
-          if offsetY > size.height * 0.4 {
-            viewModel.expandPlayer = false
-            animateContent = false
-          } else {
-            offsetY = .zero
+    func albumArt(isPlaying: Bool, animateContent: Bool, currentThumbnailURL: String) -> some View {
+      if let url = URL(string: currentThumbnailURL) {
+        return AnyView(
+          AsyncImage(url: url) { phase in
+            switch phase {
+            case .success(let image):
+              image
+                .resizable()
+                .scaledToFit()
+                .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
+                .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
+                .animation(.easeInOut(duration: 0.3), value: isPlaying) // Add animation for smooth expand
+            case .failure, .empty:
+              Image("musicnote")
+                .resizable()
+                .scaledToFit()
+                .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
+                .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
+                .animation(.easeInOut(duration: 0.3), value: isPlaying) // Add animation for smooth expand
+            @unknown default:
+              EmptyView()
+            }
+          }
+        )
+      } else {
+        return AnyView(
+          Image("musicnote")
+            .resizable()
+            .scaledToFit()
+            .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
+            .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
+            .animation(.easeInOut(duration: 0.3), value: isPlaying) // Add animation for smooth expand
+        )
+      }
+    }
+
+    private func playerButtons(size: CGSize) -> some View {
+      VStack(spacing: size.height * 0.04) {
+        GeometryReader {
+          let size = $0.size
+          let spacing = size.height * 0.04
+
+          VStack(spacing: spacing) {
+            VStack(spacing: spacing) {
+              HStack(alignment: .center, spacing: 15) {
+                VStack(alignment: .leading, spacing: 4) {
+                  Text(viewModel.currentTitle ?? "Not Playing")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+
+                  Text(viewModel.currentArtist ?? "Artist")
+                    .foregroundColor(.gray)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button {
+                  liked.toggle()
+                } label: {
+                  Image(liked ? "liked" : "unliked")
+                    .foregroundColor(.white)
+                    .font(.title)
+                }
+                .onTapGesture {
+                  Toast.shared.present(title: liked ? "Favourited" : "Unfavourited", isUserInteractionEnabled: false, timing: .short)
+                }
+
+                Menu {
+                  Button(action: {
+                    // Action for Add to Playlist button
+                  }) {
+                    Label("Add to Playlist", systemImage: "plus")
+                  }
+
+                  Button(action: {
+                    // Action for Downloading Song
+                  }) {
+                    Label("Download", systemImage: "arrow.down.circle")
+                  }
+
+                  Button(action: {
+                    // Action for Sharing the Song
+                  }) {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                  }
+                } label: {
+                  Label ("", systemImage: "ellipsis")
+                    .font(.system(size: 21))
+                    .foregroundColor(.white)
+                    .padding(.vertical, 12)
+                    .padding(.bottom, 8)
+                    .padding(.leading, 12)
+                    .padding(.trailing, -9)
+                }
+              }
+
+              //Song Duration Slider
+              MusicProgressSlider(value: $playerDuration, inRange: TimeInterval.zero...maxDuration, activeFillColor: color, fillColor: normalFillColor, emptyColor: emptyColor, height: 32) { started in
+
+              }
+              .padding(.top, spacing)
+            }
+            .frame(height: size.height / 2.5, alignment: .top)
+
+            //MARK: Playback Controls
+            HStack(spacing: size.width * 0.18) {
+              BackwardButton()
+
+              Button {
+                isPlaying.toggle()
+                transparency = 0.6
+                withAnimation(.easeOut(duration: 0.2)) {
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    transparency = 0.0
+                  }
+                }
+              } label: {
+                ZStack {
+                  Circle()
+                    .frame(width: 80, height: 80)
+                    .opacity(transparency)
+                  Image(systemName: "pause.fill")
+                    .font(.system(size: 50))
+                    .scaleEffect(isPlaying ? 1 : 0)
+                    .opacity(isPlaying ? 1 : 0)
+                    .animation(.interpolatingSpring(stiffness: 170, damping: 15), value: isPlaying)
+                  Image(systemName: "play.fill")
+                    .font(.system(size: 50))
+                    .scaleEffect(isPlaying ? 0 : 1)
+                    .opacity(isPlaying ? 0 : 1)
+                    .animation(.interpolatingSpring(stiffness: 170, damping: 15), value: isPlaying)
+                }
+              }
+              .padding(.horizontal, -25)
+              ForwardButton()
+            }
+            .padding(.top, -15)
+            .foregroundColor(.white)
+            .frame(maxHeight: .infinity)
+
+            //MARK: Volume Controls
+            VStack(spacing: spacing) {
+              VolumeSlider(value: $volume, inRange: 0...maxVolume, activeFillColor: color, fillColor: normalFillColor, emptyColor: emptyColor, height: 8) { started in }
+
+              HStack(alignment: .top, spacing: size.width * 0.18) {
+                Button(action: {
+
+                }) {
+                  Image(systemName: "quote.bubble")
+                    .font(.title2)
+                }
+                .padding(.top, 2.5)
+
+                AirPlayButton()
+                  .frame(width: 50, height: 50)
+                  .padding(.top, -10)
+                  .padding(.horizontal, 25)
+
+                Button(action: {
+
+                }) {
+                  Image(systemName: "list.bullet")
+                    .font(.title2)
+                }
+                .padding(.top, 5)
+              }
+              .foregroundColor(.white)
+              .blendMode(.overlay)
+              .padding(.top, spacing)
+            }
+            .padding(.bottom, 30)
+            .frame(height: size.height / 2.5, alignment: .bottom)
           }
         }
-      })
-  }
-}
+      }
+    }
 
-#Preview {
-  Main(videoID: "")
-    .preferredColorScheme(.dark)
-}
+    private func dragGesture(size: CGSize) -> some Gesture {
+      DragGesture()
+        .onChanged { value in
+          let translationY = value.translation.height
+          offsetY = (translationY > 0 ? translationY : 0)
+        }
+        .onEnded { value in
+          withAnimation(.easeInOut(duration: 0.3)) {
+            if offsetY > size.height * 0.3 {
+              // Collapse the player if dragged down more than 30% of the screen height
+              viewModel.expandPlayer = false
+              animateContent = false
+              offsetY = 0 // Reset the offset
+            } else {
+              // Return the player to its original position if not collapsed
+              offsetY = 0
+            }
+          }
+        }
+    }
+  }
+
+  #Preview {
+    Main(videoID: "")
+      .preferredColorScheme(.dark)
+  }

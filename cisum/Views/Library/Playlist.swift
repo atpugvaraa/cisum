@@ -29,7 +29,7 @@ struct Playlist: View {
               let opacity = (height - minHeight) / (reader.size.height - minHeight)
 
                 ZStack {
-                  LinearGradient(gradient: Gradient(colors: [accentColor, Color.black.opacity(0.84)]), startPoint: .top, endPoint: .bottom)
+                  LinearGradient(gradient: Gradient(colors: [accentColor, Color.black.opacity(0.735)]), startPoint: .top, endPoint: .bottom)
                     .scaleEffect(7)
                   Image("Image")
                     .resizable()

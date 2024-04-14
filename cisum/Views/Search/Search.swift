@@ -135,29 +135,6 @@ struct SearchView: View {
       .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .tabBar)
       .navigationTitle("Search")
       .navigationBarTitleDisplayMode(.automatic)
-      .navigationBarLargeTitleItems(visible: true) {
-        Button(action: {
-          withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
-            if showMenu {
-              reset()
-            } else {
-              showSideBar()
-            }
-          }
-        }, label: {
-          if let image = self.image {
-            Image(uiImage: image)
-              .resizable()
-              .frame(width: 40, height: 40)
-              .clipShape(Circle())
-          } else {
-            Image(systemName: "person.crop.circle")
-              .font(.system(size: 30))
-              .foregroundColor(AccentColor)
-          }
-        })
-        .padding(.trailing)
-      }
     }
   }
 
@@ -179,23 +156,8 @@ struct SearchView: View {
           .matchedGeometryEffect(id: "Background", in: animation)
       }
     }
+    .offset(y: -10.5)
     .frame(width: 370, height: 58)
-  }
-
-  //MARK: Show Side Bar
-  func showSideBar() {
-    offsetX = sideMenuWidth
-    lastOffsetX = offsetX
-    showMenu = true
-    progress = 1 //complete the progress
-  }
-
-  //MARK: Reset to initial state
-  func reset() {
-    offsetX = 0
-    lastOffsetX = 0
-    showMenu = false
-    progress = 0 // Reset the progress
   }
 
   private var loadingView: some View {

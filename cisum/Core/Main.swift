@@ -28,13 +28,13 @@ struct Main: View {
 
   var body: some View {
     NavigationView {
-      AnimatedSideBar(
-        rotatesWhenExpanded: true,
-        disablesInteraction: true,
-        sideMenuWidth: 180,
-        cornerRadius: 25,
-        showMenu: $showMenu
-      ) { safeArea in
+//      AnimatedSideBar(
+//        rotatesWhenExpanded: true,
+//        disablesInteraction: true,
+//        sideMenuWidth: 180,
+//        cornerRadius: 25,
+//        showMenu: $showMenu
+//      ) { safeArea in
         //MARK: Tab View
         TabView(selection: $selectedTab) {
           //Tabs
@@ -48,6 +48,13 @@ struct Main: View {
               Text("Home")
             }
             .tag(0)
+
+//          Radio()
+//            .tabItem {
+//              Image(systemName: "play.square.stack")
+//              Text("Library")
+//            }
+//            .tag()
 
           Library(videoID: videoID)
             .tabItem {
@@ -63,136 +70,136 @@ struct Main: View {
             }
             .tag(2)
         }
-      } menuView: { safeArea in
-        sideMenuView(safeArea)
-      } background: {
-        Rectangle()
-          .fill(.sideMenu)
-      }
-      .accentColor(AccentColor)
+//      } menuView: { safeArea in
+//        sideMenuView(safeArea)
+//      } background: {
+//        Rectangle()
+//          .fill(.sideMenu)
+//      }
+//      .accentColor(AccentColor)
     }
   }
 
-  //MARK: Side Bar Menu
-  @ViewBuilder
-  func sideMenuView(_ safeArea: UIEdgeInsets) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("cisum")
-        .font(.largeTitle.bold())
-        .padding(.bottom, 10)
-      sideMenuTabs(.profile) {
-        Profile()
-      }
-      sideMenuTabs(.downloads) {
-        Downloads()
-      }
-      sideMenuTabs(.settings) {
-        Settings()
-      }
-
-      Spacer()
-
-      VStack(spacing: 21) {
-        NavigationLink(destination: LoginSignup(), label: {
-          HStack(spacing: 12) {
-            Image(systemName: isLoggedin ? "person.crop.circle.badge.plus" : "person.crop.circle")
-              .padding(.vertical, 8)
-              .padding(.leading)
-              .font(.title3)
-            Text(isLoggedin ? "Login" : "Sign up")
-              .padding(.vertical, 8)
-              .padding(.trailing)
-              .font(.callout)
-          }
-          .background(
-            RoundedRectangle(cornerRadius: 12)
-              .foregroundColor(accentColor)
-          )
-        })
-
-        Button {
-          
-        } label: {
-          HStack(spacing: 12) {
-            Image(systemName: "rectangle.portrait.and.arrow.right")
-              .padding(.vertical, 8)
-              .padding(.leading)
-              .font(.title3)
-            Text("Logout")
-              .padding(.vertical, 8)
-              .padding(.trailing)
-              .font(.callout)
-          }
-          .background(
-            RoundedRectangle(cornerRadius: 12)
-              .foregroundColor(accentColor)
-          )
-        }
-      }
-      .padding(.bottom, 50)
-    }
-    .padding(.horizontal, 15)
-    .padding(.vertical, 20)
-    .padding(.top, safeArea.top)
-    .padding(.bottom, safeArea.bottom)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    .environment(\.colorScheme, .dark)
-  }
-
-  //sideMenuTabs
-  @ViewBuilder
-  func sideMenuTabs<Content: View>(_ tab: Tab, onTap: @escaping () -> Content) -> some View {
-    NavigationLink(
-      destination: tab.view, label: {
-        HStack(spacing: 12) {
-          Image(systemName: tab.rawValue)
-            .padding(.vertical, 8)
-            .padding(.leading)
-            .font(.title3)
-
-          Text(tab.title)
-            .padding(.vertical, 8)
-            .padding(.trailing)
-            .font(.callout)
-        }
-        .background(
-          RoundedRectangle(cornerRadius: 12)
-            .foregroundColor(accentColor)
-        )
-        .padding(.vertical, 10)
-        .contentShape(.rect)
-        .foregroundColor(AccentColor)
-      })
-  }
-
-  //Tabs
-  enum Tab: String, CaseIterable {
-    case profile = "person.crop.circle"
-    case downloads = "arrow.down.circle"
-    case settings = "gear"
-
-    func view() -> some View {
-      switch self {
-      case .profile:
-        return AnyView(Profile())
-      case .downloads:
-        return AnyView(Downloads())
-      case .settings:
-        return AnyView(Settings())
-      }
-    }
-
-    var title: String {
-      switch self {
-      case .profile:
-        return "Profile"
-      case .downloads:
-        return "Downloads"
-      case .settings:
-        return "Settings"
-      }
-    }
-  }
+//  //MARK: Side Bar Menu
+//  @ViewBuilder
+//  func sideMenuView(_ safeArea: UIEdgeInsets) -> some View {
+//    VStack(alignment: .leading, spacing: 12) {
+//      Text("cisum")
+//        .font(.largeTitle.bold())
+//        .padding(.bottom, 10)
+//      sideMenuTabs(.profile) {
+//        Profile()
+//      }
+//      sideMenuTabs(.downloads) {
+//        Downloads()
+//      }
+//      sideMenuTabs(.settings) {
+//        Settings()
+//      }
+//
+//      Spacer()
+//
+//      VStack(spacing: 21) {
+//        NavigationLink(destination: LoginSignup(), label: {
+//          HStack(spacing: 12) {
+//            Image(systemName: isLoggedin ? "person.crop.circle.badge.plus" : "person.crop.circle")
+//              .padding(.vertical, 8)
+//              .padding(.leading)
+//              .font(.title3)
+//            Text(isLoggedin ? "Login" : "Sign up")
+//              .padding(.vertical, 8)
+//              .padding(.trailing)
+//              .font(.callout)
+//          }
+//          .background(
+//            RoundedRectangle(cornerRadius: 12)
+//              .foregroundColor(accentColor)
+//          )
+//        })
+//
+//        Button {
+//          
+//        } label: {
+//          HStack(spacing: 12) {
+//            Image(systemName: "rectangle.portrait.and.arrow.right")
+//              .padding(.vertical, 8)
+//              .padding(.leading)
+//              .font(.title3)
+//            Text("Logout")
+//              .padding(.vertical, 8)
+//              .padding(.trailing)
+//              .font(.callout)
+//          }
+//          .background(
+//            RoundedRectangle(cornerRadius: 12)
+//              .foregroundColor(accentColor)
+//          )
+//        }
+//      }
+//      .padding(.bottom, 50)
+//    }
+//    .padding(.horizontal, 15)
+//    .padding(.vertical, 20)
+//    .padding(.top, safeArea.top)
+//    .padding(.bottom, safeArea.bottom)
+//    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+//    .environment(\.colorScheme, .dark)
+//  }
+//
+//  //sideMenuTabs
+//  @ViewBuilder
+//  func sideMenuTabs<Content: View>(_ tab: Tab, onTap: @escaping () -> Content) -> some View {
+//    NavigationLink(
+//      destination: tab.view, label: {
+//        HStack(spacing: 12) {
+//          Image(systemName: tab.rawValue)
+//            .padding(.vertical, 8)
+//            .padding(.leading)
+//            .font(.title3)
+//
+//          Text(tab.title)
+//            .padding(.vertical, 8)
+//            .padding(.trailing)
+//            .font(.callout)
+//        }
+//        .background(
+//          RoundedRectangle(cornerRadius: 12)
+//            .foregroundColor(accentColor)
+//        )
+//        .padding(.vertical, 10)
+//        .contentShape(.rect)
+//        .foregroundColor(AccentColor)
+//      })
+//  }
+//
+//  //Tabs
+//  enum Tab: String, CaseIterable {
+//    case profile = "person.crop.circle"
+//    case downloads = "arrow.down.circle"
+//    case settings = "gear"
+//
+//    func view() -> some View {
+//      switch self {
+//      case .profile:
+//        return AnyView(Profile())
+//      case .downloads:
+//        return AnyView(Downloads())
+//      case .settings:
+//        return AnyView(Settings())
+//      }
+//    }
+//
+//    var title: String {
+//      switch self {
+//      case .profile:
+//        return "Profile"
+//      case .downloads:
+//        return "Downloads"
+//      case .settings:
+//        return "Settings"
+//      }
+//    }
+//  }
 }
 
 #Preview {

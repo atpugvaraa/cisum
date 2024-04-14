@@ -42,7 +42,7 @@ extension BinaryFloatingPoint {
         formatter.allowedUnits = [.minute, .second]
         formatter.unitsStyle = style
         formatter.zeroFormattingBehavior = .pad
-        return formatter.string(from: TimeInterval(self)) ?? "" //formatter.string(from: self) ?? ""
+        return formatter.string(from: TimeInterval(self)) ?? ""
     }
 }
 
