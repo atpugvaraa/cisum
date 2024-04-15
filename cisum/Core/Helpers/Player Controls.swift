@@ -8,6 +8,8 @@
 import SwiftUI
 import MediaPlayer
 import AVKit
+import AVFoundation
+import MediaPlayer
 
 //MARK: Music Control Slider
 struct MusicProgressSlider<T: BinaryFloatingPoint>: View {
@@ -128,100 +130,142 @@ struct MusicProgressSlider<T: BinaryFloatingPoint>: View {
   }
 }
 
-//MARK: Volume Slider
+// MARK: Volume Slider
 struct VolumeSlider<T: BinaryFloatingPoint>: View {
-  @Binding var value: T
-  let inRange: ClosedRange<T>
-  let activeFillColor: Color
-  let fillColor: Color
-  let emptyColor: Color
-  let height: CGFloat
-  let onEditingChanged: (Bool) -> Void
+    @Binding var value: T
+    let inRange: ClosedRange<T>
+    let activeFillColor: Color
+    let fillColor: Color
+    let emptyColor: Color
+    let height: CGFloat
+    let onEditingChanged: (Bool) -> Void
 
-  // private variables
-  @State private var localRealProgress: T = 0
-  @State private var localTempProgress: T = 0
-  @GestureState private var isActive: Bool = false
+    // Private variables
+    @State private var localRealProgress: T = 0
+    @State private var localTempProgress: T = 0
+    @GestureState private var isActive: Bool = false
 
-  var body: some View {
-    GeometryReader { bounds in
-      ZStack {
-        HStack {
-          Image(systemName: "speaker.fill")
-            .font(.system(.title2))
-            .blendMode(.overlay)
-            .foregroundColor(isActive ? activeFillColor : fillColor)
+    // Media Player volume view
+    private let volumeView = MPVolumeView(frame: .zero)
 
-          GeometryReader { geo in
-            ZStack(alignment: .center) {
-              Capsule()
-                .fill(emptyColor)
-              Capsule()
-                .fill(isActive ? activeFillColor : fillColor)
-                .mask({
-                  HStack {
-                    Rectangle()
-                      .frame(width: max(geo.size.width * CGFloat((localRealProgress + localTempProgress)), 0), alignment: .leading)
-                    Spacer(minLength: 0)
-                  }
-                })
+    // Audio session instance
+    private let audioSession = AVAudioSession.sharedInstance()
+
+    var body: some View {
+        GeometryReader { bounds in
+            ZStack {
+                HStack {
+                    Image(systemName: "speaker.fill")
+                        .font(.system(.title2))
+                        .blendMode(.overlay)
+                        .foregroundColor(isActive ? activeFillColor : fillColor)
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .center) {
+                            Capsule()
+                                .fill(emptyColor)
+                            Capsule()
+                                .fill(isActive ? activeFillColor : fillColor)
+                                .mask({
+                                    HStack {
+                                        Rectangle()
+                                            .frame(width: max(geo.size.width * CGFloat((localRealProgress + localTempProgress)), 0), alignment: .leading)
+                                        Spacer(minLength: 0)
+                                    }
+                                })
+                        }
+                    }
+
+                    Image(systemName: "speaker.wave.3.fill")
+                        .blendMode(.overlay)
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .foregroundColor(isActive ? activeFillColor : fillColor)
+                }
+                .frame(width: isActive ? bounds.size.width * 1.04 : bounds.size.width, alignment: .center)
+                .animation(animation, value: isActive)
             }
-          }
+            .frame(width: bounds.size.width, height: bounds.size.height, alignment: .center)
+            .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
+                .updating($isActive) { value, state, transaction in
+                    state = true
+                }
+                .onChanged { gesture in
+                    // Calculate the progress based on the gesture translation
+                    localTempProgress = T(gesture.translation.width / bounds.size.width)
+                    // Update the slider value and make sure it's within range
+                    value = max(min(getPrgValue(), inRange.upperBound), inRange.lowerBound)
+                    // Adjust volume based on the new value
+                    adjustVolume(to: Float(value))
+                }
+                .onEnded { gesture in
+                    // Update the real progress
+                    localRealProgress = max(min(localRealProgress + localTempProgress, 1), 0)
+                    // Reset temporary progress
+                    localTempProgress = 0
+                }
+            )
+            .onChange(of: isActive) { newValue in
+                value = max(min(getPrgValue(), inRange.upperBound), inRange.lowerBound)
+                onEditingChanged(newValue)
+            }
+            .onAppear {
+                displayCurrentVolume()
+            }
+            .onChange(of: value) { newValue in
+                if !isActive {
+                    localRealProgress = getPrgPercentage(newValue)
+                    // Adjust volume based on the current value of the slider
+                    adjustVolume(to: Float(newValue))
+                }
+            }
+        }
+        .frame(height: isActive ? height * 2 : height, alignment: .center)
+    }
 
-          Image(systemName: "speaker.wave.3.fill")
-            .blendMode(.overlay)
-            .font(.system(size: 20, weight: .bold, design: .rounded))
-            .foregroundColor(isActive ? activeFillColor : fillColor)
+    // Define the animation for the slider
+    private var animation: Animation {
+        if isActive {
+            return .spring()
+        } else {
+            return .spring(response: 0.5, dampingFraction: 0.5, blendDuration: 0.6)
         }
-        .frame(width: isActive ? bounds.size.width * 1.04 : bounds.size.width, alignment: .center)
-        .animation(animation, value: isActive)
-      }
-      .frame(width: bounds.size.width, height: bounds.size.height, alignment: .center)
-      .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
-        .updating($isActive) { value, state, transaction in
-          state = true
+    }
+
+    // Function to get the progress percentage from the given value
+    private func getPrgPercentage(_ value: T) -> T {
+        let range = inRange.upperBound - inRange.lowerBound
+        let correctedStartValue = value - inRange.lowerBound
+        let percentage = correctedStartValue / range
+        return percentage
+    }
+
+    // Function to get the progress value based on localRealProgress and localTempProgress
+    private func getPrgValue() -> T {
+        return ((localRealProgress + localTempProgress) * (inRange.upperBound - inRange.lowerBound)) + inRange.lowerBound
+    }
+
+    // Function to adjust the volume based on the current value of the slider
+    private func adjustVolume(to level: Float) {
+        // Find the volume slider in the MPVolumeView and set its value
+        if let volumeSlider = volumeView.subviews.first(where: { $0 is UISlider }) as? UISlider {
+            volumeSlider.value = level
         }
-        .onChanged { gesture in
-          localTempProgress = T(gesture.translation.width / bounds.size.width)
-          value = max(min(getPrgValue(), inRange.upperBound), inRange.lowerBound)
-        }.onEnded { value in
-          localRealProgress = max(min(localRealProgress + localTempProgress, 1), 0)
-          localTempProgress = 0
-        })
-      .onChange(of: isActive) { newValue in
-        value = max(min(getPrgValue(), inRange.upperBound), inRange.lowerBound)
-        onEditingChanged(newValue)
-      }
-      .onAppear {
+    }
+
+    // Function to display the current volume level of the device
+    private func displayCurrentVolume() {
+        // Get the current device volume using AVAudioSession
+        let currentVolume = audioSession.outputVolume
+
+        // Convert the current volume to the value range
+        value = inRange.lowerBound + T(currentVolume) * (inRange.upperBound - inRange.lowerBound)
+
+        // Update the localRealProgress to match the slider value
         localRealProgress = getPrgPercentage(value)
-      }
-      .onChange(of: value) { newValue in
-        if !isActive {
-          localRealProgress = getPrgPercentage(newValue)
-        }
-      }
+
+        // Adjust the volume based on the current value of the slider
+        adjustVolume(to: Float(value))
     }
-    .frame(height: isActive ? height * 2 : height, alignment: .center)
-  }
-
-  private var animation: Animation {
-    if isActive {
-      return .spring()
-    } else {
-      return .spring(response: 0.5, dampingFraction: 0.5, blendDuration: 0.6)
-    }
-  }
-
-  private func getPrgPercentage(_ value: T) -> T {
-    let range = inRange.upperBound - inRange.lowerBound
-    let correctedStartValue = value - inRange.lowerBound
-    let percentage = correctedStartValue / range
-    return percentage
-  }
-
-  private func getPrgValue() -> T {
-    return ((localRealProgress + localTempProgress) * (inRange.upperBound - inRange.lowerBound)) + inRange.lowerBound
-  }
 }
 
 // MARK: - AirPlayButton
