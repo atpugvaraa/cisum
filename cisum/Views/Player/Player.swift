@@ -7,6 +7,7 @@
 
 import SwiftUI
 import YouTubePlayerKit
+import SDWebImageSwiftUI
 
 struct Player: View {
     @EnvironmentObject var viewModel: PlayerViewModel
@@ -93,7 +94,7 @@ struct Player: View {
                             showControls: false,
                             showFullscreenButton: false,
                             showAnnotations: false,
-                            loopEnabled: false,
+                            loopEnabled: true,
                             useModestBranding: false,
                             showRelatedVideos: false
                         )
@@ -109,7 +110,7 @@ struct Player: View {
       
       let url = URL(string: currentThumbnailURL)
       AnyView(
-        AsyncImage(url: url) { phase in
+        WebImage(url: url) { phase in
           switch phase {
           case .success(let image):
             image
@@ -135,8 +136,6 @@ struct Player: View {
                   .fill(.bg)
                   .opacity(animateContent ? 1 : 0)
               })
-          @unknown default:
-            EmptyView()
           }
         }
       )
@@ -179,7 +178,7 @@ struct Player: View {
   func albumArt(isPlaying: Bool, animateContent: Bool, currentThumbnailURL: String) -> some View {
     if let url = URL(string: currentThumbnailURL) {
       return AnyView(
-        AsyncImage(url: url) { phase in
+        WebImage(url: url) { phase in
           switch phase {
           case .success(let image):
             image
@@ -195,8 +194,6 @@ struct Player: View {
               .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
               .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
               .animation(.easeInOut(duration: 0.3), value: isPlaying) // Add animation for smooth expand
-          @unknown default:
-            EmptyView()
           }
         }
       )

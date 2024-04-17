@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SDWebImageSwiftUI
 
 struct MusicInfo: View {
   @Binding var expandPlayer: Bool
@@ -26,9 +27,9 @@ struct MusicInfo: View {
           GeometryReader {
             let size = $0.size
 
-            // Load and display the thumbnail image using AsyncImage
+            // Load and display the thumbnail image using SDWEBIMAGE
             if let url = URL(string: currentThumbnailURL), !expandPlayer {
-              AsyncImage(url: url) { phase in
+              WebImage(url: url) { phase in
                 switch phase {
                 case .success(let image):
                   image
@@ -46,8 +47,6 @@ struct MusicInfo: View {
                     .matchedGeometryEffect(id: "Album Cover", in: animation)
                 case .empty:
                   ProgressView() // Show a loading indicator if necessary
-                @unknown default:
-                  EmptyView()
                 }
               }
             }

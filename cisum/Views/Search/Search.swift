@@ -8,6 +8,7 @@
 import SwiftUI
 import Foundation
 import Combine
+import SDWebImageSwiftUI
 
 class SearchViewModel: ObservableObject {
     @Published var videos = [APIVideo]()
@@ -205,12 +206,12 @@ struct SearchView: View {
   private func updateCurrentVideo(to video: APIVideo) {
     viewModel.currentVideoID = video.id
     viewModel.currentTitle = video.title
-    viewModel.currentThumbnailURL = video.thumbnailURL
+    viewModel.currentThumbnailURL = video.thumbnailUrl
     viewModel.expandPlayer = true
   }
 
   private func videoThumbnail(for video: APIVideo) -> some View {
-    AsyncImage(url: URL(string: video.thumbnailURL)) { phase in
+    WebImage(url: URL(string: video.thumbnailUrl)) { phase in
       switch phase {
       case .empty:
         ProgressView()
@@ -226,8 +227,6 @@ struct SearchView: View {
           .aspectRatio(contentMode: .fill)
           .frame(width: 171.5, height: 171.5)
           .clipShape(RoundedRectangle(cornerRadius: 8))
-      @unknown default:
-        EmptyView()
       }
     }
   }
