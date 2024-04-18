@@ -33,7 +33,7 @@ struct Player: View {
     private var emptyColor: Color { color.opacity(0.3) }
 
     // Constants for max duration and volume
-    private let maxDuration: TimeInterval = 240
+    private let maxDuration: TimeInterval = 252
     private let maxVolume: Double = 1
 
     @State private var player: YouTubePlayer?
@@ -223,7 +223,7 @@ struct Player: View {
                   .font(.title3)
                   .fontWeight(.semibold)
                 
-                Text(viewModel.currentArtist ?? "Artist")
+                Text(viewModel.currentArtist ?? "Travis Scott")
                   .foregroundColor(.gray)
               }
               .frame(maxWidth: .infinity, alignment: .leading)
