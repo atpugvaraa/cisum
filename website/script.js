@@ -35,16 +35,29 @@ const stepContent = [
         "https://github.com/atpugvaraa/cisum/releases/latest/download/cisum.ipa"
         ">Download cisum.ipa</a>\n
         <br><br> Note: Sideloading methods include: <ul class="list-disc list-inside"><li>Altstore</li><li>Sideloadly</li><li>TrollStore</li><li>Esign</li></ul>`,
-    () => `<b>Follow these steps to install SideStore:</b><ul class="list-disc list-inside"><li>Plug your device into your computer via a cable</li><li>Trust your computer on your device (if prompted)</li><li>
-        "Launch AltServer and hold options and pick <code>Sideload .ipa</code> from the AltServer icon in the menu bar",
-        "Shift-Right click on the AltServer tray icon, and pick <code>Sideload .ipa</code>"
-    </li><li>Select the SideStore ipa and follow the instructions until AltServer confirms that SideStore has been installed (you may need to enter your iCloud account login details)</li><li>If you are running iOS or iPadOS 16 or higher, you must enable Developer Mode to use sideloaded apps (this only shows up <b>after you sideload an app for the first time</b>)<ul class="list-decimal list-inside ml-4 sm:ml-6"><li>Open Settings</li><li>Tap "Privacy & Security"</li><li>Scroll to the bottom, and toggle Developer Mode on</li></ul></li><li>Open <code>Settings > General > VPN & Device Management</code> on your device and approve the <code>Developer App</code> with your Apple ID's email.`,
-    () => `<b>Follow these steps to Pair your device:</b><ul class="list-disc list-inside"><li>Extract <code>Jitterbugpair.zip</code> and make sure your device is still connected to the computer.</li>
-        "<li>Open your device to its home screen. Once done, execute <code>JitterBugPair</code> via double-click or right-click and open.</li><li>After that, in your home directory, you will have a file that ends with <code>.mobiledevicepairing</code>.</li><li>Transfer the <code>.mobiledevicepairing</code> file to your device using Airdrop or other methods (avoid using email and some cloud services as they can mess up the file).</li>",
-        "<li>Open your device to its home screen. Once done, go into File Explorer and navigate to the folder where <code>jitterbugpair.exe</code> is located.</li><li>In the Navigation/Address bar where the folder location is, click an empty spot and type 'powershell' and press Enter.</li><li>It should open a blue-colored window called PowerShell. From there, type <code>./jitterbugpair.exe</code> in the PowerShell window and press Enter.</li><li>After that, in File Explorer, you will have a file that ends with <code>.mobiledevicepairing</code>.</li><li>Transfer the <code>.mobiledevicepairing</code> file to your device using iTunes (using iTunes file sharing when connecting to your device) or other methods (avoid using email and some cloud services as they can mess up the file).</li>"
-    </ul><br><br>Launch SideStore, select OK when it asks for the pairing file. Find where you stored the <code>.mobiledevicepairing</code> file and select it to pair your device!`,
-    () => `On your device, you'll need to download the WireGuard VPN app.<a class="btn-fill" target="_blank" href="https://apps.apple.com/us/app/wireguard/id1441195209">Download WireGuard</a>After that, you'll need to import SideStore's WireGuard configuration. (Download the file and then you can "share" it to the WireGuard app).<a class="btn-fill" target="_blank" href="https://github.com/SideStore/SideStore/releases/download/0.1.1/SideStore.conf">Download WireGuard Config</a>You'll have to turn on the VPN every time you want to use SideStore to sideload apps. You can turn it off when you're done, and the VPN doesn't connect to an external server, as it operates On-Device.<br><br>SideStore can use the On-Device VPN in the background for auto-refresh if you use your device enough for it to refresh when unlocked.`,
-    () => `Now to finish the process: <ul class="list-disc list-inside"><li>Open SideStore and sign in with the same Apple ID you used to install SideStore.</li><li>Go to the Apps tab and refresh the SideStore app itself once (you might have to swipe up to your homescreen for the process to complete).</li></ul><br> Now, you're all set! You can install apps from the sources tab or any other <code>.ipa</code> file you have.<br>If you run into any more issues, you can get support in our <a class="glink" target="_blank" href="https://discord.gg/RgpFBX3Q3k">Discord server.</a> <br><br>Note: We had to remove SideServer instructions as it was causing issues with the SideStore install.`,
+    () => `<b>Using your preferred method to install cisum:</b><ul class="list-disc list-inside">
+    Official Download:
+    <br>
+    <a class="btn-fill" target="_blank" href=" "" ">Download from AppStore</a>
+    <br>
+    <li>You can use TrollStore on a supported device.</li>
+    <li>Sideloady/AltStore/SideStore if you are fine with 7-day signing.</li>
+    <li>You can use Esign with a certificate.</li>
+    <br>Sideload <code>cisum.ipa</code> using any of the above methods on you iOS 16.0 and later device for the best experience.
+    <br><br><br><br><br><br>
+    Note: You might be able to install it via TestFlight or from the AppStore if I ever get an Apple Developer Account.`,
+    () => `<b>This is all that is needed to enjoy you favourite songs!</b>
+    <br><br>
+    Launch cisum, create an account and get started with jamming out to your favourite tunes!
+    <br><br>
+    Now you can to listen to all of the songs that you want and that too for absolutely free!
+    <br>
+    Alongside <b>NO ADS</b> during playback at all!
+    <br><br><br><br><br><br>
+    Note: This app shall be obtained only from my <b><a href="https://github.com/atpugvaraa/cisum">Github</a></b> or from the AppStore. (Published by me)
+    <br>
+    This app shall be obtained for free. Do not buy if anyone ever tries to sell this app. Please report them.
+    `,
 ];
 
 // Get references to the relevant DOM elements
