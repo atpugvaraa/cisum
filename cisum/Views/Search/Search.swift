@@ -206,12 +206,12 @@ struct SearchView: View {
   private func updateCurrentVideo(to video: APIVideo) {
     viewModel.currentVideoID = video.id
     viewModel.currentTitle = video.title
-    viewModel.currentThumbnailURL = video.thumbnailUrl
+    viewModel.currentThumbnailURL = video.thumbnailURL
     viewModel.expandPlayer = true
   }
 
   private func videoThumbnail(for video: APIVideo) -> some View {
-    WebImage(url: URL(string: video.thumbnailUrl)) { phase in
+    WebImage(url: URL(string: video.thumbnailURL)) { phase in
       switch phase {
       case .empty:
         ProgressView()

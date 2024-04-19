@@ -10,104 +10,111 @@ import YouTubePlayerKit
 import SDWebImageSwiftUI
 
 struct Player: View {
-    @EnvironmentObject var viewModel: PlayerViewModel
-    var videoID: String
-    var animation: Namespace.ID
-    var currentThumbnailURL: String
+  @EnvironmentObject var viewModel: PlayerViewModel
+  var videoID: String
+  var animation: Namespace.ID
+  var currentThumbnailURL: String
 
-    // State variables
-    @State private var activeTab: songorvideo = .song
-    @State private var expandPlayer: Bool = false
-    @State private var animateContent: Bool = false
-    @State private var offsetY: CGFloat = 0
-    @State private var liked: Bool = false
-    @State private var isPlaying: Bool = true
-    @State private var transparency: Double = 0.0
-    @State private var playerDuration: TimeInterval = 0
-    @State private var volume: Double = 0
-    @State private var color: Color = .white
+  // State variables
+  @State private var activePage: pql = .player
+  @State private var activeTab: songorvideo = .song
+  @State private var expandPlayer: Bool = false
+  @State private var animateContent: Bool = false
+  @State private var offsetY: CGFloat = 0
+  @State private var liked: Bool = false
+  @State private var isPlaying: Bool = true
+  @State private var transparency: Double = 0.0
+  @State private var playerDuration: TimeInterval = 0
+  @State private var volume: Double = 0
+  @State private var color: Color = .white
 
-    // Define the accent color
-    private let accentColor = Color(red: 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
-    private var normalFillColor: Color { color.opacity(0.5) }
-    private var emptyColor: Color { color.opacity(0.3) }
+  // Define the accent color
+  private let accentColor = Color(red: 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
+  private var normalFillColor: Color { color.opacity(0.5) }
+  private var emptyColor: Color { color.opacity(0.3) }
 
-    // Constants for max duration and volume
-    private let maxDuration: TimeInterval = 252
-    private let maxVolume: Double = 1
+  // Constants for max duration and volume
+  private let maxDuration: TimeInterval = 252
+  private let maxVolume: Double = 1
 
-    @State private var player: YouTubePlayer?
+  @State private var player: YouTubePlayer?
 
-    var body: some View {
-        NavigationView {
-            GeometryReader {
-                let size = $0.size
-                let safeArea = $0.safeAreaInsets
+  var body: some View {
+    NavigationView {
+      GeometryReader {
+        let size = $0.size
+        let safeArea = $0.safeAreaInsets
 
-                ZStack {
-                    dynamicBackground
-                        .padding(.trailing, 3)
-                        .matchedGeometryEffect(id: "Background", in: animation)
+        ZStack {
+          dynamicBackground
+            .padding(.trailing, 3)
+            .matchedGeometryEffect(id: "Background", in: animation)
 
-                    VStack(spacing: 15) {
-                        songorvideoTab
-                        ZStack {
-                            if let player = player {
-                                YouTubePlayerView(player)
-                                .allowsHitTesting(false)
-                                    .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
-                                    .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
-                                    .animation(.easeInOut(duration: 0.3), value: isPlaying)
-                            }
-                            albumArtwork
-                                .matchedGeometryEffect(id: "Album Cover", in: animation, isSource: false)
-                                .offset(x: isPlaying ? 0 : 47, y: isPlaying ? 0 : 47)
-                                .frame(width: 343, height: 343)
-                                .padding(.vertical, size.height < 700 ? 10 : 15)
-                        }
-                        .padding(.top, 5)
-
-                        playerButtons(size: size)
-                            .offset(y: animateContent ? 0 : size.height)
-                    }
-                    .padding(.top, safeArea.top + (safeArea.bottom == 0 ? 10 : 0))
-                    .padding(.bottom, safeArea.bottom == 0 ? 10 : safeArea.bottom)
-                    .padding(.horizontal, 25)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .clipped()
+          VStack(spacing: 15) {
+            if activePage == .player {
+              songorvideoTab
+              ZStack {
+                if let player = player {
+                  YouTubePlayerView(player)
+                    .allowsHitTesting(false)
+                    .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
+                    .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
+                    .animation(.easeInOut(duration: 0.3), value: isPlaying)
                 }
-                .contentShape(Rectangle())
-                .offset(y: offsetY)
-                .gesture(dragGesture(size: size))
-                .ignoresSafeArea(.container, edges: .all)
-                .onAppear {
-                    withAnimation(.easeInOut(duration: 0.35)) {
-                        animateContent = true
-                    }
-
-                    // Initialize the player here because `viewModel` is now available
-                    player = YouTubePlayer(
-                        source: .video(id: viewModel.currentVideoID ?? videoID),
-                        configuration: .init(
-                            autoPlay: true,
-                            showCaptions: false,
-                            showControls: false,
-                            showFullscreenButton: false,
-                            showAnnotations: false,
-                            loopEnabled: true,
-                            useModestBranding: false,
-                            showRelatedVideos: false
-                        )
-                    )
-                }
+                albumArtwork
+                  .matchedGeometryEffect(id: "Album Cover", in: animation, isSource: false)
+                  .offset(x: isPlaying ? 0 : 47, y: isPlaying ? 0 : 47)
+                  .frame(width: 343, height: 343)
+                  .padding(.vertical, size.height < 700 ? 10 : 15)
+              }
+              .padding(.top, 5)
+            } else if activePage == .queue {
+              Queue(viewModel: _viewModel, videoID: videoID, animation: animation, currentThumbnailURL: currentThumbnailURL)
+            } else if activePage == .lyrics {
+              Lyrics(viewModel: _viewModel, videoID: videoID, animation: animation, currentThumbnailURL: currentThumbnailURL)
             }
+
+            playerButtons(size: size)
+              .offset(y: animateContent ? 0 : size.height)
+          }
+          .padding(.top, safeArea.top + (safeArea.bottom == 0 ? 10 : 0))
+          .padding(.bottom, safeArea.bottom == 0 ? 10 : safeArea.bottom)
+          .padding(.horizontal, 25)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+          .clipped()
         }
+        .contentShape(Rectangle())
+        .offset(y: offsetY)
+        .gesture(dragGesture(size: size))
+        .ignoresSafeArea(.container, edges: .all)
+        .onAppear {
+          withAnimation(.easeInOut(duration: 0.35)) {
+            animateContent = true
+          }
+
+          // Initialize the player here because `viewModel` is now available
+          player = YouTubePlayer(
+            source: .video(id: viewModel.currentVideoID ?? videoID),
+            configuration: .init(
+              autoPlay: true,
+              showCaptions: false,
+              showControls: false,
+              showFullscreenButton: false,
+              showAnnotations: false,
+              loopEnabled: true,
+              useModestBranding: false,
+              showRelatedVideos: false
+            )
+          )
+        }
+      }
     }
-  
+  }
+
   private var dynamicBackground: some View {
     GeometryReader {
       let size = $0.size
-      
+
       let url = URL(string: currentThumbnailURL)
       AnyView(
         WebImage(url: url) { phase in
@@ -146,7 +153,7 @@ struct Player: View {
         .opacity(animateContent ? 0 : 1)
     }
   }
-  
+
   private var songorvideoTab: some View {
     VStack(spacing: 15) {
       SongOrVideo(tabs: songorvideo.allCases, activeTab: $activeTab, height: 35, font: .body, activeTint: .primary, inActiveTint: .secondary) { size in
@@ -163,18 +170,18 @@ struct Player: View {
     .opacity(animateContent ? 1 : 0)
     .offset(y: animateContent ? 0 : 343)
   }
-  
+
   private var albumArtwork: some View {
     GeometryReader { _ in
       if activeTab == .song {
-          albumArt(isPlaying: isPlaying, animateContent: animateContent, currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
-        .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
-        .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
-        .animation(.easeInOut(duration: 0.3), value: isPlaying)
+        albumArt(isPlaying: isPlaying, animateContent: animateContent, currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
+          .frame(width: isPlaying ? 343 : 250, height: isPlaying ? 343 : 250)
+          .clipShape(RoundedRectangle(cornerRadius: animateContent ? 15 : 5, style: .continuous))
+          .animation(.easeInOut(duration: 0.3), value: isPlaying)
       }
     }
   }
-  
+
   func albumArt(isPlaying: Bool, animateContent: Bool, currentThumbnailURL: String) -> some View {
     if let url = URL(string: currentThumbnailURL) {
       return AnyView(
@@ -208,13 +215,13 @@ struct Player: View {
       )
     }
   }
-  
+
   private func playerButtons(size: CGSize) -> some View {
     VStack(spacing: size.height * 0.04) {
       GeometryReader {
         let size = $0.size
         let spacing = size.height * 0.04
-        
+
         VStack(spacing: spacing) {
           VStack(spacing: spacing) {
             HStack(alignment: .center, spacing: 15) {
@@ -222,12 +229,12 @@ struct Player: View {
                 Text(viewModel.currentTitle ?? "Not Playing")
                   .font(.title3)
                   .fontWeight(.semibold)
-                
+
                 Text(viewModel.currentArtist ?? "Travis Scott")
                   .foregroundColor(.gray)
               }
               .frame(maxWidth: .infinity, alignment: .leading)
-              
+
               Button {
                 liked.toggle()
               } label: {
@@ -238,20 +245,20 @@ struct Player: View {
               .onTapGesture {
                 Toast.shared.present(title: liked ? "Favourited" : "Unfavourited", isUserInteractionEnabled: false, timing: .short)
               }
-              
+
               Menu {
                 Button(action: {
                   // Action for Add to Playlist button
                 }) {
                   Label("Add to Playlist", systemImage: "plus")
                 }
-                
+
                 Button(action: {
                   // Action for Downloading Song
                 }) {
                   Label("Download", systemImage: "arrow.down.circle")
                 }
-                
+
                 Button(action: {
                   // Action for Sharing the Song
                 }) {
@@ -267,19 +274,19 @@ struct Player: View {
                   .padding(.trailing, -9)
               }
             }
-            
+
             //Song Duration Slider
             MusicProgressSlider(value: $playerDuration, inRange: TimeInterval.zero...maxDuration, activeFillColor: color, fillColor: normalFillColor, emptyColor: emptyColor, height: 32) { started in
-              
+
             }
             .padding(.top, spacing)
           }
           .frame(height: size.height / 2.5, alignment: .top)
-          
+
           //MARK: Playback Controls
           HStack(spacing: size.width * 0.18) {
             BackwardButton()
-            
+
             Button {
               if isPlaying == false {
                 player!.play()
@@ -316,27 +323,39 @@ struct Player: View {
           .padding(.top, -15)
           .foregroundColor(.white)
           .frame(maxHeight: .infinity)
-          
+
           //MARK: Volume Controls
           VStack(spacing: spacing) {
             VolumeSlider(value: $volume, inRange: 0...maxVolume, activeFillColor: color, fillColor: normalFillColor, emptyColor: emptyColor, height: 8) { started in }
-            
+
             HStack(alignment: .top, spacing: size.width * 0.18) {
               Button(action: {
-                
+                if activePage == .player {
+                  activePage = .lyrics
+                } else if activePage == .lyrics {
+                  activePage = .player
+                } else if activePage == .queue {
+                  activePage = .lyrics
+                }
               }) {
                 Image(systemName: "quote.bubble")
                   .font(.title2)
               }
               .padding(.top, 2.5)
-              
+
               AirPlayButton()
                 .frame(width: 50, height: 50)
                 .padding(.top, -10)
                 .padding(.horizontal, 25)
-              
+
               Button(action: {
-                
+                if activePage == .player {
+                  activePage = .queue
+                } else if activePage == .queue {
+                  activePage = .player
+                } else if activePage == .lyrics {
+                  activePage = .queue
+                }
               }) {
                 Image(systemName: "list.bullet")
                   .font(.title2)
@@ -353,7 +372,7 @@ struct Player: View {
       }
     }
   }
-  
+
   private func dragGesture(size: CGSize) -> some Gesture {
     DragGesture()
       .onChanged { value in
@@ -365,7 +384,7 @@ struct Player: View {
       .onEnded { value in
         // Determine if the player should collapse
         let shouldCollapse = offsetY > size.height * 0.3
-        
+
         // Use a smooth easing function and adjust the duration for a better transition
         withAnimation(shouldCollapse ? .easeInOut(duration: 0.5) : .spring()) {
           if shouldCollapse {
@@ -380,6 +399,156 @@ struct Player: View {
         }
       }
   }
+}
+
+struct Queue: View {
+  @EnvironmentObject var viewModel: PlayerViewModel
+  var videoID: String
+  var animation: Namespace.ID
+  var currentThumbnailURL: String
+
+  // State variables
+  @State private var activePage: pql = .queue
+  @State private var activeTab: songorvideo = .song
+  @State private var animateContent: Bool = false
+  @State private var isPlaying: Bool = true
+
+  var body: some View {
+    GeometryReader {
+      let size = $0.size
+
+      //Song/Video
+      Capsule()
+        .fill(.gray)
+        .frame(width: 40, height: 5)
+        .padding(.vertical, 15)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .opacity(animateContent ? 1 : 0)
+      //Fixing Slide Animation
+        .offset(y: animateContent ? 0 : size.height)
+
+      //Artwork
+      GeometryReader { _ in
+        if let url = URL(string: currentThumbnailURL) {
+          AnyView(
+            WebImage(url: url) { phase in
+              switch phase {
+              case .success(let image):
+                image
+                  .resizable()
+                  .scaledToFit()
+                  .frame(width: 80, height: 80)
+                  .clipShape(RoundedRectangle(cornerRadius: animateContent ? 5 : 5, style: .continuous))
+                  .animation(.easeInOut(duration: 0.3), value: isPlaying) // Add animation for smooth expand
+              case .failure, .empty:
+                Image("musicnote")
+                  .resizable()
+                  .scaledToFit()
+                  .frame(width: 80, height: 80)
+                  .clipShape(RoundedRectangle(cornerRadius: animateContent ? 5 : 5, style: .continuous))
+                  .animation(.easeInOut(duration: 0.3), value: isPlaying) // Add animation for smooth expand
+              }
+            }
+          )
+        } else {
+          AnyView(
+            Image("musicnote")
+              .resizable()
+              .scaledToFit()
+              .frame(width: 80, height: 80)
+              .clipShape(RoundedRectangle(cornerRadius: animateContent ? 5 : 5, style: .continuous))
+              .animation(.easeInOut(duration: 0.3), value: isPlaying) // Add animation for smooth expand
+          )
+        }
+      }
+      .matchedGeometryEffect(id: "Album Cover", in: animation)
+      //Square Artwork Image
+      .frame(width: 80, height: 80)
+      .padding(.top, -25)
+      .padding(.vertical, size.height < 700 ? 10 : 15)
+
+      RoundedRectangle(cornerRadius: 15)
+        .frame(width: 343, height: 343)
+    }
+  }
+}
+
+struct Lyrics: View {
+  @EnvironmentObject var viewModel: PlayerViewModel
+  var videoID: String
+  var animation: Namespace.ID
+  var currentThumbnailURL: String
+
+  // State variables
+  @State private var activePage: pql = .lyrics
+  @State private var activeTab: songorvideo = .song
+  @State private var animateContent: Bool = false
+  @State private var isPlaying: Bool = true
+
+  var body: some View {
+    GeometryReader {
+      let size = $0.size
+
+      //Song/Video
+      Capsule()
+        .fill(.gray)
+        .frame(width: 40, height: 5)
+        .padding(.vertical, 15)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .opacity(animateContent ? 1 : 0)
+      //Fixing Slide Animation
+        .offset(y: animateContent ? 0 : size.height)
+
+      //Artwork
+      GeometryReader { _ in
+        if let url = URL(string: currentThumbnailURL) {
+          AnyView(
+            WebImage(url: url) { phase in
+              switch phase {
+              case .success(let image):
+                image
+                  .resizable()
+                  .scaledToFit()
+                  .frame(width: 80, height: 80)
+                  .clipShape(RoundedRectangle(cornerRadius: animateContent ? 5 : 5, style: .continuous))
+                  .animation(.easeInOut(duration: 0.3), value: isPlaying) // Add animation for smooth expand
+              case .failure, .empty:
+                Image("musicnote")
+                  .resizable()
+                  .scaledToFit()
+                  .frame(width: 80, height: 80)
+                  .clipShape(RoundedRectangle(cornerRadius: animateContent ? 5 : 5, style: .continuous))
+                  .animation(.easeInOut(duration: 0.3), value: isPlaying) // Add animation for smooth expand
+              }
+            }
+          )
+        } else {
+          AnyView(
+            Image("musicnote")
+              .resizable()
+              .scaledToFit()
+              .frame(width: 80, height: 80)
+              .clipShape(RoundedRectangle(cornerRadius: animateContent ? 5 : 5, style: .continuous))
+              .animation(.easeInOut(duration: 0.3), value: isPlaying) // Add animation for smooth expand
+          )
+        }
+      }
+      .matchedGeometryEffect(id: "Album Cover", in: animation)
+      //Square Artwork Image
+      .frame(width: 80, height: 80)
+      .padding(.top, -25)
+      .padding(.vertical, size.height < 700 ? 10 : 15)
+
+      RoundedRectangle(cornerRadius: 15)
+        .frame(width: 343, height: 343)
+    }
+  }
+}
+
+enum pql: String, CaseIterable {
+  case player = "play.fill"
+  case queue = "quote.bubble"
+  case lyrics = "list.bullet"
 }
 
 #Preview {

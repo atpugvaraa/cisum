@@ -24,8 +24,7 @@ struct MusicInfo: View {
       ZStack {
         if !expandPlayer {
           // GeometryReader for dynamic sizing
-          GeometryReader {
-            let size = $0.size
+          GeometryReader {_ in
 
             // Load and display the thumbnail image using SDWEBIMAGE
             if let url = URL(string: currentThumbnailURL), !expandPlayer {
@@ -35,14 +34,14 @@ struct MusicInfo: View {
                   image
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 42, height: 42)
                     .clipShape(RoundedRectangle(cornerRadius: expandPlayer ? 15 : 5, style: .continuous))
                     .matchedGeometryEffect(id: "Album Cover", in: animation)
                 case .failure:
                   Image("musicnote")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 42, height: 42)
                     .clipShape(RoundedRectangle(cornerRadius: expandPlayer ? 15 : 5, style: .continuous))
                     .matchedGeometryEffect(id: "Album Cover", in: animation)
                 case .empty:
@@ -53,8 +52,8 @@ struct MusicInfo: View {
           }
         }
       }
-      .padding(.leading, -5)
-      .frame(width: 40, height: 40)
+      .padding(.leading, -7)
+      .frame(width: 42, height: 42)
 
       // Display the current title
       Text(currentTitle)
