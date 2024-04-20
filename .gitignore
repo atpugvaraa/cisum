@@ -7,6 +7,11 @@
 
 cisum/._cisumApp.swift
 
+cisum/Assets.xcassets/AppIcon alt.appiconset/._.DS_Store
+cisum/Assets.xcassets/AppIcon.appiconset/._.DS_Store
+cisum/Assets.xcassets/home.imageset/._.DS_Store
+cisum/Assets.xcassets/liked.imageset/._.DS_Store
+
 cisum/Core/._Login Signup.swift
 cisum/Core/._Main.swift
 cisum/Core/._Profile.swift
