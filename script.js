@@ -34,7 +34,7 @@ const stepContent = [
     <a class="btn-fill" target="_blank" href="
         "https://github.com/atpugvaraa/cisum/releases/latest/download/cisum.ipa"
         ">Download cisum.ipa</a>\n
-        <br><br> Note: Sideloading methods include: <ul class="list-disc list-inside"><li>Altstore</li><li>Sideloadly</li><li>TrollStore</li><li>Esign</li></ul>`,
+        <br><br> Note: Sideloading methods include: <ul class="list-disc list-inside"><li>Altstore</li><li>Sideloadly</li><li>TrollStore</li><li>ESign</li></ul>`,
     () => `<b>Using your preferred method to install cisum:</b><ul class="list-disc list-inside">
     Official Download:
     <br>
@@ -42,7 +42,7 @@ const stepContent = [
     <br>
     <li>You can use TrollStore on a supported device.</li>
     <li>Sideloady/AltStore/SideStore if you are fine with 7-day signing.</li>
-    <li>You can use Esign with a certificate.</li>
+    <li>You can use ESign with a certificate.</li>
     <br>Sideload <code>cisum.ipa</code> using any of the above methods on you iOS 16.0 and later device for the best experience.
     <br><br><br><br><br><br>
     Note: You might be able to install it via TestFlight or from the AppStore if I ever get an Apple Developer Account.`,
