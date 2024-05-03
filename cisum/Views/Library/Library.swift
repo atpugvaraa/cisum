@@ -8,23 +8,30 @@
 import SwiftUI
 
 struct Library: View {
-  @State var isLoggedin: Bool = false
-  var videoID: String
+  //Miscellaneous
   let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
-  let accentColor = Color(red : 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
-  @State private var selectedTab = 0
+  let accentColor = Color(red: 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
+
+  //Animation Properties
+  @EnvironmentObject var viewModel: PlayerViewModel
+  @Namespace var animation
+  @State var expandPlayer: Bool = false
+  var videoID: String
+  var title: String? = nil
+  var artistName: String? = nil
+  var thumbnailURL: String? = nil
+  var animateContent: Bool = false
+
   //Side Menu Properties
   var sideMenuWidth: CGFloat = 180
+  @State private var showMenu: Bool = false
   @State private var offsetX: CGFloat = 0
   @State private var lastOffsetX: CGFloat = 0
   @State private var progress: CGFloat = 0
-  //Animation Properties
-  @State private var animateContent: Bool = false
-  @State var expandPlayer: Bool = false
-  @Namespace var animation
-  @State private var showMenu: Bool = false
-  @EnvironmentObject var viewModel: PlayerViewModel
+
+  //Login Page
   @State var image: UIImage?
+  @State var isLoggedin: Bool = false
 
   var body: some View {
     NavigationView {
@@ -109,40 +116,13 @@ struct Library: View {
         FloatingPlayer()
       }
       .overlay {
-        Group {
-          if viewModel.expandPlayer {
-            ZStack {
-              // Use UltraThickMaterial as the background
-              RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
-                .fill(.ultraThickMaterial)
-                .overlay(content: {
-                  RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
-                    .fill(.ultraThickMaterial)
-                    .opacity(animateContent ? 1 : 0)
-                })
-                .overlay(alignment: .top) {
-                  MusicInfo(
-                    expandPlayer: $viewModel.expandPlayer,
-                    animation: animation,
-                    currentTitle: viewModel.currentTitle ?? "Not Playing",
-                    currentArtist: viewModel.currentArtist ?? "",
-                    currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote"
-                  )
-                  .allowsHitTesting(false)
-                  .opacity(animateContent ? 0 : 1)
-                }
-                .matchedGeometryEffect(id: "Background", in: animation, isSource: false)
-                .edgesIgnoringSafeArea(.all)
-              // Your Player view
-              Player(videoID: videoID, animation: animation, currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
-                .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
-            }
-            .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
+          if expandPlayer {
+            Player(animation: animation, expandPlayer: $expandPlayer, videoID: viewModel.videoID ?? videoID)
+                .transition(.asymmetric(insertion: .identity, removal: .offset(y: -5)))
           }
-        }
       }
-      .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .navigationBar)
-      .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .tabBar)
+      .toolbar(expandPlayer ? .hidden : .visible, for: .navigationBar)
+      .toolbar(expandPlayer ? .hidden : .visible, for: .tabBar)
       .navigationBarTitleDisplayMode(.automatic)
       .navigationBarLargeTitleItems(visible: showMenu ? false : true) {
         Button(action: {
@@ -189,7 +169,7 @@ struct Library: View {
           .fill(.thickMaterial)
           .overlay {
             //Music Info
-            MusicInfo(expandPlayer: $viewModel.expandPlayer, animation: animation, currentTitle: viewModel.currentTitle ?? "Not Playing", currentArtist: viewModel.currentArtist ?? "", currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
+            MusicInfo(title: viewModel.title ?? "Not Playing", artistName: viewModel.artistName ?? "", thumbnailURL: viewModel.thumbnailURL ?? "musicnote", animation: animation, expandPlayer: $expandPlayer)
           }
           .matchedGeometryEffect(id: "Background", in: animation)
       }
@@ -218,7 +198,7 @@ struct Library: View {
       Spacer()
 
       VStack(spacing: 21) {
-        NavigationLink(destination: LoginSignup(), label: {
+        NavigationLink(destination: Login(), label: {
           HStack(spacing: 12) {
             Image(systemName: isLoggedin ? "person.crop.circle.badge.plus" : "person.crop.circle")
               .padding(.vertical, 8)

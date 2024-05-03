@@ -1,23 +1,27 @@
 
 ._README.md
+._.git
 ._.gitignore
 
 *.xcodeproj
 /cisum.xcodeproj
 
+cisum/._Assets.xcassets
 cisum/._cisumApp.swift
+cisum/._Core
+cisum/._Views
 
-cisum/Assets.xcassets/AppIcon alt.appiconset/._.DS_Store
-cisum/Assets.xcassets/AppIcon.appiconset/._.DS_Store
-cisum/Assets.xcassets/home.imageset/._.DS_Store
-cisum/Assets.xcassets/liked.imageset/._.DS_Store
+cisum/Assets.xcassets/
 
-cisum/Core/._Login Signup.swift
-cisum/Core/._Main.swift
-cisum/Core/._Profile.swift
-cisum/Core/._Settings.swift
+cisum/Core/API Stuff
+cisum/Core/Authentication
+cisum/Core/._API Stuff.swift
+cisum/Core/._Authentication.swift
+cisum/Core/._Helpers.swift
 
-cisum/Core/Helpers/API Stuff
+cisum/Core/API Stuff/._Saavn API
+cisum/Core/Authentication/._Login.swift
+
 cisum/Core/Helpers/._Animated Side Bar.swift
 cisum/Core/Helpers/._Extensions.swift
 cisum/Core/Helpers/._ImagePicker.swift
@@ -25,6 +29,10 @@ cisum/Core/Helpers/._Music Info.swift
 cisum/Core/Helpers/._Player Controls.swift
 cisum/Core/Helpers/._Toast.swift
 
+cisum/Views/._Home
+cisum/Views/._Library
+cisum/Views/._Player
+cisum/Views/._Search
 cisum/Views/Home/._Home.swift
 cisum/Views/Library/._Library.swift
 cisum/Views/Library/._Playlist.swift
@@ -36,3 +44,5 @@ cisum/Views/Player/._Lyrics.swift
 cisum/Views/Player/._Player.swift
 cisum/Views/Player/._UpNext.swift
 cisum/Views/Search/._Search.swift
+
+/YouTubeResponder

@@ -9,7 +9,6 @@ import SwiftUI
 
 struct Playlist: View {
   @State private var isPlaying = false
-    @EnvironmentObject var viewModel: PlayerViewModel
   let accentColor = Color(red: 0.976, green: 0.176, blue: 0.282, opacity: 0.3)
 
   func getOffsetY(reader: GeometryProxy) -> CGFloat {

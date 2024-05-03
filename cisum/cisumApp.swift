@@ -14,12 +14,10 @@ struct cisumApp: App {
 
     var body: some Scene {
         WindowGroup {
-          RootView {
-            Main(videoID: "")
+            Main(videoID: "", title: "", thumbnailURL: "")
               .accentColor(AccentColor)
               .preferredColorScheme(.dark)
               .environmentObject(playerViewModel)
-          }
         }
     }
 }

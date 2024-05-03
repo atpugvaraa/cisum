@@ -7,57 +7,13 @@
 
 import SwiftUI
 import Foundation
-import Combine
+import YouTubeResponder
+import AVKit
 import SDWebImageSwiftUI
 
-class SearchViewModel: ObservableObject {
-    @Published var videos = [APIVideo]()
-    @Published var isLoading = false
-    @Published var errorMessage: AlertMessage?
-    @Published var searchText = "" {
-        didSet {
-            searchVideos()
-        }
-    }
-    private var cancellables = Set<AnyCancellable>()
-
-    init() {
-        $searchText
-            .removeDuplicates()
-            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
-            .sink { [weak self] searchText in
-                self?.searchVideos(searchText: searchText)
-            }
-            .store(in: &cancellables)
-    }
-
-    private func searchVideos(searchText: String = "") {
-      guard !searchText.isEmpty else {
-        videos = []
-//        errorMessage = AlertMessage(message: "Please enter a search term.")
-          return
-      }
-
-    isLoading = true
-      APIService().fetchVideos(query: searchText) { fetchedVideos in
-          DispatchQueue.main.async {
-            self.isLoading = false
-              if fetchedVideos.isEmpty {
-//                self.errorMessage = AlertMessage(message: "No videos found for \"\(searchText)\".")
-              } else {
-                self.videos = fetchedVideos
-              }
-          }
-      }
-    }
-}
-
-struct AlertMessage: Identifiable {
-    let id = UUID() // Automatically provides a unique identifier
-    let message: String
-}
-
 struct SearchView: View {
+  @State private var player: AVPlayer = AVPlayer()
+  var keyword: String {"\(viewModel.artistName ?? "") \(viewModel.title ?? "")" }
   @State var isLoggedin: Bool = false
   var videoID: String
   let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
@@ -75,15 +31,20 @@ struct SearchView: View {
   @EnvironmentObject var viewModel: PlayerViewModel
   @State var image: UIImage?
   @StateObject private var searchViewModel = SearchViewModel()
-  @StateObject private var audioPlayerManager = AudioPlayerManager()
-  private let gridLayout = [
-    GridItem(.flexible()),
-    GridItem(.flexible())
-  ]
 
   var body: some View {
     NavigationView {
       VStack {
+        Picker("Filter", selection: $searchViewModel.filter) {
+          ForEach(MediaFilter.allCases, id: \.self) { filter in
+            Text(filter.rawValue)
+          }
+        }
+        .pickerStyle(SegmentedPickerStyle())
+        .padding(.horizontal)
+        .padding(.vertical, 5)
+        .clipped()
+
         if searchViewModel.isLoading {
           ProgressView()
         } else if searchViewModel.videos.isEmpty && !searchViewModel.searchText.isEmpty {
@@ -93,47 +54,18 @@ struct SearchView: View {
           listContent
         }
       }
-      .searchable(text: $searchViewModel.searchText)
-      .alert(item: $searchViewModel.errorMessage) { errorMessage in
-        Alert(title: Text("Error"), message: Text(errorMessage.message), dismissButton: .default(Text("OK")))}
       .safeAreaInset(edge: .bottom) {
         FloatingPlayer()
       }
       .overlay {
-        Group {
-          if viewModel.expandPlayer {
-            ZStack {
-              // Use UltraThickMaterial as the background
-              RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
-                .fill(.ultraThickMaterial)
-                .overlay(content: {
-                  RoundedRectangle(cornerRadius: animateContent ? deviceCornerRadius : 0, style: .continuous)
-                    .fill(.ultraThickMaterial)
-                    .opacity(animateContent ? 1 : 0)
-                })
-                .overlay(alignment: .top) {
-                  MusicInfo(
-                    expandPlayer: $viewModel.expandPlayer,
-                    animation: animation,
-                    currentTitle: viewModel.currentTitle ?? "Not Playing",
-                    currentArtist: viewModel.currentArtist ?? "",
-                    currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote"
-                  )
-                  .allowsHitTesting(false)
-                  .opacity(animateContent ? 0 : 1)
-                }
-                .matchedGeometryEffect(id: "Background", in: animation, isSource: false)
-                .edgesIgnoringSafeArea(.all)
-              // Your Player view
-              Player(videoID: videoID, animation: animation, currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
-                .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
-            }
-            .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)))
-          }
+        if expandPlayer {
+          Player(animation: animation, expandPlayer: $expandPlayer, videoID: viewModel.videoID ?? videoID)
+            .transition(.asymmetric(insertion: .identity, removal: .offset(y: -5)))
         }
       }
-      .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .navigationBar)
-      .toolbar(viewModel.expandPlayer ? .hidden : .visible, for: .tabBar)
+      .toolbar(expandPlayer ? .hidden : .visible, for: .navigationBar)
+      .toolbar(expandPlayer ? .hidden : .visible, for: .tabBar)
+      .searchable(text: $searchViewModel.searchText)
       .navigationTitle("Search")
       .navigationBarTitleDisplayMode(.automatic)
     }
@@ -152,7 +84,7 @@ struct SearchView: View {
           .fill(.thickMaterial)
           .overlay {
             //Music Info
-            MusicInfo(expandPlayer: $viewModel.expandPlayer, animation: animation, currentTitle: viewModel.currentTitle ?? "Not Playing", currentArtist: viewModel.currentArtist ?? "", currentThumbnailURL: viewModel.currentThumbnailURL ?? "musicnote")
+            MusicInfo(title: viewModel.title ?? "Not Playing", artistName: viewModel.artistName ?? "", thumbnailURL: viewModel.thumbnailURL ?? "musicnote", animation: animation, expandPlayer: $expandPlayer)
           }
           .matchedGeometryEffect(id: "Background", in: animation)
       }
@@ -175,7 +107,7 @@ struct SearchView: View {
 
   private var listContent: some View {
     ScrollView {
-      LazyVGrid(columns: gridLayout, spacing: 6) {
+      LazyVGrid(columns: Array(repeating: GridItem(spacing: 6), count: 2), spacing: 6) {
         ForEach(searchViewModel.videos) { video in
           videoColumn(for: video)
         }
@@ -184,8 +116,8 @@ struct SearchView: View {
     }
   }
 
-  private func videoColumn(for video: APIVideo) -> some View {
-    VStack(alignment: .leading, spacing: 4) {
+  private func videoColumn(for video: VideoResponse) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
       videoThumbnail(for: video)
         .frame(width: 171.5, height: 171.5)
 
@@ -198,25 +130,29 @@ struct SearchView: View {
     .onTapGesture {
       updateCurrentVideo(to: video)
       UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+      expandPlayer = true
     }
     .frame(width: 171.5, height: 200, alignment: .leading)
     .padding(.vertical, 4)
   }
 
-  private func updateCurrentVideo(to video: APIVideo) {
-    viewModel.currentVideoID = video.id
-    viewModel.currentTitle = video.title
-    viewModel.currentThumbnailURL = video.thumbnailURL
+  private func updateCurrentVideo(to video: VideoResponse) {
+    viewModel.videoID = video.id
+    viewModel.title = video.title
+    viewModel.duration = video.duration
+    viewModel.artistName = video.artistName
+    viewModel.thumbnailURL = video.thumbnailURL
     viewModel.expandPlayer = true
   }
 
-  private func videoThumbnail(for video: APIVideo) -> some View {
+  private func videoThumbnail(for video: VideoResponse) -> some View {
     WebImage(url: URL(string: video.thumbnailURL)) { phase in
       switch phase {
       case .empty:
         ProgressView()
       case .success(let image):
         image.resizable()
+          .interpolation(.high)
           .aspectRatio(contentMode: .fill)
           .frame(width: 171.5, height: 171.5)
           .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -226,8 +162,19 @@ struct SearchView: View {
           .resizable()
           .aspectRatio(contentMode: .fill)
           .frame(width: 171.5, height: 171.5)
-          .clipShape(RoundedRectangle(cornerRadius: 8))
+          .clipShape(RoundedRectangle(cornerRadius: 12))
       }
     }
   }
+}
+
+struct AlertMessage: Identifiable {
+  let id = UUID() // Automatically provides a unique identifier
+  let message: String
+}
+
+enum MediaFilter: String, CaseIterable {
+  case song = "Songs"
+  case video = "Music Videos"
+  case artist = "Artist"
 }

@@ -8,25 +8,6 @@
 import Foundation
 import SwiftUI
 import UIKit
-import Firebase
-import FirebaseStorage
-
-class FirebaseManager: NSObject {
-
-  let auth: Auth
-  let storage: Storage
-
-  static let shared = FirebaseManager()
-
-  override init() {
-    FirebaseApp.configure()
-
-    self.auth = Auth.auth()
-    self.storage = Storage.storage()
-
-    super.init()
-  }
-}
 
 class VolumeObserverManager {
     private var observer: NSObjectProtocol?
@@ -63,14 +44,6 @@ extension UIApplication {
 
     return viewcontroller
   }
-}
-
-class PlayerViewModel: ObservableObject {
-    @Published var currentVideoID: String?
-    @Published var expandPlayer: Bool = false
-    @Published var currentTitle: String? = nil
-    @Published var currentArtist: String? = nil
-    @Published var currentThumbnailURL: String? = nil
 }
 
 extension Double {
