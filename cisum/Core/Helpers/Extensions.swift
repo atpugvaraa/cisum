@@ -9,6 +9,18 @@ import Foundation
 import SwiftUI
 import UIKit
 
+extension PreviewProvider {
+    static var dev: DevPreview {
+        return DevPreview.shared
+    }
+}
+
+class DevPreview {
+    static let shared = DevPreview()
+    
+    let user = User(id: NSUUID().uuidString, email: "max@gmail.com", firstname: "Max Verstappen", username: "maxverstappen")
+}
+
 class VolumeObserverManager {
     private var observer: NSObjectProtocol?
 

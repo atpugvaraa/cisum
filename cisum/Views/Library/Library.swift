@@ -14,13 +14,9 @@ struct Library: View {
 
   //Animation Properties
   @EnvironmentObject var viewModel: PlayerViewModel
+    @StateObject var mainViewModel = MainViewModel()
   @Namespace var animation
   @State var expandPlayer: Bool = false
-  var videoID: String
-  var title: String? = nil
-  var artistName: String? = nil
-  var thumbnailURL: String? = nil
-  var animateContent: Bool = false
 
   //Side Menu Properties
   var sideMenuWidth: CGFloat = 180
@@ -28,13 +24,13 @@ struct Library: View {
   @State private var offsetX: CGFloat = 0
   @State private var lastOffsetX: CGFloat = 0
   @State private var progress: CGFloat = 0
-
-  //Login Page
-  @State var image: UIImage?
-  @State var isLoggedin: Bool = false
+    @StateObject var profileViewModel = ProfileViewModel()
+    private var currentUser: User? {
+        return profileViewModel.currentUser
+    }
 
   var body: some View {
-    NavigationView {
+    NavigationStack {
       AnimatedSideBar(
         rotatesWhenExpanded: true,
         disablesInteraction: true,
@@ -105,8 +101,111 @@ struct Library: View {
           .accentColor(AccentColor)
         }
         .background(Color.black)
-      } menuView: { safeArea in
-        sideMenuView(safeArea)
+      } menuView: { _ in
+          GeometryReader {
+              let safeArea = $0.safeAreaInsets
+              
+              VStack(alignment: .leading, spacing: 12) {
+                Text("cisum")
+                  .font(.largeTitle.bold())
+                  .padding(.bottom, 10)
+                  NavigationLink(
+                      destination: CurrentUserProfile(), label: {
+                      HStack(spacing: 12) {
+                          ProfileImage(user: currentUser, size: .sidemenu)
+                          .padding(.vertical, 8)
+                          .padding(.leading)
+
+                        Text(currentUser?.username ?? "Profile")
+                          .padding(.vertical, 8)
+                          .padding(.trailing)
+                          .font(.callout)
+                      }
+                      .background(
+                        RoundedRectangle(cornerRadius: 12)
+                          .foregroundColor(accentColor)
+                      )
+                      .padding(.vertical, 10)
+                      .contentShape(.rect)
+                      .foregroundColor(AccentColor)
+                    })
+                  
+                  NavigationLink(
+                      destination: Downloads(), label: {
+                      HStack(spacing: 12) {
+                          Image(systemName: "arrow.down.circle")
+                          .padding(.vertical, 8)
+                          .padding(.leading)
+                          .font(.title3)
+
+                        Text("Downloads")
+                          .padding(.vertical, 8)
+                          .padding(.trailing)
+                          .font(.callout)
+                      }
+                      .background(
+                        RoundedRectangle(cornerRadius: 12)
+                          .foregroundColor(accentColor)
+                      )
+                      .padding(.vertical, 10)
+                      .contentShape(.rect)
+                      .foregroundColor(AccentColor)
+                    })
+
+                  NavigationLink(
+                      destination: Settings(), label: {
+                      HStack(spacing: 12) {
+                          Image(systemName: "gear")
+                          .padding(.vertical, 8)
+                          .padding(.leading)
+                          .font(.title3)
+
+                        Text("Settings")
+                          .padding(.vertical, 8)
+                          .padding(.trailing)
+                          .font(.callout)
+                      }
+                      .background(
+                        RoundedRectangle(cornerRadius: 12)
+                          .foregroundColor(accentColor)
+                      )
+                      .padding(.vertical, 10)
+                      .contentShape(.rect)
+                      .foregroundColor(AccentColor)
+                    })
+                  
+                Spacer()
+
+                VStack(spacing: 21) {
+                  Button {
+                      AuthService.shared.signOut()
+                  } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                          .padding(.vertical, 8)
+                          .padding(.leading)
+                          .font(.title3)
+                        
+                      Text("Logout")
+                        .padding(.vertical, 8)
+                        .padding(.trailing)
+                        .font(.callout)
+                    }
+                    .background(
+                      RoundedRectangle(cornerRadius: 12)
+                        .foregroundColor(accentColor)
+                    )
+                  }
+                }
+                .padding(.bottom, 115)
+              }
+              .padding(.horizontal, 15)
+              .padding(.vertical, 20)
+              .padding(.top, safeArea.top)
+              .padding(.bottom, safeArea.bottom)
+              .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+              .environment(\.colorScheme, .dark)
+            }
       } background: {
         Rectangle()
           .fill(.sideMenu)
@@ -117,7 +216,7 @@ struct Library: View {
       }
       .overlay {
           if expandPlayer {
-            Player(animation: animation, expandPlayer: $expandPlayer, videoID: viewModel.videoID ?? videoID)
+              Player(animation: animation, expandPlayer: $expandPlayer, videoID: viewModel.videoID ?? mainViewModel.videoID)
                 .transition(.asymmetric(insertion: .identity, removal: .offset(y: -5)))
           }
       }
@@ -126,12 +225,8 @@ struct Library: View {
       .navigationBarTitleDisplayMode(.automatic)
       .navigationBarLargeTitleItems(visible: showMenu ? false : true) {
         Button(action: {
-
           withAnimation(.snappy(duration: 0.3, extraBounce: 0)) {
-
             showMenu.toggle()
-
-
             if showMenu {
               showSideBar()
             } else {
@@ -139,17 +234,9 @@ struct Library: View {
             }
           }
         }, label: {
-
-          if let image = self.image {
-            Image(uiImage: image)
-              .resizable()
-              .frame(width: 40, height: 40)
-              .clipShape(Circle())
-          } else {
-            Image(systemName: "person.crop.circle")
-              .font(.system(size: 30))
-              .foregroundColor(AccentColor)
-          }
+            if let user = currentUser {
+                ProfileImage(user: user, size: .small)
+            }
         })
         .padding(.trailing)
       }
@@ -176,127 +263,6 @@ struct Library: View {
     }
     .offset(y: -10.5)
     .frame(width: 370, height: 58)
-  }
-
-  //MARK: Side Bar Menu
-  @ViewBuilder
-  func sideMenuView(_ safeArea: UIEdgeInsets) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("cisum")
-        .font(.largeTitle.bold())
-        .padding(.bottom, 10)
-      sideMenuTabs(.profile) {
-        Profile()
-      }
-      sideMenuTabs(.downloads) {
-        Downloads()
-      }
-      sideMenuTabs(.settings) {
-        Settings()
-      }
-
-      Spacer()
-
-      VStack(spacing: 21) {
-        NavigationLink(destination: Login(), label: {
-          HStack(spacing: 12) {
-            Image(systemName: isLoggedin ? "person.crop.circle.badge.plus" : "person.crop.circle")
-              .padding(.vertical, 8)
-              .padding(.leading)
-              .font(.title3)
-            Text(isLoggedin ? "Login" : "Sign up")
-              .padding(.vertical, 8)
-              .padding(.trailing)
-              .font(.callout)
-          }
-          .background(
-            RoundedRectangle(cornerRadius: 12)
-              .foregroundColor(accentColor)
-          )
-        })
-
-        Button {
-
-        } label: {
-          HStack(spacing: 12) {
-            Image(systemName: "rectangle.portrait.and.arrow.right")
-              .padding(.vertical, 8)
-              .padding(.leading)
-              .font(.title3)
-            Text("Logout")
-              .padding(.vertical, 8)
-              .padding(.trailing)
-              .font(.callout)
-          }
-          .background(
-            RoundedRectangle(cornerRadius: 12)
-              .foregroundColor(accentColor)
-          )
-        }
-      }
-      .padding(.bottom, 105)
-    }
-    .padding(.horizontal, 15)
-    .padding(.vertical, 20)
-    .padding(.top, safeArea.top)
-    .padding(.bottom, safeArea.bottom)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    .environment(\.colorScheme, .dark)
-  }
-
-  //sideMenuTabs
-  @ViewBuilder
-  func sideMenuTabs<Content: View>(_ tab: Tab, onTap: @escaping () -> Content) -> some View {
-    NavigationLink(
-      destination: tab.view, label: {
-        HStack(spacing: 12) {
-          Image(systemName: tab.rawValue)
-            .padding(.vertical, 8)
-            .padding(.leading)
-            .font(.title3)
-
-          Text(tab.title)
-            .padding(.vertical, 8)
-            .padding(.trailing)
-            .font(.callout)
-        }
-        .background(
-          RoundedRectangle(cornerRadius: 12)
-            .foregroundColor(accentColor)
-        )
-        .padding(.vertical, 10)
-        .contentShape(.rect)
-        .foregroundColor(AccentColor)
-      })
-  }
-
-  //Tabs
-  enum Tab: String, CaseIterable {
-    case profile = "person.crop.circle"
-    case downloads = "arrow.down.circle"
-    case settings = "gear"
-
-    func view() -> some View {
-      switch self {
-      case .profile:
-        return AnyView(Profile())
-      case .downloads:
-        return AnyView(Downloads())
-      case .settings:
-        return AnyView(Settings())
-      }
-    }
-
-    var title: String {
-      switch self {
-      case .profile:
-        return "Profile"
-      case .downloads:
-        return "Downloads"
-      case .settings:
-        return "Settings"
-      }
-    }
   }
 
   //MARK: Show Side Bar

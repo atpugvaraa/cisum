@@ -16,6 +16,8 @@ cisum/Assets.xcassets/
 
 cisum/Core/API Stuff
 cisum/Core/Authentication
+cisum/Core/Comments
+cisum/Core/Helpers
 cisum/Core/._API Stuff.swift
 cisum/Core/._Authentication.swift
 cisum/Core/._Helpers.swift

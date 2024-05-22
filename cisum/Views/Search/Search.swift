@@ -6,68 +6,71 @@
 //
 
 import SwiftUI
-import Foundation
-import YouTubeResponder
 import AVKit
 import SDWebImageSwiftUI
 
 struct SearchView: View {
+  @State private var isUserSearchEnabled: Bool = false
   @State private var player: AVPlayer = AVPlayer()
   var keyword: String {"\(viewModel.artistName ?? "") \(viewModel.title ?? "")" }
   @State var isLoggedin: Bool = false
-  var videoID: String
   let AccentColor = Color(red : 0.9764705882352941, green: 0.17647058823529413, blue: 0.2823529411764706)
   @State private var selectedTab = 0
-  //Side Menu Properties
-  var sideMenuWidth: CGFloat = 180
-  @State private var offsetX: CGFloat = 0
-  @State private var lastOffsetX: CGFloat = 0
-  @State private var progress: CGFloat = 0
   //Animation Properties
   @State private var animateContent: Bool = false
   @State var expandPlayer: Bool = false
   @Namespace var animation
-  @State private var showMenu: Bool = false
   @EnvironmentObject var viewModel: PlayerViewModel
   @State var image: UIImage?
   @StateObject private var searchViewModel = SearchViewModel()
+  @StateObject var mainViewModel = MainViewModel()
 
   var body: some View {
-    NavigationView {
-      VStack {
-        Picker("Filter", selection: $searchViewModel.filter) {
-          ForEach(MediaFilter.allCases, id: \.self) { filter in
-            Text(filter.rawValue)
-          }
-        }
-        .pickerStyle(SegmentedPickerStyle())
-        .padding(.horizontal)
-        .padding(.vertical, 5)
-        .clipped()
+    if !isUserSearchEnabled {
+        NavigationView {
+          VStack {
+            Picker("Filter", selection: $searchViewModel.filter) {
+              ForEach(MediaFilter.allCases, id: \.self) { filter in
+                Text(filter.rawValue)
+              }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .padding(.horizontal)
+            .padding(.vertical, 5)
+            .clipped()
 
-        if searchViewModel.isLoading {
-          ProgressView()
-        } else if searchViewModel.videos.isEmpty && !searchViewModel.searchText.isEmpty {
-          Text("Please search for \"\(searchViewModel.searchText)\" again.")
-            .padding()
-        } else {
-          listContent
+            if searchViewModel.isLoading {
+              ProgressView()
+            } else if searchViewModel.videos.isEmpty && !searchViewModel.searchText.isEmpty {
+              Text("Please search for \"\(searchViewModel.searchText)\" again.")
+                .padding()
+            } else {
+              listContent
+            }
+          }
+          .safeAreaInset(edge: .bottom) {
+            FloatingPlayer()
+          }
+          .overlay {
+            if expandPlayer {
+                Player(animation: animation, expandPlayer: $expandPlayer, videoID: viewModel.videoID ?? mainViewModel.videoID)
+                .transition(.asymmetric(insertion: .identity, removal: .offset(y: -5)))
+            }
+          }
+          .toolbar(expandPlayer ? .hidden : .visible, for: .navigationBar)
+          .toolbar(expandPlayer ? .hidden : .visible, for: .tabBar)
+          .searchable(text: $searchViewModel.searchText, prompt: "Search \(searchViewModel.filter.rawValue)")
+          .navigationTitle("Search")
+          .navigationBarLargeTitleItems(visible: true, trailingItems: {
+              Toggle("User Search", isOn: $isUserSearchEnabled)
+                  .padding(.trailing)
+                  .toggleStyle(.switch)
+                  .tint(AccentColor)
+          })
+          .navigationBarTitleDisplayMode(.automatic)
         }
-      }
-      .safeAreaInset(edge: .bottom) {
-        FloatingPlayer()
-      }
-      .overlay {
-        if expandPlayer {
-          Player(animation: animation, expandPlayer: $expandPlayer, videoID: viewModel.videoID ?? videoID)
-            .transition(.asymmetric(insertion: .identity, removal: .offset(y: -5)))
-        }
-      }
-      .toolbar(expandPlayer ? .hidden : .visible, for: .navigationBar)
-      .toolbar(expandPlayer ? .hidden : .visible, for: .tabBar)
-      .searchable(text: $searchViewModel.searchText)
-      .navigationTitle("Search")
-      .navigationBarTitleDisplayMode(.automatic)
+    } else {
+        UserSearch(isUserSearchEnabled: $isUserSearchEnabled)
     }
   }
 
@@ -169,7 +172,7 @@ struct SearchView: View {
 }
 
 struct AlertMessage: Identifiable {
-  let id = UUID() // Automatically provides a unique identifier
+  let id = UUID()
   let message: String
 }
 

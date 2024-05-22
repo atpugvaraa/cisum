@@ -15,26 +15,17 @@ struct Main: View {
 
   //Animation Properties
   @EnvironmentObject var viewModel: PlayerViewModel
-  @State var videoID: String
-  @State var title: String
-  @State var thumbnailURL: String
+    @StateObject var mainViewModel = MainViewModel()
   @Namespace var animation
   @State var expandPlayer: Bool = false
   @State private var animateContent: Bool = false
-
-  //Side Menu Properties
-  var sideMenuWidth: CGFloat = 180
-  @State private var showMenu: Bool = false
-  @State private var offsetX: CGFloat = 0
-  @State private var lastOffsetX: CGFloat = 0
-  @State private var progress: CGFloat = 0
 
   var body: some View {
     NavigationView {
         //MARK: Tab View
         TabView(selection: $selectedTab) {
           //Tabs
-          Home(videoID: viewModel.videoID ?? videoID)
+            Home()
             .tabItem {
               if selectedTab == 0 {
                 Image("home.fill")
@@ -52,14 +43,14 @@ struct Main: View {
 //            }
 //            .tag()
 
-          Library(videoID: viewModel.videoID ?? videoID)
+            Library()
             .tabItem {
               Image(systemName: "play.square.stack")
               Text("Library")
             }
             .tag(1)
 
-          SearchView(videoID: viewModel.videoID ?? videoID)
+            SearchView()
             .tabItem {
               Image(systemName: "magnifyingglass")
               Text("Search")
@@ -68,4 +59,8 @@ struct Main: View {
         }
     }
   }
+}
+
+#Preview {
+    Main()
 }
