@@ -21,16 +21,8 @@ cisum/Core/Helpers
 cisum/Core/._API Stuff.swift
 cisum/Core/._Authentication.swift
 cisum/Core/._Helpers.swift
-
-cisum/Core/API Stuff/._Saavn API
-cisum/Core/Authentication/._Login.swift
-
-cisum/Core/Helpers/._Animated Side Bar.swift
-cisum/Core/Helpers/._Extensions.swift
-cisum/Core/Helpers/._ImagePicker.swift
-cisum/Core/Helpers/._Music Info.swift
-cisum/Core/Helpers/._Player Controls.swift
-cisum/Core/Helpers/._Toast.swift
+cisum/Core/._Main.swift
+cisum/Core/._ViewModels.swift
 
 cisum/Views/._Home
 cisum/Views/._Library
