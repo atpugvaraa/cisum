@@ -13,6 +13,39 @@
             "developerName": "Aarav Gupta (atpugvaraa)",
             "localizedDescription": "This is the fourth beta that contains some changes to the music progress slider and the volume slider, making them infinitely better!!!",
             "iconURL": "https://github.com/atpugvaraa/cisum/blob/main/icons/cisum.png"
+        },
+        {
+            "name": "cisum",
+            "bundleIdentifier": "atpugvaraa.cisum",
+            "version": "Beta 3",
+            "versionDate": "2024-07-23",
+            "size": 7474218,
+            "downloadURL": "https://github.com/atpugvaraa/cisum/releases/download/23%2F07%2F24/cisum-beta-3.ipa",
+            "developerName": "Aarav Gupta (atpugvaraa)",
+            "localizedDescription": "This is the third beta with some more fixes to the Gradient Background of the player and random animations and code refactor.",
+            "iconURL": "https://github.com/atpugvaraa/cisum/blob/main/icons/cisum.png"
+        },
+        {
+            "name": "cisum",
+            "bundleIdentifier": "atpugvaraa.cisum",
+            "version": "Beta 2",
+            "versionDate": "2024-07-23",
+            "size": 7472509,
+            "downloadURL": "https://github.com/atpugvaraa/cisum/releases/download/23%2F07%2F24/cisum-beta-2.ipa",
+            "developerName": "Aarav Gupta (atpugvaraa)",
+            "localizedDescription": "Latest beta with fixes\n\niOS 16.x stll not supported. (will work on it once iOS 17+ version is completed)",
+            "iconURL": "https://github.com/atpugvaraa/cisum/blob/main/icons/cisum.png"
+        },
+        {
+            "name": "cisum",
+            "bundleIdentifier": "atpugvaraa.cisum",
+            "version": "Beta 1",
+            "versionDate": "2024-07-19",
+            "size": 7451812,
+            "downloadURL": "https://github.com/atpugvaraa/cisum/releases/download/19%2F07%2F24/cisum-beta-1.ipa",
+            "developerName": "Aarav Gupta (atpugvaraa)",
+            "localizedDescription": "Initial release.\nThere will be many many bugs that i will be fixing slowly but you guys can try this out and share your thoughts and suggestions please.\n\nI will try to add the ones which i think are good and i can make.\nMany features like playlists and albums are not present as i am still working on them.",
+            "iconURL": "https://github.com/atpugvaraa/cisum/blob/main/icons/cisum.png"
         }
     ]
 }
