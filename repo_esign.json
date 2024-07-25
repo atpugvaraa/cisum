@@ -6,13 +6,13 @@
         {
             "name": "cisum",
             "bundleIdentifier": "atpugvaraa.cisum",
-            "version": "Beta 3",
+            "version": "Beta 4",
             "versionDate": "2024-07-24",
             "size": 7474894,
             "downloadURL": "https://github.com/atpugvaraa/cisum/releases/download/24%2F07%2F24/cisum-beta-4.ipa",
             "developerName": "Aarav Gupta (atpugvaraa)",
             "localizedDescription": "This is the fourth beta that contains some changes to the music progress slider and the volume slider, making them infinitely better!!!",
-            "iconURL": "https://github.com/atpugvaraa/cisum/blob/64b026e1e9ea1fcc9453805d5d2b844bd345cd82/icons/cisum.png"
+            "iconURL": "https://github.com/atpugvaraa/cisum/blob/main/icons/cisum.png"
         }
     ]
 }

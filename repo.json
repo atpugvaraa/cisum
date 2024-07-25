@@ -2,7 +2,7 @@
     "name": "atpugvaraa's repo",
     "subtitle": "Auto-update repo for AltStore and ESign",
     "description": "Welcome to my repo! Here you'll find all of my apps.",
-    "iconURL": "https://github.com/atpugvaraa/cisum/blob/cb168acd71c3ca1a0e6deb34d6127d8e1190c648/icons/cisum.png",
+    "iconURL": "https://github.com/atpugvaraa/cisum/blob/main/icons/cisum.png",
     "headerURL": "",
     "website": "https://atpugvaraa.github.io/cisum",
     "tintColor": "#F92D48",
@@ -13,12 +13,12 @@
             "developerName": "Aarav Gupta",
             "subtitle": "An awesome app to stream music for free without ads.",
             "localizedDescription": "This is an awesome app only available on AltStore/ESign right now.",
-            "iconURL": "https://f000.backblazeb2.com/file/rileytestut/ExampleSource/FishApp.png",
+            "iconURL": "https://github.com/atpugvaraa/cisum/blob/main/icons/cisum.png",
             "tintColor": "#F92D48",
             "versions": [
                 {
                     "version": "Beta 4",
-                    "date": "2025-07-24",
+                    "date": "2024-07-24",
                     "size": 7474894,
                     "downloadURL": "https://github.com/atpugvaraa/cisum/releases/download/24%2F07%2F24/cisum-beta-4.ipa",
                     "localizedDescription": "This is the fourth beta that contains some changes to the music progress slider and the volume slider, making them infinitely better!!!",
