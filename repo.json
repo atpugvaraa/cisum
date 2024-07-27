@@ -17,6 +17,14 @@
             "tintColor": "#F92D48",
             "versions": [
                 {
+                    "version": "Beta 5",
+                    "date": "2024-07-27",
+                    "size": 6154232,
+                    "downloadURL": "https://github.com/atpugvaraa/cisum/releases/download/27%2F07%2F24/cisum-beta-5.ipa",
+                    "localizedDescription": "This is the fifth beta of cisum that contains the addition of user profiles.\nThis beta also introduces background playback (courtesy: @SwiftDev12/@mattycbtw, Let me use his account to create the ipa file.)",
+                    "minOSVersion": "17.0"
+                },
+                {
                     "version": "Beta 4",
                     "date": "2024-07-24",
                     "size": 7474894,
