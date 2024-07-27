@@ -6,6 +6,17 @@
         {
             "name": "cisum",
             "bundleIdentifier": "atpugvaraa.cisum",
+            "version": "Beta 5",
+            "versionDate": "2024-07-24",
+            "size": 6154232,
+            "downloadURL": "https://github.com/atpugvaraa/cisum/releases/download/27%2F07%2F24/cisum-beta-5.ipa",
+            "developerName": "Aarav Gupta (atpugvaraa)",
+            "localizedDescription": "This is the fifth beta of cisum that contains the addition of user profiles.\nThis beta also introduces background playback (courtesy: @SwiftDev12/@mattycbtw, Let me use his account to create the ipa file.)",
+            "iconURL": "https://cdn.discordapp.com/attachments/1266223680908955698/1266623192936611880/cisum.jpg?ex=66a5d245&is=66a480c5&hm=ef6bab89c46d102842af30805165ccbf2a334b56deb0271c273f0fe8de9830c8&"
+        },
+        {
+            "name": "cisum",
+            "bundleIdentifier": "atpugvaraa.cisum",
             "version": "Beta 4",
             "versionDate": "2024-07-24",
             "size": 7474894,
