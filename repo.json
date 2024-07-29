@@ -17,6 +17,14 @@
             "tintColor": "#F92D48",
             "versions": [
                 {
+                    "version": "Beta 6",
+                    "versionDate": "2024-07-29",
+                    "size": 6228147,
+                    "downloadURL": "https://github.com/atpugvaraa/cisum/releases/download/29%2F07%2F24/cisum-beta-6.ipa",
+                    "localizedDescription": "Beta-6\nThis is the sixth beta:\nAdded a much subtler background for the player with accurate colorpicker.\nAdded recent searches to make it easier.\nAdded the ability to search without pressing enter.\.Now you can go out of profile view easily.",
+                    "minOSVersion": "17.0"
+                },
+                {
                     "version": "Beta 5",
                     "date": "2024-07-27",
                     "size": 6154232,
