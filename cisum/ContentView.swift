@@ -8,14 +8,44 @@
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+    @State private var previousTab: SelectedTab = .browse
+    @State private var currentTab: SelectedTab = .browse
+    @State var browsePath = NavigationPath()
+    @State var libraryPath = NavigationPath()
+    @State var searchPath = NavigationPath()
+    @State var profilePath = NavigationPath()
+    @State var tabbarHeight: CGFloat = 83
+    
+    private func setNavigationPath(for tab: SelectedTab) {
+        switch tab {
+        case .browse:
+            browsePath = NavigationPath()
+        case .library:
+            libraryPath = NavigationPath()
+        case .search:
+            searchPath = NavigationPath()
+        case .profile:
+            profilePath = NavigationPath()
         }
-        .padding()
+    }
+    
+    var selectedTab: Binding<Int> { Binding(
+        get: {
+            currentTab.rawValue
+        },
+        set: { newValue in
+            previousTab = currentTab
+            currentTab = SelectedTab(rawValue: newValue) ?? .browse
+
+            if previousTab == currentTab {
+                print("Pop to root for \(currentTab)")
+                setNavigationPath(for: currentTab)
+            }
+        }
+    )}
+    
+    var body: some View {
+        MainNavigation(browsePath: $browsePath, libraryPath: $libraryPath, searchPath: $searchPath, profilePath: $profilePath, tabbarHeight: $tabbarHeight, selectedTab: selectedTab)
     }
 }
 
