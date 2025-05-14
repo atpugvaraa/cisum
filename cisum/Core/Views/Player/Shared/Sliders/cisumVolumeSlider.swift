@@ -8,10 +8,23 @@
 import SwiftUI
 
 struct cisumVolumeSlider: View {
-    @State var volume: CGFloat = 0.5
+    @Binding var volume: Double
+    
     @State var minVolumeAnimationTrigger: Bool = false
     @State var maxVolumeAnimationTrigger: Bool = false
-    let range = 0.0 ... 1
+    
+    let range: ClosedRange<Double>
+    let onEditingChanged: (Bool) -> Void
+    
+    init(
+        volume: Binding<Double>,
+        in range: ClosedRange<Double> = 0.0...1.0,
+        onEditingChanged: @escaping (Bool) -> Void = { _ in }
+    ) {
+        self._volume = volume
+        self.range = range
+        self.onEditingChanged = onEditingChanged
+    }
 
     public var body: some View {
         StretchySlider(
@@ -26,7 +39,8 @@ struct cisumVolumeSlider: View {
                 Image(systemName: "speaker.wave.3.fill")
                     .padding(.leading, 10)
                     .symbolEffect(.bounce, value: maxVolumeAnimationTrigger)
-            }
+            },
+            onEditingChanged: onEditingChanged
         )
         .sliderStyle(.volume)
         .font(.system(size: 14))

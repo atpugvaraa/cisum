@@ -8,8 +8,19 @@
 import SwiftUI
 
 struct cisumMusicProgressScrubber: View {
-    @State var currentTime: CGFloat = 60
-    let range = 0.0 ... 194
+    @Binding var currentTime: Double
+    let range: ClosedRange<Double>
+    let onEditingChanged: (Bool) -> Void
+    
+    init(
+        currentTime: Binding<Double>,
+        inRange range: ClosedRange<Double>,
+        onEditingChanged: @escaping (Bool) -> Void = { _ in }
+    ) {
+        self._currentTime = currentTime
+        self.range = range
+        self.onEditingChanged = onEditingChanged
+    }
 
     var body: some View {
         StretchySlider(
@@ -20,7 +31,8 @@ struct cisumMusicProgressScrubber: View {
             },
             trailingLabel: {
                 label(trailingDuration)
-            }
+            },
+            onEditingChanged: onEditingChanged
         )
         .sliderStyle(.playbackProgress)
         .frame(height: 60)

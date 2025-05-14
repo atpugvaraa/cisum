@@ -8,13 +8,16 @@
 import SwiftUI
 
 struct StretchySlider<LeadingContent: View, TrailingContent: View>: View {
-    @Binding var value: CGFloat
+    @Binding var value: Double
     /// View Properties
     private let range: ClosedRange<Double>
     private let leadingLabel: LeadingContent?
     private let trailingLabel: TrailingContent?
+    private let onEditingChanged: (Bool) -> Void
+    
     @Environment(\.cisumSliderConfig) var config
-    @State private var progress: CGFloat = .zero
+    
+    @State var progress: CGFloat = .zero
     @State private var dragOffset: CGFloat = .zero
     @State private var lastDragOffset: CGFloat = .zero
     let limitation: CGFloat = 0.1
@@ -22,27 +25,32 @@ struct StretchySlider<LeadingContent: View, TrailingContent: View>: View {
     @State private var lastStoredValue: CGFloat
     @State private var stretchingValue: CGFloat = 0
     @State private var viewSize: CGSize = .zero
-    @GestureState private var isActive: Bool = false
+    
+    @GestureState var isActive: Bool = false
     
     init(
-        value: Binding<CGFloat>,
+        value: Binding<Double>,
         in range: ClosedRange<Double>,
         leadingLabel: (() -> LeadingContent)? = nil,
-        trailingLabel: (() -> TrailingContent)? = nil
+        trailingLabel: (() -> TrailingContent)? = nil,
+        onEditingChanged: @escaping (Bool) -> Void = { _ in }
     ) {
         _value = value
         self.range = range
         lastStoredValue = value.wrappedValue
         self.leadingLabel = leadingLabel?()
         self.trailingLabel = trailingLabel?()
+        self.onEditingChanged = onEditingChanged
     }
     
     var body: some View {
         Group {
             if config.labelLocation == .bottom {
                 bottomLabeledSlider
-            } else {
+            } else if config.labelLocation == .side {
                 sideLabeledSlider
+            } else if config.labelLocation == .overlay {
+                miniPlayerProgress
             }
         }
         .animation(.smooth(duration: 0.3, extraBounce: 0.3), value: isActive)
@@ -89,6 +97,7 @@ private extension StretchySlider {
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)
                     .updating($isActive) { _, state, _ in
                         state = true
+                        onEditingChanged(true)
                     }
                     .onChanged {
                         let translation = $0.translation
@@ -103,6 +112,7 @@ private extension StretchySlider {
                         }
                         
                         lastDragOffset = dragOffset
+                        onEditingChanged(false)
                     }
             )
 //            .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
@@ -257,82 +267,50 @@ private extension StretchySlider {
 // MARK: Convenience initializers
 extension StretchySlider where LeadingContent == EmptyView {
     init(
-        value: Binding<CGFloat>,
+        value: Binding<Double>,
         in range: ClosedRange<Double>,
-        trailingLabel: (() -> TrailingContent)? = nil
+        trailingLabel: (() -> TrailingContent)? = nil,
+        onEditingChanged: @escaping (Bool) -> Void = { _ in }
     ) {
         _value = value
         self.range = range
         lastStoredValue = value.wrappedValue
         leadingLabel = nil
         self.trailingLabel = trailingLabel?()
+        self.onEditingChanged = onEditingChanged
     }
 }
 
 extension StretchySlider where TrailingContent == EmptyView {
     init(
-        value: Binding<CGFloat>,
+        value: Binding<Double>,
         in range: ClosedRange<Double>,
         config _: cisumSliderConfig = .init(),
-        leadingLabel: (() -> LeadingContent)? = nil
+        leadingLabel: (() -> LeadingContent)? = nil,
+        onEditingChanged: @escaping (Bool) -> Void = { _ in }
     ) {
         _value = value
         self.range = range
         lastStoredValue = value.wrappedValue
         self.leadingLabel = leadingLabel?()
         trailingLabel = nil
+        self.onEditingChanged = onEditingChanged
     }
 }
 
 extension StretchySlider where LeadingContent == EmptyView, TrailingContent == EmptyView {
     init(
-        value: Binding<CGFloat>,
+        value: Binding<Double>,
         in range: ClosedRange<Double>,
-        config _: cisumSliderConfig = .init()
+        config _: cisumSliderConfig = .init(),
+        onEditingChanged: @escaping (Bool) -> Void = { _ in }
     ) {
         _value = value
         self.range = range
         lastStoredValue = value.wrappedValue
         leadingLabel = nil
         trailingLabel = nil
-    }
-}
-
-#Preview {
-    @Previewable @State var progress: CGFloat = 0.5
-    @Previewable @State var volume: CGFloat = 0.5
-    let range = 0.0 ... 2
-    VStack(spacing: 50) {
-        StretchySlider(
-            value: $progress,
-            in: range,
-            leadingLabel: {
-                Text(progress, format: .number.precision(.fractionLength(2)))
-                    .monospaced()
-            },
-            trailingLabel: {
-                Text((range.upperBound - progress) * -1.0, format: .number.precision(.fractionLength(2)))
-                    .monospaced()
-            }
-        )
-        .sliderStyle(.init(labelLocation: .bottom, maxStretch: 0))
-        .padding(.horizontal, 15)
-        .frame(height: 50)
-
-        StretchySlider(
-            value: $volume,
-            in: 0 ... 1,
-            leadingLabel: {
-                Image(systemName: "speaker.fill")
-                    .padding(.trailing, 4)
-            },
-            trailingLabel: {
-                Image(systemName: "speaker.wave.3.fill")
-                    .padding(.leading, 4)
-            }
-        )
-        .sliderStyle(.init(labelLocation: .side, syncLabelsStyle: true))
-        .frame(height: 50)
+        self.onEditingChanged = onEditingChanged
     }
 }
 

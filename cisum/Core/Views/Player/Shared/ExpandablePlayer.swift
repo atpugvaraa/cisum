@@ -23,7 +23,7 @@ struct ExpandablePlayer: View {
                 // Background
                 background
                 
-                MiniPlayer(namespace: namespace, resizeWindow: properties.resizeWindow(_:), player: player, properties: properties)
+                MiniPlayer(namespace: namespace, player: player, properties: properties)
                     .opacity(properties.expandPlayer ? 0 : 1)
                 
                 NowPlaying(namespace: namespace, size: size, safeArea: safeArea, player: player, properties: properties)

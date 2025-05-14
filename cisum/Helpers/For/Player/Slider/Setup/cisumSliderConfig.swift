@@ -11,6 +11,7 @@ struct cisumSliderConfig {
     enum LabelLocation {
         case bottom
         case side
+        case overlay
     }
 
     let labelLocation: LabelLocation

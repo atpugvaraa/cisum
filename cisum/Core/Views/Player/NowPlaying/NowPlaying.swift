@@ -118,7 +118,9 @@ struct NowPlaying: View {
             
             VStack {
                 VStack {
-                    cisumMusicProgressScrubber()
+                    cisumMusicProgressScrubber(currentTime: .constant(60), inRange: 0...240) { isEditing in
+                        
+                    }
                 }
                 .frame(height: 30)
 //                    MusicControlSlider(value: $player.currentTime, inRange: TimeInterval.zero...playerProperties.maxDuration, activeFillColor: playerProperties.color, fillColor: playerProperties.normalFillColor, emptyColor: playerProperties.emptyColor, height: 32) { isEditing in
@@ -142,7 +144,9 @@ struct NowPlaying: View {
                 Spacer(minLength: 0)
                 
                 VStack {
-                    cisumVolumeSlider()
+                    cisumVolumeSlider(volume: .constant(60)) { isEditing in
+                        
+                    }
 //                    VolumeSlider(volume: $player.volume, inRange: 0...1, activeFillColor: playerProperties.color, fillColor: playerProperties.normalFillColor, emptyColor: playerProperties.emptyColor, height: 7) { isEditing in
 //                        if !isEditing {
 //                            volumeObserver.setVolume(player.volume)

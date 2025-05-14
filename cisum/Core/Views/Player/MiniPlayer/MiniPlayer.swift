@@ -9,7 +9,6 @@ import SwiftUI
 
 struct MiniPlayer: View {
     var namespace: Namespace.ID
-    var resizeWindow: (CGFloat) -> Void
     
     let player: Player
     let properties: PlayerProperties
@@ -37,6 +36,9 @@ struct MiniPlayer: View {
             UIView.animate(withDuration: 0.3) {
                 properties.resizeWindow(0.1)
             }
+        }
+        .overlay {
+            cisumMiniPlayerProgress(currentTime: .constant(60), inRange: 0...240)
         }
     }
     
