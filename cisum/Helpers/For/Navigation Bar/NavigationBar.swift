@@ -16,6 +16,8 @@ struct NavigationBar: View {
     var icon: String?
     
     @State var showTopRightButton: Bool
+    @State var searchKeyword = ""
+    @State private var isSearching = false
     
     var body: some View {
         ZStack {
@@ -23,18 +25,24 @@ struct NavigationBar: View {
                 .frame(height: interpolation(start: 200, end: 130, transitionOffset: 60))
                 .edgesIgnoringSafeArea(.top)
             
-            VStack(spacing: 0) {
-                header
-                
-                if config.showSearchBar {
-                    searchBar
-                }
-            }
+            navigationBar
         }
         .frame(maxHeight: .infinity, alignment: .top)
     }
     
-    var header: some View {
+    var navigationBar: some View {
+        VStack {
+            navigationTitle
+            
+            if config.showSearchBar {
+                searchBar
+            }
+        }
+        .animation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.3), value: scrollOffset)
+        .offset(y: interpolation(start: config.showSearchBar ? -12 : -30, end: config.showSearchBar ? -21 : -40, transitionOffset: 60))
+    }
+    
+    var navigationTitle: some View {
         HStack {
             Text(title)
                 .font(.system(size: interpolation(start: 35, end: 30, transitionOffset: 60)))
@@ -46,15 +54,17 @@ struct NavigationBar: View {
                 topRightButton()
             }
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.3), value: scrollOffset)
-        .offset(y: interpolation(start: -30, end: -40, transitionOffset: 60))
         .padding()
     }
     
     var searchBar: some View {
-        #warning("Implementation for searchbar")
-        return EmptyView()
+        cisumSearchViewController(text: $searchKeyword, isSearching: $isSearching)
+            .frame(height: 44)
+            .padding(.horizontal, 8)
+            .padding(.top, -16)
+            .transition(.move(edge: .top).combined(with: .opacity))
     }
+
     
     @ViewBuilder func topRightButton() -> some View {
         NavigationLink {

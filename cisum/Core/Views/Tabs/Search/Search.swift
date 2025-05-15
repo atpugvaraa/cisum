@@ -14,7 +14,7 @@ struct Search: View {
     
     var body: some View {
         NavigationStack(path: $searchPath) {
-            NavigationBarView(title: title) {
+            NavigationBarView(title: title, blurRadius: 12, blurHeight: 100) {
                 content
             }
             .navigationBarStyle(.search)
@@ -22,6 +22,14 @@ struct Search: View {
     }
     
     var content: some View {
-        Text("Hello, Search!")
+        ForEach(0...20, id: \.self) { _ in
+            VStack(spacing: 24) {
+                Rectangle()
+                    .fill(.clear)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 120)
+                    .padding()
+            }
+        }
     }
 }

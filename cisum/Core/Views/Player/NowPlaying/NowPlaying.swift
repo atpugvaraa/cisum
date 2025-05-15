@@ -17,7 +17,7 @@ struct NowPlaying: View {
     
     var body: some View {
         VStack(spacing: 12) {
-            capsule
+            header
             
             artwork
             
@@ -32,7 +32,7 @@ struct NowPlaying: View {
         .animation(.smooth(duration: 0.35), value: properties.expandPlayer)
     }
     
-    var capsule: some View {
+    var header: some View {
         VStack {
             Capsule()
                 .fill(.white)
@@ -123,11 +123,6 @@ struct NowPlaying: View {
                     }
                 }
                 .frame(height: 30)
-//                    MusicControlSlider(value: $player.currentTime, inRange: TimeInterval.zero...playerProperties.maxDuration, activeFillColor: playerProperties.color, fillColor: playerProperties.normalFillColor, emptyColor: playerProperties.emptyColor, height: 32) { isEditing in
-//                        if !isEditing {
-//                            player.seek(to: player.currentTime)
-//                        }
-//                    }
                 
                 Spacer(minLength: 0)
                 
@@ -147,24 +142,19 @@ struct NowPlaying: View {
                     cisumVolumeSlider(volume: .constant(60)) { isEditing in
                         
                     }
-//                    VolumeSlider(volume: $player.volume, inRange: 0...1, activeFillColor: playerProperties.color, fillColor: playerProperties.normalFillColor, emptyColor: playerProperties.emptyColor, height: 7) { isEditing in
-//                        if !isEditing {
-//                            volumeObserver.setVolume(player.volume)
-//                        }
-//                    }
                 }
                 .frame(height: 30)
                 
                 Spacer(minLength: 0)
                 
-                // Buttons
-                bottomButtons
+                // Bottom Buttons
+                footer
             }
             .padding(.horizontal, 15)
         }
     }
     
-    var bottomButtons: some View {
+    var footer: some View {
         HStack(alignment: .top, spacing: size.width * 0.18) {
             Button {
                 

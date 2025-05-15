@@ -9,13 +9,18 @@ import SwiftUI
 
 struct NavigationBarView<Content: View>: View {
     var title: String = ""
+    var blurHeight: CGFloat
+    var blurRadius: CGFloat
     var icon: String?
     var showTopRightButton: Bool
     var content: Content
+    
     @State private var scrollOffset: CGFloat = 0
     
-    init(title: String, icon: String? = nil, @ViewBuilder content: () -> Content) {
+    init(title: String, blurRadius: CGFloat = 12, blurHeight: CGFloat = 50, icon: String? = nil, @ViewBuilder content: () -> Content) {
         self.title = title
+        self.blurRadius = blurRadius
+        self.blurHeight = blurHeight
         self.icon = icon
         self.showTopRightButton = icon != nil
         self.content = content()
@@ -36,7 +41,7 @@ struct NavigationBarView<Content: View>: View {
                     content
                 }
             }
-            .variableBlur(radius: 12, maskHeight: 50, opacity: opacity)
+            .variableBlur(radius: blurRadius, maskHeight: blurHeight, opacity: opacity)
             .ignoresSafeArea()
             .overlay {
                 NavigationBar(scrollOffset: scrollOffset, title: title, icon: icon, showTopRightButton: showTopRightButton)

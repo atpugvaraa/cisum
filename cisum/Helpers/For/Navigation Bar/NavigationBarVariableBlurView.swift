@@ -222,5 +222,5 @@ extension View {
             .foregroundStyle(.blue)
     }
     .frame(maxWidth: .infinity, alignment: .center)
-    .variableBlur(radius: 20, maskHeight: 200, opacity: 1)
+    .variableBlur(radius: 12, maskHeight: 100, opacity: 1)
 }
