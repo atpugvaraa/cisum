@@ -21,7 +21,9 @@ struct cisumSearchViewController: UIViewRepresentable {
         }
 
         func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
-            parent.isSearching = true
+            withAnimation(.easeInOut) {
+                parent.isSearching = true
+            }
 
             UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut], animations: {
                 searchBar.setShowsCancelButton(true, animated: true)
@@ -29,7 +31,7 @@ struct cisumSearchViewController: UIViewRepresentable {
         }
 
         func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
-            parent.isSearching = false
+            
         }
 
 
@@ -43,7 +45,10 @@ struct cisumSearchViewController: UIViewRepresentable {
 
         func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
             parent.text = ""
-
+            withAnimation(.easeInOut) {
+                parent.isSearching = false
+            }
+            
             UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut], animations: {
                 searchBar.setShowsCancelButton(false, animated: true)
             }, completion: { _ in
@@ -74,6 +79,9 @@ struct cisumSearchViewController: UIViewRepresentable {
             textField.layer.shadowOffset = CGSize(width: 0, height: 2)
             textField.layer.shadowRadius = 4
             
+            // Add shadowPath to optimize shadow rendering
+            textField.layer.shadowPath = UIBezierPath(roundedRect: textField.bounds, cornerRadius: textField.layer.cornerRadius).cgPath
+            
             // Removes inner "x" clear button
             textField.clearButtonMode = .never
         }
@@ -95,6 +103,11 @@ struct cisumSearchViewController: UIViewRepresentable {
                 textField.transform = .identity
                 textField.layer.shadowOpacity = 0.1
             }
+            
+            // Update shadowPath to match current bounds during animation
+            let scale = isSearching ? 1.02 : 1.0
+            let scaledBounds = CGRect(x: 0, y: 0, width: textField.bounds.width * scale, height: textField.bounds.height * scale)
+            textField.layer.shadowPath = UIBezierPath(roundedRect: scaledBounds, cornerRadius: textField.layer.cornerRadius).cgPath
         }
     }
 

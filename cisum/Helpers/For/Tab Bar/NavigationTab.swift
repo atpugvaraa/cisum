@@ -34,13 +34,13 @@ struct TabContentView: View {
     private var content: some View {
         switch selectedTab {
         case .home:
-            Home(homePath: selectedPath)
+            HomeTab(homePath: selectedPath)
         case .discover:
-            Discover(discoverPath: selectedPath)
+            DiscoverTab(discoverPath: selectedPath)
         case .library:
-            Library(libraryPath: selectedPath)
+            LibraryTab(libraryPath: selectedPath)
         case .search:
-            Search(searchPath: selectedPath)
+            SearchTab(searchPath: selectedPath)
         }
     }
 }

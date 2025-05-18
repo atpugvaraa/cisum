@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct ContentView: View {
-    @Environment(PlayerProperties.self) private var playerProperties
     @Environment(NavigationState.self) private var navigationState
     
     @State var tabbarHeight: CGFloat = 83
@@ -27,8 +26,6 @@ struct ContentView: View {
             tabbarHeight: $tabbarHeight,
             selectedTab: selectedTab
         )
-        .environment(navigationState)
-        .environment(playerProperties)
     }
 }
 

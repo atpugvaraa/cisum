@@ -1,5 +1,5 @@
 //
-//  Home.swift
+//  HomeTab.swift
 //  cisum
 //
 //  Created by Aarav Gupta (github.com/atpugvaraa) on 03/05/25.
@@ -7,8 +7,10 @@
 
 import SwiftUI
 
-struct Home: View {
+struct HomeTab: View {
     @Binding var homePath: NavigationPath
+    
+    @State private var scrollOffset: CGFloat = 0
     
     let title = Constants.homeTitle
     
@@ -17,7 +19,7 @@ struct Home: View {
             ZStack {
                 background
                 
-                NavigationBarView(title: title, icon: "person.fill") {
+                NavigationBarView(title: title, scrollOffset: $scrollOffset, icon: "person.fill") {
                     content
                 }
             }

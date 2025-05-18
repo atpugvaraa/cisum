@@ -12,14 +12,12 @@ struct cisumApp: App {
     @Environment(\.scenePhase) private var scenePhase
     
     @State private var navigationState = NavigationState()
-    @State private var playerProperties = PlayerProperties()
     
     var body: some Scene {
         WindowGroup {
             RootView {
                 ContentView()
                     .environment(navigationState)
-                    .environment(playerProperties)
             }
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in

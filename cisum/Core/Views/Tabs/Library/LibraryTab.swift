@@ -1,5 +1,5 @@
 //
-//  Library.swift
+//  LibraryTab.swift
 //  cisum
 //
 //  Created by Aarav Gupta (github.com/atpugvaraa) on 03/05/25.
@@ -7,14 +7,16 @@
 
 import SwiftUI
 
-struct Library: View {
+struct LibraryTab: View {
     @Binding var libraryPath: NavigationPath
+    
+    @State private var scrollOffset: CGFloat = 0
     
     let title = Constants.libraryTitle
     
     var body: some View {
         NavigationStack(path: $libraryPath) {
-            NavigationBarView(title: title) {
+            NavigationBarView(title: title, scrollOffset: $scrollOffset) {
                 content
             }
         }

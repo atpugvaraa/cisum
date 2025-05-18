@@ -16,8 +16,8 @@ struct NavigationBar: View {
     var icon: String?
     
     @State var showTopRightButton: Bool
-    @State var searchKeyword = ""
-    @State private var isSearching = false
+    
+    @State private var search = Search.shared
     
     var body: some View {
         ZStack {
@@ -36,6 +36,10 @@ struct NavigationBar: View {
             
             if config.showSearchBar {
                 searchBar
+                
+                if search.isSearching {
+                    searchChips
+                }
             }
         }
         .animation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.3), value: scrollOffset)
@@ -58,11 +62,15 @@ struct NavigationBar: View {
     }
     
     var searchBar: some View {
-        cisumSearchViewController(text: $searchKeyword, isSearching: $isSearching)
+        cisumSearchViewController(text: $search.keyword, isSearching: $search.isSearching)
             .frame(height: 44)
             .padding(.horizontal, 8)
             .padding(.top, -16)
             .transition(.move(edge: .top).combined(with: .opacity))
+    }
+    
+    var searchChips: some View {
+        cisumSearchChips()
     }
 
     

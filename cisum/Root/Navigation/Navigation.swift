@@ -17,9 +17,6 @@ struct Navigation: View {
     @Binding var tabbarHeight: CGFloat
     @Binding var selectedTab: Int
     
-    @Environment(NavigationState.self) private var navigationState
-    @Environment(PlayerProperties.self) private var properties
-    
     @State private var showMiniPlayer: Bool = false
     
     private func setNavigationPath(for tab: SelectedTab) -> Binding<NavigationPath> {
@@ -47,7 +44,6 @@ struct Navigation: View {
         }
         .universalOverlay(show: $showMiniPlayer) {
             ExpandablePlayer(show: $showMiniPlayer)
-                .environment(properties)
                 .ignoresSafeArea(.keyboard)
         }
         .onAppear {

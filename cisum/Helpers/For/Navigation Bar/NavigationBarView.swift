@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct NavigationBarView<Content: View>: View {
+    @Environment(\.navigationBarStyle) private var config
+
     var title: String = ""
     var blurHeight: CGFloat
     var blurRadius: CGFloat
@@ -15,12 +17,13 @@ struct NavigationBarView<Content: View>: View {
     var showTopRightButton: Bool
     var content: Content
     
-    @State private var scrollOffset: CGFloat = 0
+    @Binding var scrollOffset: CGFloat
     
-    init(title: String, blurRadius: CGFloat = 12, blurHeight: CGFloat = 50, icon: String? = nil, @ViewBuilder content: () -> Content) {
+    init(title: String, blurRadius: CGFloat = 12, blurHeight: CGFloat = 50, scrollOffset: Binding<CGFloat>, icon: String? = nil,  @ViewBuilder content: () -> Content) {
         self.title = title
         self.blurRadius = blurRadius
         self.blurHeight = blurHeight
+        self._scrollOffset = scrollOffset
         self.icon = icon
         self.showTopRightButton = icon != nil
         self.content = content()
@@ -28,17 +31,23 @@ struct NavigationBarView<Content: View>: View {
     
     var body: some View {
         GeometryReader { geo in
-            ScrollView {
-                VStack(spacing: 0) {
-                    Color.clear
-                        .frame(height: 140)
-                    
-                    ScrollOffsetBackground { offset in
-                        self.scrollOffset = offset - geo.safeAreaInsets.top
-                    }
-                    .frame(height: 0)
-                    
+            Group {
+                if config.styleType == .search {
                     content
+                } else {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            Color.clear
+                                .frame(height: 140)
+
+                            ScrollOffsetBackground { offset in
+                                self.scrollOffset = offset - geo.safeAreaInsets.top
+                            }
+                            .frame(height: 0)
+
+                            content
+                        }
+                    }
                 }
             }
             .variableBlur(radius: blurRadius, maskHeight: blurHeight, opacity: opacity)
