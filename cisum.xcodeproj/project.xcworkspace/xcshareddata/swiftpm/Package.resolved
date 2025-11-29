@@ -1,0 +1,15 @@
+{
+  "originHash" : "ed88b0dc67ef6c2f2c21433c01c93a4ccdc34aa2e187cf0eb5a5d92c31504ebc",
+  "pins" : [
+    {
+      "identity" : "injectionnext",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/johnno1962/InjectionNext.git",
+      "state" : {
+        "revision" : "a24d3d1451d1d2efd753474a3885c8a1df741a84",
+        "version" : "1.5.3"
+      }
+    }
+  ],
+  "version" : 3
+}
