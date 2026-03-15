@@ -19,12 +19,21 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            Color.black
-            
+            VStack(spacing: 12) {
+                ForEach(1...50, id: \.self) { _ in
+                    Rectangle()
+                        .fill(.fill.tertiary)
+                        .frame(height: 50)
+                }
+            }
+            .padding(15)
+        }
+        .safeAreaPadding(.top, 140)
+        .overlay(content: {
             Button("Login") {
                 showSheet = true
             }
-        }
+        })
         .overlay {
             ZStack {
                 VStack(alignment: .leading) {

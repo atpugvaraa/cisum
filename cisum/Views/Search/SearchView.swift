@@ -23,20 +23,28 @@ struct SearchView: View {
     #endif
 
     var body: some View {
-        VStack(spacing: 0) {
-            // 1. Scope Picker (Music vs Video)
-            Picker("Search Scope", selection: Bindable(searchViewModel).searchScope) {
-                Text("Music").tag(SearchViewModel.SearchScope.music)
-                Text("YouTube").tag(SearchViewModel.SearchScope.video)
+        searchContent
+            .sheet(isPresented: $showPlayer) {
+                NowPlayingView()
+                    .environment(playerViewModel)
             }
-            .pickerStyle(.segmented)
-            .padding()
-            
-            if !searchViewModel.suggestions.isEmpty {
+            .optionalSearchable(
+                text: Bindable(searchViewModel).searchText,
+                scope: Bindable(searchViewModel).searchScope,
+                suggestions: searchViewModel.suggestions,
+                onSuggestionTap: { suggestion in
+                    searchViewModel.applySuggestion(suggestion)
+                }
+            )
+        .enableInjection()
+    }
+
+    private var searchContent: some View {
+        VStack(spacing: 0) {
+            if shouldShowInlineSuggestions && !searchViewModel.suggestions.isEmpty {
                 SuggestionsList()
             }
             
-            // 2. Main Content
             ZStack {
                 switch searchViewModel.state {
                 case .idle:
@@ -55,24 +63,20 @@ struct SearchView: View {
             }
         }
         .enableInjection()
-        .optionalSearchable(
-            text: Bindable(searchViewModel).searchText,
-            suggestions: searchViewModel.suggestions,
-            onSuggestionTap: { suggestion in
-                searchViewModel.applySuggestion(suggestion)
-            }
-        )
         .onSubmit(of: .search) {
             isSearchFocused = false
         }
-        .sheet(isPresented: $showPlayer) {
-            NowPlayingView()
-                .environment(playerViewModel)
+    }
+
+    private var shouldShowInlineSuggestions: Bool {
+        if #available(iOS 26.0, *) {
+            return false
+        } else {
+            return true
         }
     }
     
     // MARK: - Subviews
-    
     @ViewBuilder
     private func ResultsList() -> some View {
         List {
@@ -264,8 +268,6 @@ struct SearchView: View {
     }
     
     // MARK: - Actions
-    
-    // In SearchView.swift
     private func playMusic(_ song: YouTubeMusicSong) {
         print("Loading: \(song.title)")
         searchViewModel.recordSuccessfulPlayFromCurrentQuery()
@@ -317,12 +319,17 @@ extension View {
     @ViewBuilder
     func optionalSearchable(
         text: Binding<String>,
+        scope: Binding<SearchViewModel.SearchScope>,
         suggestions: [String],
         onSuggestionTap: @escaping (String) -> Void
     ) -> some View {
         if #available(iOS 26.0, *) {
             self
-                .searchable(text: text)
+                .searchable(
+                    text: text,
+                    placement: .navigationBarDrawer(displayMode: .always),
+                    prompt: Text("Search")
+                )
                 .searchSuggestions {
                     ForEach(suggestions, id: \.self) { suggestion in
                         Button(suggestion) {
@@ -330,8 +337,17 @@ extension View {
                         }
                     }
                 }
+                .searchScopes(scope) {
+                    Text("Music").tag(SearchViewModel.SearchScope.music)
+                    Text("YouTube").tag(SearchViewModel.SearchScope.video)
+                }
+                .searchPresentationToolbarBehavior(.avoidHidingContent)
+                .searchToolbarBehavior(.minimize)
         } else {
-            self
+            self.searchScopes(scope) {
+                Text("Music").tag(SearchViewModel.SearchScope.music)
+                Text("YouTube").tag(SearchViewModel.SearchScope.video)
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ struct LibraryView: View {
 
     var body: some View {
         Color.blue.overlay(Text("Library View"))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         .enableInjection()
     }
 }

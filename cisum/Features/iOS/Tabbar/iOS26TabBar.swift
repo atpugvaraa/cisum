@@ -21,6 +21,7 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
     @State private var isInitialOffsetSet = false
     @State private var dragOffset: CGFloat = 0
     @State private var lastDragOffset: CGFloat?
+    @State private var lastVisibleSelection: SelectionValue?
     
     @State private var isSearchExpanded: Bool = false
     
@@ -33,7 +34,8 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
     var body: some View {
         GeometryReader { geo in
             let size = geo.size
-            let tabsCount = CGFloat(tabs.count - 1)
+            let visibleTabs = tabs.filter { $0.role != .search }
+            let tabsCount = CGFloat(max(visibleTabs.count, 1))
             let tabItemWidth = max(min(size.width / tabsCount, 90), 60)
             let tabItemHeight: CGFloat = 56
             
@@ -45,13 +47,14 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
                         let tabLayout = isSearchExpanded ? AnyLayout(ZStackLayout()) : AnyLayout(HStackLayout(spacing: 0))
                         
                         tabLayout {
-                            ForEach(tabs) { tab in
+                            ForEach(visibleTabs) { tab in
                                 TabItemView(
                                     tab,
                                     width: isSearchExpanded ? 45 : tabItemWidth,
-                                    height: isSearchExpanded ? 45 : tabItemHeight
+                                    height: isSearchExpanded ? 45 : tabItemHeight,
+                                    visibleTabs: visibleTabs
                                 )
-                                .opacity(isSearchExpanded ? (activeTab == tab.value ? 1 : 0) : 1)
+                                .opacity(isSearchExpanded ? ((activeTab == tab.value || (!visibleTabs.contains(where: { $0.value == activeTab }) && lastVisibleSelection == tab.value)) ? 1 : 0) : 1)
                             }
                         }
                         .background(alignment: .leading) {
@@ -77,9 +80,12 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
                                     .foregroundStyle(.clear)
                                     .contentShape(.capsule)
                                     .onTapGesture {
-                                        withAnimation(.bouncy) {
+                                        withAnimation(bouncyAnimation) {
                                             isSearchExpanded = false
                                             isKeyboardActive = false
+                                            if let last = lastVisibleSelection {
+                                                activeTab = last
+                                            }
                                         }
                                     }
                             }
@@ -97,32 +103,57 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
             .onAppear {
                 setInitialOffset(width: tabItemWidth)
             }
-            .onChange(of: activeTab) { _, _ in
+            .onChange(of: activeTab) { newValue, _ in
+                // Update lastVisibleSelection if the new activeTab is one of the visible tabs
+                if visibleTabs.contains(where: { $0.value == newValue }) {
+                    lastVisibleSelection = newValue
+                }
                 withAnimation(.bouncy) {
                     setInitialOffset(width: tabItemWidth)
                 }
             }
         }
         .frame(height: 56)
-        .padding(.horizontal, isKeyboardActive ? 10 : 25)
-        .padding(.bottom, isKeyboardActive ? 10 : 0)
-        .animation(.bouncy, value: dragOffset)
-        .animation(.bouncy, value: isActive)
-        .animation(.smooth, value: activeTab)
-        .animation(.bouncy, value: isKeyboardActive)
+        .padding(.horizontal, isSearchExpanded ? (isKeyboardActive ? 10 : 25) : 0)
+        .padding(.bottom, isKeyboardActive ? 10 : -10)
+        .animation(bouncyAnimation, value: dragOffset)
+        .animation(bouncyAnimation, value: isActive)
+        .animation(bouncyAnimation, value: activeTab)
+        .animation(bouncyAnimation, value: isKeyboardActive)
         .enableInjection()
     }
     
-    // ... (Keep setInitialOffset, TabItemView, TabBarBackground same as before) ...
+    private var bouncyAnimation: Animation {
+        if #available(iOS 26.0, *) {
+            .bouncy
+        } else {
+            .smooth(duration: 0.35, extraBounce: 0.185)
+        }
+    }
+    
     private func setInitialOffset(width: CGFloat) {
-        if let index = tabs.firstIndex(where: { $0.value == activeTab }) {
+        let visible = tabs.filter { $0.role != .search }
+        if let index = visible.firstIndex(where: { $0.value == activeTab }) {
             dragOffset = CGFloat(index) * width
+            lastVisibleSelection = activeTab
+            isInitialOffsetSet = true
+        } else if let last = lastVisibleSelection, let idx = visible.firstIndex(where: { $0.value == last }) {
+            // Restore to previously remembered visible selection if still present
+            dragOffset = CGFloat(idx) * width
+            isInitialOffsetSet = true
+        } else if let first = visible.first {
+            // No known previous visible selection; default to first tab but do not overwrite lastVisibleSelection
+            if let idx = visible.firstIndex(where: { $0.value == first.value }) {
+                dragOffset = CGFloat(idx) * width
+            }
             isInitialOffsetSet = true
         }
     }
     
     @ViewBuilder
-    private func TabItemView(_ tab: TabViewData<SelectionValue>, width: CGFloat, height: CGFloat) -> some View {
+    private func TabItemView(_ tab: TabViewData<SelectionValue>, width: CGFloat, height: CGFloat, visibleTabs: [TabViewData<SelectionValue>]) -> some View {
+        let tabCount = CGFloat(max(visibleTabs.count - 1, 0))
+        
         VStack(spacing: 6) {
             Image(systemName: tab.icon)
                 .font(.title2)
@@ -144,7 +175,7 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
                     let xOffset = value.translation.width
                     if let lastDragOffset {
                         let newDragOffset = xOffset + lastDragOffset
-                        dragOffset = max(min(newDragOffset, CGFloat(tabs.count - 1) * width), 0)
+                                dragOffset = max(min(newDragOffset, tabCount * width), 0)
                     } else {
                         lastDragOffset = dragOffset
                     }
@@ -152,9 +183,9 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
                 .onEnded({ value in
                     lastDragOffset = nil
                     let landingIndex  = Int((dragOffset / width).rounded())
-                    if tabs.indices.contains(landingIndex) {
+                    if visibleTabs.indices.contains(landingIndex) {
                         dragOffset = CGFloat(landingIndex) * width
-                        activeTab = tabs[landingIndex].value
+                        activeTab = visibleTabs[landingIndex].value
                     }
                 })
         )
@@ -162,7 +193,7 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
             TapGesture()
                 .onEnded({ _ in
                     activeTab = tab.value
-                    if let index = tabs.firstIndex(where: { $0.value == activeTab }) {
+                    if let index = visibleTabs.firstIndex(where: { $0.value == activeTab }) {
                         dragOffset = CGFloat(index) * width
                     }
                 })
@@ -194,15 +225,18 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
                     .foregroundStyle(isSearchExpanded ? .gray : .primary)
                     .frame(width: isSearchExpanded ? nil : height, height: height)
                     .onTapGesture {
-                        withAnimation(.bouncy) {
+                        withAnimation(bouncyAnimation) {
                             isSearchExpanded = true
+                            let visible = tabs.filter { $0.role != .search }
+                            if visible.contains(where: { $0.value == activeTab }) {
+                                lastVisibleSelection = activeTab
+                            }
                             onSearchTriggered()
                         }
                     }
                     .allowsHitTesting(!isSearchExpanded)
                 
                 if isSearchExpanded {
-                    // CHANGED: Use bound searchText
                     TextField("Search...", text: $searchText)
                         .focused($isKeyboardActive)
                         .onSubmit {
@@ -217,7 +251,9 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
             .zIndex(1)
             
             Button {
-                isKeyboardActive = false
+                withAnimation(bouncyAnimation) {
+                    isKeyboardActive = false
+                }
             } label: {
                 Image(systemName: "xmark")
                     .font(.title2)

@@ -7,11 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7725A1482F63D612008D5716 /* Plan.md in Resources */ = {isa = PBXBuildFile; fileRef = 7725A1472F63D612008D5716 /* Plan.md */; };
 		7725A14F2F63DF8D008D5716 /* YouTubeSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 7725A14E2F63DF8D008D5716 /* YouTubeSDK */; };
 		7725A1BC2F63F3C6008D5716 /* YouTubeSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 7733B1D62F03B95800BA9C73 /* YouTubeSDK */; };
 		7725A1BE2F63F3C6008D5716 /* YouTubeSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 7733B1E32F03B99A00BA9C73 /* YouTubeSDK */; };
 		7725A1BF2F63F3C6008D5716 /* YouTubeSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 7733B1ED2F03B9CC00BA9C73 /* YouTubeSDK */; };
+		778645E92F6710D500B7FA67 /* TabBarVisibilityKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778645E82F6710D500B7FA67 /* TabBarVisibilityKey.swift */; };
+		778645EC2F6711DC00B7FA67 /* ScrollViewModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778645EB2F6711DC00B7FA67 /* ScrollViewModifiers.swift */; };
+		778645EE2F67127D00B7FA67 /* View+Modifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778645ED2F67127D00B7FA67 /* View+Modifiers.swift */; };
 		77A3EBF52F66716700B13358 /* Enum+TabItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBC12F66716700B13358 /* Enum+TabItem.swift */; };
 		77A3EBF62F66716700B13358 /* YouTubeEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBC32F66716700B13358 /* YouTubeEnvironment.swift */; };
 		77A3EBF72F66716700B13358 /* Color+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBC52F66716700B13358 /* Color+Extension.swift */; };
@@ -51,8 +53,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		7725A1472F63D612008D5716 /* Plan.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Plan.md; sourceTree = "<group>"; };
 		772721402EDB2728002F5866 /* cisum.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = cisum.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		778645E82F6710D500B7FA67 /* TabBarVisibilityKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarVisibilityKey.swift; sourceTree = "<group>"; };
+		778645EB2F6711DC00B7FA67 /* ScrollViewModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollViewModifiers.swift; sourceTree = "<group>"; };
+		778645ED2F67127D00B7FA67 /* View+Modifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Modifiers.swift"; sourceTree = "<group>"; };
 		77A3EBBF2F66716700B13358 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		77A3EBC12F66716700B13358 /* Enum+TabItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Enum+TabItem.swift"; sourceTree = "<group>"; };
 		77A3EBC32F66716700B13358 /* YouTubeEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeEnvironment.swift; sourceTree = "<group>"; };
@@ -117,7 +121,6 @@
 		772721372EDB2728002F5866 = {
 			isa = PBXGroup;
 			children = (
-				7725A1472F63D612008D5716 /* Plan.md */,
 				77A3EBF42F66716700B13358 /* cisum */,
 				7725A14C2F63DF5D008D5716 /* Frameworks */,
 				772721412EDB2728002F5866 /* Products */,
@@ -132,6 +135,15 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		778645EA2F6711D400B7FA67 /* ViewModifiers */ = {
+			isa = PBXGroup;
+			children = (
+				778645ED2F67127D00B7FA67 /* View+Modifiers.swift */,
+				778645EB2F6711DC00B7FA67 /* ScrollViewModifiers.swift */,
+			);
+			path = ViewModifiers;
+			sourceTree = "<group>";
+		};
 		77A3EBC02F66716700B13358 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
@@ -144,6 +156,7 @@
 			isa = PBXGroup;
 			children = (
 				77A3EBC12F66716700B13358 /* Enum+TabItem.swift */,
+				77A3EBD62F66716700B13358 /* Enum+TabRole.swift */,
 			);
 			path = Enums;
 			sourceTree = "<group>";
@@ -151,6 +164,7 @@
 		77A3EBC42F66716700B13358 /* EnvironmentKeys */ = {
 			isa = PBXGroup;
 			children = (
+				778645E82F6710D500B7FA67 /* TabBarVisibilityKey.swift */,
 				77CEB0D92F667A440062568F /* RouterEnvironmentKey.swift */,
 				77A3EBC32F66716700B13358 /* YouTubeEnvironment.swift */,
 			);
@@ -176,6 +190,7 @@
 		77A3EBC92F66716700B13358 /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
+				778645EA2F6711D400B7FA67 /* ViewModifiers */,
 				77A3EBC22F66716700B13358 /* Enums */,
 				77A3EBC42F66716700B13358 /* EnvironmentKeys */,
 				77A3EBC62F66716700B13358 /* Extensions */,
@@ -227,7 +242,6 @@
 		77A3EBDC2F66716700B13358 /* Tabbar */ = {
 			isa = PBXGroup;
 			children = (
-				77A3EBD62F66716700B13358 /* Enum+TabRole.swift */,
 				77A3EBD72F66716700B13358 /* iOS26TabBar.swift */,
 				77A3EBD82F66716700B13358 /* iOSTabView.swift */,
 				77A3EBD92F66716700B13358 /* Tab.swift */,
@@ -248,7 +262,6 @@
 		77A3EBDF2F66716700B13358 /* macOS */ = {
 			isa = PBXGroup;
 			children = (
-				77A3EBDE2F66716700B13358 /* DynamicPlayerIsland.swift */,
 			);
 			path = macOS;
 			sourceTree = "<group>";
@@ -371,6 +384,7 @@
 			isa = PBXGroup;
 			children = (
 				77A3EBEE2F66716700B13358 /* NowPlayingView.swift */,
+				77A3EBDE2F66716700B13358 /* DynamicPlayerIsland.swift */,
 			);
 			path = Player;
 			sourceTree = "<group>";
@@ -454,7 +468,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				77A3EC122F66716700B13358 /* Assets.xcassets in Resources */,
-				7725A1482F63D612008D5716 /* Plan.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -476,6 +489,7 @@
 				77A3EBFC2F66716700B13358 /* NetworkPathMonitor.swift in Sources */,
 				77A3EBFD2F66716700B13358 /* PlaybackMetricsStore.swift in Sources */,
 				77A3EBFE2F66716700B13358 /* PrefetchSettings.swift in Sources */,
+				778645EE2F67127D00B7FA67 /* View+Modifiers.swift in Sources */,
 				77A3EBFF2F66716700B13358 /* SearchHistoryStore.swift in Sources */,
 				77A3EC002F66716700B13358 /* SuggestionRanker.swift in Sources */,
 				77A3EC012F66716700B13358 /* Enum+TabRole.swift in Sources */,
@@ -485,9 +499,11 @@
 				77A3EC052F66716700B13358 /* TabViewBuilder.swift in Sources */,
 				77A3EC062F66716700B13358 /* TabViewData.swift in Sources */,
 				77A3EC072F66716700B13358 /* DynamicPlayerIsland.swift in Sources */,
+				778645EC2F6711DC00B7FA67 /* ScrollViewModifiers.swift in Sources */,
 				77A3EC082F66716700B13358 /* SearchResultsCache.swift in Sources */,
 				77A3EC092F66716700B13358 /* VideoMetadataCache.swift in Sources */,
 				77A3EC0A2F66716700B13358 /* ProfileButton.swift in Sources */,
+				778645E92F6710D500B7FA67 /* TabBarVisibilityKey.swift in Sources */,
 				77A3EC0B2F66716700B13358 /* Router.swift in Sources */,
 				77A3EC0C2F66716700B13358 /* RouterViewModifier.swift in Sources */,
 				77A3EC0D2F66716700B13358 /* ContentView.swift in Sources */,

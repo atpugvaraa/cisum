@@ -10,7 +10,6 @@ import SwiftUI
 /// Data model representing a Tab.
 public struct TabViewData<SelectionValue: Hashable>: Identifiable {
     
-    // CHANGED: Use the value itself as the ID, not a random UUID
     public var id: SelectionValue { value }
     
     public var title: String

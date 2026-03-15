@@ -8,38 +8,49 @@
 import SwiftUI
 
 enum Routes: Hashable {
-    // Auth
-//    case signup
-//    case login
-//    case resetPassword
-//    case forgotPassword(email: String)
-    
-    // Navigation
-    case home
-    case discover
-    case library
-    case search
     case profile
     case settings
 }
 
 @Observable
-class Router {
+final class Router {
     static let shared = Router()
-    
-    var path = NavigationPath()
+
+    var selectedTab: TabItem = .home
+
+    private var tabPaths: [TabItem: NavigationPath] = Dictionary(
+        uniqueKeysWithValues: TabItem.allCases.map { ($0, NavigationPath()) }
+    )
+
+    func binding(for tab: TabItem) -> Binding<NavigationPath> {
+        Binding(
+            get: { self.tabPaths[tab] ?? NavigationPath() },
+            set: { self.tabPaths[tab] = $0 }
+        )
+    }
     
     func navigate(to route: Routes) {
-        path.append(route)
+        updatePath(for: selectedTab) { path in
+            path.append(route)
+        }
     }
     
     func popToRoot() {
-        path.removeLast(path.count)
+        updatePath(for: selectedTab) { path in
+            path.removeLast(path.count)
+        }
     }
 
     func pop() {
-        guard !path.isEmpty else { return }
-        path.removeLast()
+        updatePath(for: selectedTab) { path in
+            guard !path.isEmpty else { return }
+            path.removeLast()
+        }
+    }
+
+    private func updatePath(for tab: TabItem, _ update: (inout NavigationPath) -> Void) {
+        var path = tabPaths[tab] ?? NavigationPath()
+        update(&path)
+        tabPaths[tab] = path
     }
 }
-

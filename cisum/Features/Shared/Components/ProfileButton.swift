@@ -167,7 +167,7 @@ struct ProfileButton: View {
                 Button {
                     
                 } label: {
-                    if #available(iOS 26.0, *) {
+                    if #available(macOS 26.0, *) {
                         RoundedRectangle(cornerRadius: 50)
                             .fill(.clear)
                             .glassEffect(.regular)

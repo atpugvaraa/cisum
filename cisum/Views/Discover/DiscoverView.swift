@@ -14,7 +14,8 @@ struct DiscoverView: View {
 
     var body: some View {
         Color.green.overlay(Text("Discover"))
-        .enableInjection()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .enableInjection()
     }
 }
 

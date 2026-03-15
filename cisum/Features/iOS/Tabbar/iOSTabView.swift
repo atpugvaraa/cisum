@@ -8,36 +8,49 @@
 import SwiftUI
 
 #if os(iOS)
-public struct iOSTabView<SelectionValue: Hashable>: View {
+struct iOSTabView<SelectionValue: Hashable>: View {
     @Binding var selection: SelectionValue
     let tabs: [TabViewData<SelectionValue>]
-    
-//    @State private var bottomAccessory: AnyView?
-    
+    @Environment(\.tabBarVisibility) private var tabBarVisibility
+    @Environment(\.tabBarBottomAccessory) private var tabBarBottomAccessory
+
     var searchText: Binding<String>
     var onSearchSubmit: () -> Void
     
-    public init(selection: Binding<SelectionValue>,
-                searchText: Binding<String> = .constant(""),
-                @TabViewBuilder<SelectionValue> content: () -> [TabViewData<SelectionValue>],
-                onSearchSubmit: @escaping () -> Void = {}) {
+    init(
+        selection: Binding<SelectionValue>,
+        searchText: Binding<String> = .constant(""),
+        @TabViewBuilder<SelectionValue> content: () -> [TabViewData<SelectionValue>],
+        onSearchSubmit: @escaping () -> Void = {}
+    ) {
         self._selection = selection
         self.tabs = content()
         self.searchText = searchText
         self.onSearchSubmit = onSearchSubmit
     }
     
-    public var body: some View {
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
+
+    var body: some View {
         Group {
             if #available(iOS 26.0, *) {
                 NativeTabView
+                    .toolbarVisibility(tabBarVisibility, for: .tabBar)
+                    .tabViewBottomAccessory {
+                        if let accessory = tabBarBottomAccessory {
+                            accessory
+                        }
+                    }
+                    .onChange(of: tabBarVisibility) {
+                        print(tabBarVisibility)
+                    }
             } else {
                 iOS26TabView
             }
         }
-//        .onPreferenceChange(TabViewBottomAccessoryKey.self) { value in
-//            self.bottomAccessory = value?.view
-//        }
+        .enableInjection()
     }
     
     // MARK: - Native Adapter (iOS 26+)
@@ -52,16 +65,10 @@ public struct iOSTabView<SelectionValue: Hashable>: View {
                     role: tab.role?.toNative
                 ) {
                     tab.content
-                        .ignoresSafeArea()
+                        .toolbarVisibility(tabBarVisibility, for: .tabBar)
                 }
             }
         }
-//        .overlay(alignment: .bottom) {
-//            if let bottomAccessory {
-//                bottomAccessory
-//                    .padding(.bottom, 60)
-//            }
-//        }
     }
 
     // MARK: - Custom TabView (iOS 17+)
@@ -72,12 +79,10 @@ public struct iOSTabView<SelectionValue: Hashable>: View {
                 if let searchTab = tabs.first(where: { $0.role == .search }),
                    selection == searchTab.value {
                     searchTab.content
-                        .ignoresSafeArea()
                 } else {
                     ForEach(tabs.filter { $0.role != .search }) { tab in
                         if selection == tab.value {
                             tab.content
-                                .ignoresSafeArea()
                         }
                     }
                 }
@@ -87,19 +92,35 @@ public struct iOSTabView<SelectionValue: Hashable>: View {
             // Tab Bar
             VStack(spacing: 0) {
                 Spacer()
+
+                if let accessory = tabBarBottomAccessory {
+                    let searchTab = tabs.first(where: { $0.role == .search })
+                    let isSearchExpanded = selection == searchTab?.value
                 
-                iOS26TabBar(
-                    tabs: tabs.filter { $0.role != .search },
-                    activeTab: $selection,
-                    showsSearchBar: tabs.contains(where: { $0.role == .search }),
-                    searchText: searchText,
-                    onSearchTriggered: {
-                        if let searchTab = tabs.first(where: { $0.role == .search }) {
-                            selection = searchTab.value
-                        }
-                    },
-                    onSearchSubmitted: onSearchSubmit
-                )
+                    accessory
+                        .padding(.bottom, tabBarVisibility == .visible ? (isSearchExpanded ? -5 : 5) : -20)
+                        .allowsHitTesting(tabBarVisibility == .visible)
+                        .animation(.smooth(duration: 0.3), value: tabBarVisibility)
+                        .animation(.smooth(duration: 0.3), value: isSearchExpanded)
+                }
+
+                if tabBarVisibility == .visible {
+                    iOS26TabBar(
+                        tabs: tabs,
+                        activeTab: $selection,
+                        showsSearchBar: tabs.contains(where: { $0.role == .search }),
+                        searchText: searchText,
+                        onSearchTriggered: {
+                            if let searchTab = tabs.first(where: { $0.role == .search }) {
+                                selection = searchTab.value
+                            }
+                        },
+                        onSearchSubmitted: onSearchSubmit
+                    )
+                    .offset(y: tabBarVisibility == .hidden ? 120 : 0)
+                    .allowsHitTesting(tabBarVisibility != .hidden)
+                    .animation(.smooth(duration: 0.3), value: tabBarVisibility)
+                }
             }
         }
     }
