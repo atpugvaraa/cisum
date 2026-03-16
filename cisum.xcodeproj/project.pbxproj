@@ -17,7 +17,6 @@
 		77A3EBF52F66716700B13358 /* Enum+TabItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBC12F66716700B13358 /* Enum+TabItem.swift */; };
 		77A3EBF62F66716700B13358 /* YouTubeEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBC32F66716700B13358 /* YouTubeEnvironment.swift */; };
 		77A3EBF72F66716700B13358 /* Color+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBC52F66716700B13358 /* Color+Extension.swift */; };
-		77A3EBF82F66716700B13358 /* YouTubeProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBC72F66716700B13358 /* YouTubeProtocols.swift */; };
 		77A3EBF92F66716700B13358 /* SearchHistoryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBCA2F66716700B13358 /* SearchHistoryEntry.swift */; };
 		77A3EBFA2F66716700B13358 /* PlayerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBCC2F66716700B13358 /* PlayerViewModel.swift */; };
 		77A3EBFB2F66716700B13358 /* SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBCD2F66716700B13358 /* SearchViewModel.swift */; };
@@ -61,7 +60,6 @@
 		77A3EBC12F66716700B13358 /* Enum+TabItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Enum+TabItem.swift"; sourceTree = "<group>"; };
 		77A3EBC32F66716700B13358 /* YouTubeEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeEnvironment.swift; sourceTree = "<group>"; };
 		77A3EBC52F66716700B13358 /* Color+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extension.swift"; sourceTree = "<group>"; };
-		77A3EBC72F66716700B13358 /* YouTubeProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeProtocols.swift; sourceTree = "<group>"; };
 		77A3EBCA2F66716700B13358 /* SearchHistoryEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchHistoryEntry.swift; sourceTree = "<group>"; };
 		77A3EBCC2F66716700B13358 /* PlayerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerViewModel.swift; sourceTree = "<group>"; };
 		77A3EBCD2F66716700B13358 /* SearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViewModel.swift; sourceTree = "<group>"; };
@@ -179,14 +177,6 @@
 			path = Extensions;
 			sourceTree = "<group>";
 		};
-		77A3EBC82F66716700B13358 /* Protocols */ = {
-			isa = PBXGroup;
-			children = (
-				77A3EBC72F66716700B13358 /* YouTubeProtocols.swift */,
-			);
-			path = Protocols;
-			sourceTree = "<group>";
-		};
 		77A3EBC92F66716700B13358 /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
@@ -194,7 +184,6 @@
 				77A3EBC22F66716700B13358 /* Enums */,
 				77A3EBC42F66716700B13358 /* EnvironmentKeys */,
 				77A3EBC62F66716700B13358 /* Extensions */,
-				77A3EBC82F66716700B13358 /* Protocols */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -481,7 +470,6 @@
 				77A3EBF52F66716700B13358 /* Enum+TabItem.swift in Sources */,
 				77A3EBF62F66716700B13358 /* YouTubeEnvironment.swift in Sources */,
 				77A3EBF72F66716700B13358 /* Color+Extension.swift in Sources */,
-				77A3EBF82F66716700B13358 /* YouTubeProtocols.swift in Sources */,
 				77A3EBF92F66716700B13358 /* SearchHistoryEntry.swift in Sources */,
 				77A3EBFA2F66716700B13358 /* PlayerViewModel.swift in Sources */,
 				77A3EBFB2F66716700B13358 /* SearchViewModel.swift in Sources */,

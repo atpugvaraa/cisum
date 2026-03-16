@@ -130,8 +130,6 @@ class SearchViewModel {
                 return
             }
 
-            print("[SearchViewModel] executeSearch() query='\(query)' scope=\(searchScope)")
-            
             switch searchScope {
             case .music:
                 // Serve cache if available (stale-while-revalidate)
@@ -146,7 +144,6 @@ class SearchViewModel {
                     }
                 } else {
                     let results = try await youtube.music.search(query)
-                    print("[SearchViewModel] music results count=\(results.count)")
                     self.musicResults = results
                     searchCache.setMusicResults(results, for: query)
                     self.state = .success
@@ -171,7 +168,6 @@ class SearchViewModel {
                     }
                 } else {
                     let cont = try await youtube.main.search(query)
-                    print("[SearchViewModel] video continuation items=\(cont.items.count)")
                     updateVideoResults(with: cont, appending: false)
                     // Cache the mapped video results
                     let mapped = mapSearchResults(from: cont.items)
@@ -193,7 +189,6 @@ class SearchViewModel {
             
         } catch {
             if !Task.isCancelled {
-                print("Search Error: \(error)")
                 self.state = .error("\(error.localizedDescription)")
             }
         }
@@ -460,8 +455,6 @@ class SearchViewModel {
             videoContinuationBadResponseCount = 0
         } catch {
             if !Task.isCancelled {
-                print("[SearchViewModel] pagination error: \(error)")
-
                 // If the error looks like a repeated bad server response (HTTP 400
                 // or NSURLErrorBadServerResponse -1011), increment a counter and
                 // defensively clear the continuation token after a couple attempts
@@ -469,9 +462,7 @@ class SearchViewModel {
                 if let ns = error as NSError? {
                     if ns.code == 400 || (ns.domain == NSURLErrorDomain && ns.code == -1011) {
                         videoContinuationBadResponseCount += 1
-                        print("[SearchViewModel] continuation bad response count=\(videoContinuationBadResponseCount)")
                         if videoContinuationBadResponseCount >= 2 {
-                            print("[SearchViewModel] clearing continuation token after repeated bad responses")
                             videoContinuationToken = nil
                             state = .error("Pagination temporarily disabled due to server responses.")
                         }

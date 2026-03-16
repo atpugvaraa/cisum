@@ -6,15 +6,10 @@
 //
 
 import SwiftUI
-import YouTubeSDK
 
 struct ContentView: View {
-    @Environment(PrefetchSettings.self) private var prefetchSettings
-    @Environment(NetworkPathMonitor.self) private var networkMonitor
-    @Environment(PlayerViewModel.self) private var playerViewModel
     @Environment(SearchViewModel.self) private var searchViewModel
     @Environment(\.router) private var router
-    @Environment(\.youtube) private var youtube
     
     @State private var activeTab: TabItem = .home
 
@@ -23,8 +18,8 @@ struct ContentView: View {
     @State var scrollPhase: ScrollPhases = .idle
     @State var tabBarVisibility: Visibility = .visible
     
-    let hideThresholds: CGFloat = 200
-    let showThresholds: CGFloat = -40
+    let hideThresholds: CGFloat = 40
+    let showThresholds: CGFloat = -10
     
     var body: some View {
 #if os(iOS)
@@ -70,14 +65,8 @@ struct ContentView: View {
             router.selectedTab = newValue
             tabBarVisibility = .visible
         }
-        .environment(playerViewModel)
-        .environment(searchViewModel)
-        .environment(prefetchSettings)
-        .environment(networkMonitor)
 #elseif os(macOS)
         SearchView()
-            .environment(playerViewModel)
-            .environment(searchViewModel)
 #endif
     }
 }
@@ -93,33 +82,30 @@ struct ContentView: View {
 private extension ContentView {
     func tabRoot<Content: View>(for tab: TabItem, @ViewBuilder content: () -> Content) -> some View {
         NavigationStack(path: router.binding(for: tab)) {
-            ScrollView {
-                content()
-                    .safeAreaPadding(.bottom, 140)
-            }
-            .onScrollOffsetChange { oldValue, newValue in
-                let scrollingDown = oldValue < newValue
-                
-                if self.isScrollingDown != scrollingDown {
-                    storedOffset = newValue - (tabBarVisibility == .hidden ? 60 : 0)
-                    self.isScrollingDown = scrollingDown
-                }
-                
-                let diff = newValue - storedOffset
-                if scrollPhase == .interacting {
-                    if diff > hideThresholds {
-                        tabBarVisibility = .hidden
-                    } else if diff < showThresholds {
-                        tabBarVisibility = .visible
+            content()
+                .ignoresSafeArea()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .onScrollOffsetChange { oldValue, newValue in
+                    let scrollingDown = oldValue < newValue
+                    
+                    if self.isScrollingDown != scrollingDown {
+                        storedOffset = newValue - (tabBarVisibility == .hidden ? 20 : 0)
+                        self.isScrollingDown = scrollingDown
+                    }
+                    
+                    let diff = newValue - storedOffset
+                    if scrollPhase == .interacting {
+                        if diff > hideThresholds {
+                            tabBarVisibility = .hidden
+                        } else if diff < showThresholds {
+                            tabBarVisibility = .visible
+                        }
                     }
                 }
-            }
-            .onScrollPhaseUpdate { oldPhase, newPhase in
-                scrollPhase = newPhase
-            }
-            .ignoresSafeArea()
-            .usingRouter()
+                .onScrollPhaseUpdate { _, newPhase in
+                    scrollPhase = newPhase
+                }
+                .usingRouter()
         }
-        .ignoresSafeArea()
     }
 }

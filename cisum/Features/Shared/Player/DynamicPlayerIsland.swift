@@ -9,7 +9,6 @@ import SwiftUI
 
 struct DynamicPlayerIsland: View {
 #if os(iOS)
-    @State var isClicked: Bool = false
     @Namespace private var namespace
 
     #if DEBUG
@@ -56,19 +55,18 @@ struct DynamicPlayerIsland: View {
                 .onTapGesture {
                     
                 }
-                .animation(.bouncy, value: isClicked)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             } else {
                 ZStack {
                     RoundedRectangle(cornerRadius: 50)
                         .fill(.bar)
                         .matchedGeometryEffect(id: "GLASS", in: namespace)
-                        .frame(height: 56)
+                        .frame(height: 45)
                         .overlay {
                             HStack(spacing: 12) {
                                 Circle()
                                     .matchedGeometryEffect(id: "Artwork", in: namespace)
-                                    .frame(width: 40, height: 40)
+                                    .frame(width: 36, height: 36)
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Now Playing")
@@ -88,14 +86,14 @@ struct DynamicPlayerIsland: View {
                                 .font(.title3)
                                 .fontWeight(.bold)
                             }
-                            .padding(10)
+                            .padding(.leading, 4)
+                            .padding(.trailing, 10)
                         }
                 }
                 .padding(.horizontal, 20)
                 .onTapGesture {
                     
                 }
-                .animation(.bouncy, value: isClicked)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             }
         }

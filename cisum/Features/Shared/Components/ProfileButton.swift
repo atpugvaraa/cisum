@@ -16,7 +16,7 @@ struct ProfileButton: View {
 
     private enum Layout {
         static let collapsedSize: CGFloat = 60
-        static let expandedWidth: CGFloat = 200
+        static let expandedWidth: CGFloat = 175
         static let expandedHeight: CGFloat = 195
         static let expandedProfileSize: CGFloat = 60
         static let menuCornerRadius: CGFloat = 50
@@ -135,7 +135,7 @@ struct ProfileButton: View {
                             .fill(.clear)
                             .glassEffect(.regular)
                             .overlay {
-                                Text("Aarav Gupta")
+                                Text("Profile")
                                     .fixedSize(horizontal: true, vertical: true)
                             }
                     } else {
@@ -144,7 +144,7 @@ struct ProfileButton: View {
                             .stroke(.white.opacity(0.1), lineWidth: 1.5)
                             .foregroundStyle(.ultraThinMaterial)
                             .overlay {
-                                Text("Aarav Gupta")
+                                Text("Profile")
                                     .fixedSize(horizontal: true, vertical: true)
                             }
                     }
@@ -172,7 +172,7 @@ struct ProfileButton: View {
                             .fill(.clear)
                             .glassEffect(.regular)
                             .overlay {
-                                Text("Aarav Gupta")
+                                Text("Profile")
                                     .fixedSize(horizontal: true, vertical: true)
                             }
                     } else {
@@ -181,7 +181,7 @@ struct ProfileButton: View {
                             .stroke(.white.opacity(0.1), lineWidth: 1.5)
                             .foregroundStyle(.ultraThinMaterial)
                             .overlay {
-                                Text("Aarav Gupta")
+                                Text("Profile")
                                     .fixedSize(horizontal: true, vertical: true)
                             }
                     }

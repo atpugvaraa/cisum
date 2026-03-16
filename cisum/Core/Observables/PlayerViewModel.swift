@@ -49,7 +49,7 @@ class PlayerViewModel {
     
     // MARK: - Loaders
         
-    func load(song: YouTubeMusicSong, preferAudio: Bool = true) {
+    func load(song: YouTubeMusicSong) {
         let tapStartedAt = Date()
         // 1. Set Metadata immediately (for instant UI feedback)
         self.currentTitle = song.title
@@ -83,7 +83,7 @@ class PlayerViewModel {
         }
     }
     
-    func load(video: YouTubeVideo, preferAudio: Bool = false) {
+    func load(video: YouTubeVideo) {
         let tapStartedAt = Date()
         self.currentTitle = video.title
         self.currentArtist = video.author
@@ -161,8 +161,8 @@ class PlayerViewModel {
         }
     }
 
-    /// Reload the current video with a different preference (audio/video).
-    func reloadCurrentVideo(preferAudio: Bool) {
+    /// Reload the current video with current playback configuration.
+    func reloadCurrentVideo() {
         guard let id = currentVideoId else { return }
         currentLoadTask?.cancel()
         currentLoadTask = Task {

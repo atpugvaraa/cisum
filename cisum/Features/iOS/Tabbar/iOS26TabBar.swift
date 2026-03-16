@@ -18,7 +18,6 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
     
     // View Properties
     @GestureState private var isActive = false
-    @State private var isInitialOffsetSet = false
     @State private var dragOffset: CGFloat = 0
     @State private var lastDragOffset: CGFloat?
     @State private var lastVisibleSelection: SelectionValue?
@@ -103,7 +102,7 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
             .onAppear {
                 setInitialOffset(width: tabItemWidth)
             }
-            .onChange(of: activeTab) { newValue, _ in
+            .onChange(of: activeTab) { _, newValue in
                 // Update lastVisibleSelection if the new activeTab is one of the visible tabs
                 if visibleTabs.contains(where: { $0.value == newValue }) {
                     lastVisibleSelection = newValue
@@ -136,17 +135,14 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
         if let index = visible.firstIndex(where: { $0.value == activeTab }) {
             dragOffset = CGFloat(index) * width
             lastVisibleSelection = activeTab
-            isInitialOffsetSet = true
         } else if let last = lastVisibleSelection, let idx = visible.firstIndex(where: { $0.value == last }) {
             // Restore to previously remembered visible selection if still present
             dragOffset = CGFloat(idx) * width
-            isInitialOffsetSet = true
         } else if let first = visible.first {
             // No known previous visible selection; default to first tab but do not overwrite lastVisibleSelection
             if let idx = visible.firstIndex(where: { $0.value == first.value }) {
                 dragOffset = CGFloat(idx) * width
             }
-            isInitialOffsetSet = true
         }
     }
     

@@ -15,7 +15,6 @@ struct cisumApp: App {
     private let router = Router.shared
     private let modelContainer: ModelContainer
 
-    @State private var searchHistoryStore: SearchHistoryStore
     @State private var prefetchSettings: PrefetchSettings
     @State private var networkMonitor: NetworkPathMonitor
     @State private var playerViewModel: PlayerViewModel
@@ -46,7 +45,6 @@ struct cisumApp: App {
 
         self.prefetchSettings = settings
         self.networkMonitor = monitor
-        self.searchHistoryStore = historyStore
         self.playerViewModel = PlayerViewModel(youtube: youtube, settings: settings)
         self.searchViewModel = SearchViewModel(
             youtube: youtube,
@@ -61,12 +59,14 @@ struct cisumApp: App {
             ContentView()
                 .modelContainer(modelContainer)
                 .environment(\.youtube, youtube)
-                .environment(router)
                 .environment(\.router, router)
                 .environment(prefetchSettings)
                 .environment(playerViewModel)
                 .environment(searchViewModel)
                 .environment(networkMonitor)
+#if os(iOS)
+                .persistentSystemOverlays(.hidden)
+#endif
         }
         
         #if os(macOS)

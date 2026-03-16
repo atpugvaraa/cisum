@@ -37,14 +37,10 @@ struct iOSTabView<SelectionValue: Hashable>: View {
         Group {
             if #available(iOS 26.0, *) {
                 NativeTabView
-                    .toolbarVisibility(tabBarVisibility, for: .tabBar)
                     .tabViewBottomAccessory {
                         if let accessory = tabBarBottomAccessory {
                             accessory
                         }
-                    }
-                    .onChange(of: tabBarVisibility) {
-                        print(tabBarVisibility)
                     }
             } else {
                 iOS26TabView
@@ -53,7 +49,7 @@ struct iOSTabView<SelectionValue: Hashable>: View {
         .enableInjection()
     }
     
-    // MARK: - Native Adapter (iOS 26+)
+    // MARK: - Native TabView (iOS 26+)
     @available(iOS 26.0, *)
     private var NativeTabView: some View {
         SwiftUI.TabView(selection: $selection) {
@@ -71,10 +67,9 @@ struct iOSTabView<SelectionValue: Hashable>: View {
         }
     }
 
-    // MARK: - Custom TabView (iOS 17+)
+    // MARK: - TabView (iOS 17+)
     private var iOS26TabView: some View {
-        ZStack(alignment: .bottom) {
-            // Content
+        ZStack {
             ZStack {
                 if let searchTab = tabs.first(where: { $0.role == .search }),
                    selection == searchTab.value {
@@ -88,41 +83,45 @@ struct iOSTabView<SelectionValue: Hashable>: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            // Tab Bar
-            VStack(spacing: 0) {
-                Spacer()
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            bottomChrome
+        }
+    }
 
-                if let accessory = tabBarBottomAccessory {
-                    let searchTab = tabs.first(where: { $0.role == .search })
-                    let isSearchExpanded = selection == searchTab?.value
-                
-                    accessory
-                        .padding(.bottom, tabBarVisibility == .visible ? (isSearchExpanded ? -5 : 5) : -20)
-                        .allowsHitTesting(tabBarVisibility == .visible)
-                        .animation(.smooth(duration: 0.3), value: tabBarVisibility)
-                        .animation(.smooth(duration: 0.3), value: isSearchExpanded)
-                }
+    @ViewBuilder
+    private var bottomChrome: some View {
+        let searchTab = tabs.first(where: { $0.role == .search })
+        let isSearchExpanded = selection == searchTab?.value
 
-                if tabBarVisibility == .visible {
-                    iOS26TabBar(
-                        tabs: tabs,
-                        activeTab: $selection,
-                        showsSearchBar: tabs.contains(where: { $0.role == .search }),
-                        searchText: searchText,
-                        onSearchTriggered: {
-                            if let searchTab = tabs.first(where: { $0.role == .search }) {
-                                selection = searchTab.value
-                            }
-                        },
-                        onSearchSubmitted: onSearchSubmit
-                    )
-                    .offset(y: tabBarVisibility == .hidden ? 120 : 0)
-                    .allowsHitTesting(tabBarVisibility != .hidden)
-                    .animation(.smooth(duration: 0.3), value: tabBarVisibility)
-                }
+        VStack(spacing: 6) {
+            if let accessory = tabBarBottomAccessory {
+                accessory
+                    .padding(.bottom, isSearchExpanded ? -5 : 5)
+                    .allowsHitTesting(tabBarVisibility == .visible)
+            }
+
+            if tabBarVisibility == .visible {
+                iOS26TabBar(
+                    tabs: tabs,
+                    activeTab: $selection,
+                    showsSearchBar: tabs.contains(where: { $0.role == .search }),
+                    searchText: searchText,
+                    onSearchTriggered: {
+                        if let searchTab = tabs.first(where: { $0.role == .search }) {
+                            selection = searchTab.value
+                        }
+                    },
+                    onSearchSubmitted: onSearchSubmit
+                )
             }
         }
+        .frame(maxWidth: .infinity)
+        .background(Color.clear)
+        .padding(.bottom, tabBarVisibility == .hidden ? -20 : 4)
+        .allowsHitTesting(tabBarVisibility != .hidden)
+        .animation(.smooth(duration: 0.3), value: tabBarVisibility)
+        .animation(.smooth(duration: 0.3), value: isSearchExpanded)
     }
 }
 #endif

@@ -19,21 +19,17 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            VStack(spacing: 12) {
-                ForEach(1...50, id: \.self) { _ in
-                    Rectangle()
-                        .fill(.fill.tertiary)
-                        .frame(height: 50)
+            Color.black
+            
+            ScrollView {
+                Button("Login") {
+                    showSheet = true
                 }
             }
-            .padding(15)
+            .ignoresSafeArea()
+            .contentMargins(.top, 140)
         }
-        .safeAreaPadding(.top, 140)
-        .overlay(content: {
-            Button("Login") {
-                showSheet = true
-            }
-        })
+        .ignoresSafeArea()
         .overlay {
             ZStack {
                 VStack(alignment: .leading) {
@@ -51,13 +47,12 @@ struct HomeView: View {
                 
                 ProfileButton()
             }
-            .padding(.top, 48)
+            .padding(.top, 200)
         }
         .sheet(isPresented: $showSheet) {
             GoogleLoginView { cookies in
                 YouTubeOAuthClient.saveCookies(cookies)
                 
-                // Update central YouTube manager with new cookies so all clients refresh
                 youtube.cookies = cookies
                 
                 showSheet = false

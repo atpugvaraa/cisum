@@ -19,7 +19,6 @@ struct RouterViewModifier: ViewModifier {
                 SettingsView()
             }
         }
-        .environment(router)
         .environment(\.router, router)
     }
 
@@ -29,7 +28,6 @@ struct RouterViewModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .environment(router)
             .environment(\.router, router)
             .navigationDestination(for: Routes.self) { newRoute in
                 routeView(to: newRoute)

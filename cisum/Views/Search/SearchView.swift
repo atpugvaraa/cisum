@@ -11,8 +11,7 @@ import YouTubeSDK
 struct SearchView: View {
     @Environment(SearchViewModel.self) private var searchViewModel
     @Environment(PlayerViewModel.self) private var playerViewModel
-    
-    // UI State
+
     @State private var showPlayer = false
     @FocusState private var isSearchFocused: Bool
     @State private var showNonPlayableAlert: Bool = false
@@ -81,13 +80,11 @@ struct SearchView: View {
     private func ResultsList() -> some View {
         List {
             if searchViewModel.searchScope == .music {
-                // Music Results
                 ForEach(searchViewModel.musicResults) { song in
                     Button {
                         playMusic(song)
                     } label: {
                         HStack(spacing: 12) {
-                            // Thumbnail
                             AsyncImage(url: song.thumbnailURL) { image in
                                 image.resizable().scaledToFill()
                             } placeholder: {
@@ -109,7 +106,6 @@ struct SearchView: View {
                             
                             Spacer()
                             
-                            // Duration
                             if let duration = song.duration {
                                 Text(formatDuration(duration))
                                     .font(.caption2)
@@ -269,21 +265,17 @@ struct SearchView: View {
     
     // MARK: - Actions
     private func playMusic(_ song: YouTubeMusicSong) {
-        print("Loading: \(song.title)")
         searchViewModel.recordSuccessfulPlayFromCurrentQuery()
         playerViewModel.load(song: song)
         showPlayer = true
     }
     
     private func playVideo(_ video: YouTubeVideo) {
-        print("Selected Video: \(video.title)")
-        // Call your PlayerViewModel here
         searchViewModel.recordSuccessfulPlayFromCurrentQuery()
         playerViewModel.load(video: video)
         showPlayer = true
     }
-    
-    // Helper for duration (e.g., 200 -> "3:20")
+
     private func formatDuration(_ seconds: TimeInterval) -> String {
         let min = Int(seconds) / 60
         let sec = Int(seconds) % 60

@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import UIKit
 
 extension Color {
     static let cisumBg = Color(hex: "FDF6E3")
