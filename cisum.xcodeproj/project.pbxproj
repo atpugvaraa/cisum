@@ -14,6 +14,26 @@
 		778645E92F6710D500B7FA67 /* TabBarVisibilityKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778645E82F6710D500B7FA67 /* TabBarVisibilityKey.swift */; };
 		778645EC2F6711DC00B7FA67 /* ScrollViewModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778645EB2F6711DC00B7FA67 /* ScrollViewModifiers.swift */; };
 		778645EE2F67127D00B7FA67 /* View+Modifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778645ED2F67127D00B7FA67 /* View+Modifiers.swift */; };
+		7786467F2F67B58000B7FA67 /* View+hideKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7786467E2F67B58000B7FA67 /* View+hideKeyboard.swift */; };
+		778646802F67B58000B7FA67 /* View+deviceCornerRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7786467D2F67B58000B7FA67 /* View+deviceCornerRadius.swift */; };
+		778646832F67B58D00B7FA67 /* EnvironmentValues+Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778646812F67B58D00B7FA67 /* EnvironmentValues+Config.swift */; };
+		778646862F67B5C300B7FA67 /* View+SliderConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778646852F67B5C300B7FA67 /* View+SliderConfig.swift */; };
+		778646892F67B5F500B7FA67 /* SizePreferenceKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778646882F67B5F500B7FA67 /* SizePreferenceKey.swift */; };
+		7786468A2F67B5F500B7FA67 /* cisumSliderConfigEnvironmentKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778646872F67B5F500B7FA67 /* cisumSliderConfigEnvironmentKey.swift */; };
+		7786468C2F67B60200B7FA67 /* StretchySlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7786468B2F67B60200B7FA67 /* StretchySlider.swift */; };
+		7786468E2F67B61400B7FA67 /* cisumSliderConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7786468D2F67B61400B7FA67 /* cisumSliderConfig.swift */; };
+		778646902F67B62800B7FA67 /* UniversalOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7786468F2F67B62800B7FA67 /* UniversalOverlay.swift */; };
+		7786469C2F67B68C00B7FA67 /* cisumVolumeSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7786469B2F67B68C00B7FA67 /* cisumVolumeSlider.swift */; };
+		7786469D2F67B68C00B7FA67 /* cisumMiniPlayerProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778646992F67B68C00B7FA67 /* cisumMiniPlayerProgress.swift */; };
+		7786469E2F67B68C00B7FA67 /* cisumMusicProgressScrubber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7786469A2F67B68C00B7FA67 /* cisumMusicProgressScrubber.swift */; };
+		778646A02F67B6B000B7FA67 /* ExpandablePlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7786469F2F67B6B000B7FA67 /* ExpandablePlayer.swift */; };
+		778646A62F67B6D600B7FA67 /* PlayerProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778646A52F67B6D600B7FA67 /* PlayerProperties.swift */; };
+		778646A82F67B6F800B7FA67 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778646A72F67B6F800B7FA67 /* Player.swift */; };
+		778646AB2F67B8BC00B7FA67 /* ClosedRange+Comparable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778646AA2F67B8BC00B7FA67 /* ClosedRange+Comparable.swift */; };
+		778646AC2F67B8BC00B7FA67 /* BinaryFloatingPoint+asTimeString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778646A92F67B8BC00B7FA67 /* BinaryFloatingPoint+asTimeString.swift */; };
+		778646B22F67CC2B00B7FA67 /* cisumBackwardButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778646AE2F67CC2B00B7FA67 /* cisumBackwardButton.swift */; };
+		778646B32F67CC2B00B7FA67 /* cisumForwardButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778646AF2F67CC2B00B7FA67 /* cisumForwardButton.swift */; };
+		778646B42F67CC2B00B7FA67 /* cisumPlayButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778646B02F67CC2B00B7FA67 /* cisumPlayButton.swift */; };
 		77A3EBF52F66716700B13358 /* Enum+TabItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBC12F66716700B13358 /* Enum+TabItem.swift */; };
 		77A3EBF62F66716700B13358 /* YouTubeEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBC32F66716700B13358 /* YouTubeEnvironment.swift */; };
 		77A3EBF72F66716700B13358 /* Color+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77A3EBC52F66716700B13358 /* Color+Extension.swift */; };
@@ -56,6 +76,27 @@
 		778645E82F6710D500B7FA67 /* TabBarVisibilityKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarVisibilityKey.swift; sourceTree = "<group>"; };
 		778645EB2F6711DC00B7FA67 /* ScrollViewModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollViewModifiers.swift; sourceTree = "<group>"; };
 		778645ED2F67127D00B7FA67 /* View+Modifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Modifiers.swift"; sourceTree = "<group>"; };
+		7786467D2F67B58000B7FA67 /* View+deviceCornerRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+deviceCornerRadius.swift"; sourceTree = "<group>"; };
+		7786467E2F67B58000B7FA67 /* View+hideKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+hideKeyboard.swift"; sourceTree = "<group>"; };
+		778646812F67B58D00B7FA67 /* EnvironmentValues+Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EnvironmentValues+Config.swift"; sourceTree = "<group>"; };
+		778646852F67B5C300B7FA67 /* View+SliderConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+SliderConfig.swift"; sourceTree = "<group>"; };
+		778646872F67B5F500B7FA67 /* cisumSliderConfigEnvironmentKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cisumSliderConfigEnvironmentKey.swift; sourceTree = "<group>"; };
+		778646882F67B5F500B7FA67 /* SizePreferenceKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SizePreferenceKey.swift; sourceTree = "<group>"; };
+		7786468B2F67B60200B7FA67 /* StretchySlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchySlider.swift; sourceTree = "<group>"; };
+		7786468D2F67B61400B7FA67 /* cisumSliderConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cisumSliderConfig.swift; sourceTree = "<group>"; };
+		7786468F2F67B62800B7FA67 /* UniversalOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UniversalOverlay.swift; sourceTree = "<group>"; };
+		778646992F67B68C00B7FA67 /* cisumMiniPlayerProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cisumMiniPlayerProgress.swift; sourceTree = "<group>"; };
+		7786469A2F67B68C00B7FA67 /* cisumMusicProgressScrubber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cisumMusicProgressScrubber.swift; sourceTree = "<group>"; };
+		7786469B2F67B68C00B7FA67 /* cisumVolumeSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cisumVolumeSlider.swift; sourceTree = "<group>"; };
+		7786469F2F67B6B000B7FA67 /* ExpandablePlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpandablePlayer.swift; sourceTree = "<group>"; };
+		778646A52F67B6D600B7FA67 /* PlayerProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerProperties.swift; sourceTree = "<group>"; };
+		778646A72F67B6F800B7FA67 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
+		778646A92F67B8BC00B7FA67 /* BinaryFloatingPoint+asTimeString.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BinaryFloatingPoint+asTimeString.swift"; sourceTree = "<group>"; };
+		778646AA2F67B8BC00B7FA67 /* ClosedRange+Comparable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ClosedRange+Comparable.swift"; sourceTree = "<group>"; };
+		778646AD2F67C83A00B7FA67 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		778646AE2F67CC2B00B7FA67 /* cisumBackwardButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cisumBackwardButton.swift; sourceTree = "<group>"; };
+		778646AF2F67CC2B00B7FA67 /* cisumForwardButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cisumForwardButton.swift; sourceTree = "<group>"; };
+		778646B02F67CC2B00B7FA67 /* cisumPlayButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cisumPlayButton.swift; sourceTree = "<group>"; };
 		77A3EBBF2F66716700B13358 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		77A3EBC12F66716700B13358 /* Enum+TabItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Enum+TabItem.swift"; sourceTree = "<group>"; };
 		77A3EBC32F66716700B13358 /* YouTubeEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeEnvironment.swift; sourceTree = "<group>"; };
@@ -142,6 +183,28 @@
 			path = ViewModifiers;
 			sourceTree = "<group>";
 		};
+		778646982F67B65100B7FA67 /* Slider */ = {
+			isa = PBXGroup;
+			children = (
+				7786468D2F67B61400B7FA67 /* cisumSliderConfig.swift */,
+				7786468B2F67B60200B7FA67 /* StretchySlider.swift */,
+				778646992F67B68C00B7FA67 /* cisumMiniPlayerProgress.swift */,
+				7786469A2F67B68C00B7FA67 /* cisumMusicProgressScrubber.swift */,
+				7786469B2F67B68C00B7FA67 /* cisumVolumeSlider.swift */,
+			);
+			path = Slider;
+			sourceTree = "<group>";
+		};
+		778646B12F67CC2B00B7FA67 /* Buttons */ = {
+			isa = PBXGroup;
+			children = (
+				778646AE2F67CC2B00B7FA67 /* cisumBackwardButton.swift */,
+				778646AF2F67CC2B00B7FA67 /* cisumForwardButton.swift */,
+				778646B02F67CC2B00B7FA67 /* cisumPlayButton.swift */,
+			);
+			path = Buttons;
+			sourceTree = "<group>";
+		};
 		77A3EBC02F66716700B13358 /* Assets */ = {
 			isa = PBXGroup;
 			children = (
@@ -165,6 +228,8 @@
 				778645E82F6710D500B7FA67 /* TabBarVisibilityKey.swift */,
 				77CEB0D92F667A440062568F /* RouterEnvironmentKey.swift */,
 				77A3EBC32F66716700B13358 /* YouTubeEnvironment.swift */,
+				778646872F67B5F500B7FA67 /* cisumSliderConfigEnvironmentKey.swift */,
+				778646882F67B5F500B7FA67 /* SizePreferenceKey.swift */,
 			);
 			path = EnvironmentKeys;
 			sourceTree = "<group>";
@@ -172,7 +237,13 @@
 		77A3EBC62F66716700B13358 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				778646852F67B5C300B7FA67 /* View+SliderConfig.swift */,
 				77A3EBC52F66716700B13358 /* Color+Extension.swift */,
+				7786467D2F67B58000B7FA67 /* View+deviceCornerRadius.swift */,
+				7786467E2F67B58000B7FA67 /* View+hideKeyboard.swift */,
+				778646812F67B58D00B7FA67 /* EnvironmentValues+Config.swift */,
+				778646A92F67B8BC00B7FA67 /* BinaryFloatingPoint+asTimeString.swift */,
+				778646AA2F67B8BC00B7FA67 /* ClosedRange+Comparable.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -180,6 +251,7 @@
 		77A3EBC92F66716700B13358 /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
+				7786468F2F67B62800B7FA67 /* UniversalOverlay.swift */,
 				778645EA2F6711D400B7FA67 /* ViewModifiers */,
 				77A3EBC22F66716700B13358 /* Enums */,
 				77A3EBC42F66716700B13358 /* EnvironmentKeys */,
@@ -243,6 +315,9 @@
 		77A3EBDD2F66716700B13358 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
+				778646A52F67B6D600B7FA67 /* PlayerProperties.swift */,
+				778646A72F67B6F800B7FA67 /* Player.swift */,
+				7786469F2F67B6B000B7FA67 /* ExpandablePlayer.swift */,
 				77A3EBDC2F66716700B13358 /* Tabbar */,
 			);
 			path = iOS;
@@ -267,7 +342,9 @@
 		77A3EBE42F66716700B13358 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				778646B12F67CC2B00B7FA67 /* Buttons */,
 				77A3EBE32F66716700B13358 /* ProfileButton.swift */,
+				778646982F67B65100B7FA67 /* Slider */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -343,6 +420,7 @@
 		77A3EBF42F66716700B13358 /* cisum */ = {
 			isa = PBXGroup;
 			children = (
+				778646AD2F67C83A00B7FA67 /* Info.plist */,
 				77A3EBC02F66716700B13358 /* Assets */,
 				77A3EBD52F66716700B13358 /* Core */,
 				77A3EBE92F66716700B13358 /* Features */,
@@ -469,14 +547,23 @@
 			files = (
 				77A3EBF52F66716700B13358 /* Enum+TabItem.swift in Sources */,
 				77A3EBF62F66716700B13358 /* YouTubeEnvironment.swift in Sources */,
+				7786468C2F67B60200B7FA67 /* StretchySlider.swift in Sources */,
 				77A3EBF72F66716700B13358 /* Color+Extension.swift in Sources */,
+				778646A82F67B6F800B7FA67 /* Player.swift in Sources */,
+				7786467F2F67B58000B7FA67 /* View+hideKeyboard.swift in Sources */,
+				778646802F67B58000B7FA67 /* View+deviceCornerRadius.swift in Sources */,
+				778646862F67B5C300B7FA67 /* View+SliderConfig.swift in Sources */,
 				77A3EBF92F66716700B13358 /* SearchHistoryEntry.swift in Sources */,
 				77A3EBFA2F66716700B13358 /* PlayerViewModel.swift in Sources */,
+				778646B22F67CC2B00B7FA67 /* cisumBackwardButton.swift in Sources */,
+				778646B32F67CC2B00B7FA67 /* cisumForwardButton.swift in Sources */,
+				778646B42F67CC2B00B7FA67 /* cisumPlayButton.swift in Sources */,
 				77A3EBFB2F66716700B13358 /* SearchViewModel.swift in Sources */,
 				77CEB0DA2F667A440062568F /* RouterEnvironmentKey.swift in Sources */,
 				77A3EBFC2F66716700B13358 /* NetworkPathMonitor.swift in Sources */,
 				77A3EBFD2F66716700B13358 /* PlaybackMetricsStore.swift in Sources */,
 				77A3EBFE2F66716700B13358 /* PrefetchSettings.swift in Sources */,
+				778646A02F67B6B000B7FA67 /* ExpandablePlayer.swift in Sources */,
 				778645EE2F67127D00B7FA67 /* View+Modifiers.swift in Sources */,
 				77A3EBFF2F66716700B13358 /* SearchHistoryStore.swift in Sources */,
 				77A3EC002F66716700B13358 /* SuggestionRanker.swift in Sources */,
@@ -493,16 +580,27 @@
 				77A3EC0A2F66716700B13358 /* ProfileButton.swift in Sources */,
 				778645E92F6710D500B7FA67 /* TabBarVisibilityKey.swift in Sources */,
 				77A3EC0B2F66716700B13358 /* Router.swift in Sources */,
+				7786469C2F67B68C00B7FA67 /* cisumVolumeSlider.swift in Sources */,
+				7786469D2F67B68C00B7FA67 /* cisumMiniPlayerProgress.swift in Sources */,
+				7786469E2F67B68C00B7FA67 /* cisumMusicProgressScrubber.swift in Sources */,
+				778646AB2F67B8BC00B7FA67 /* ClosedRange+Comparable.swift in Sources */,
+				778646AC2F67B8BC00B7FA67 /* BinaryFloatingPoint+asTimeString.swift in Sources */,
 				77A3EC0C2F66716700B13358 /* RouterViewModifier.swift in Sources */,
+				778646A62F67B6D600B7FA67 /* PlayerProperties.swift in Sources */,
 				77A3EC0D2F66716700B13358 /* ContentView.swift in Sources */,
+				7786468E2F67B61400B7FA67 /* cisumSliderConfig.swift in Sources */,
 				77A3EC152F66719D00B13358 /* HomeView.swift in Sources */,
 				77A3EC0E2F66716700B13358 /* NowPlayingView.swift in Sources */,
 				77A3EC172F66720E00B13358 /* DiscoverView.swift in Sources */,
+				778646832F67B58D00B7FA67 /* EnvironmentValues+Config.swift in Sources */,
 				77A3EC192F66722F00B13358 /* LibraryView.swift in Sources */,
+				778646892F67B5F500B7FA67 /* SizePreferenceKey.swift in Sources */,
+				7786468A2F67B5F500B7FA67 /* cisumSliderConfigEnvironmentKey.swift in Sources */,
 				77A3EC0F2F66716700B13358 /* SearchView.swift in Sources */,
 				77A3EC102F66716700B13358 /* SettingsView.swift in Sources */,
 				77A3EC1E2F66729B00B13358 /* ProfileView.swift in Sources */,
 				77A3EC112F66716700B13358 /* cisumApp.swift in Sources */,
+				778646902F67B62800B7FA67 /* UniversalOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -646,6 +744,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = cisum/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = cisum;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -695,6 +794,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = cisum/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = cisum;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

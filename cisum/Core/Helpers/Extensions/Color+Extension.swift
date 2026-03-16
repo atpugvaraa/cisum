@@ -8,6 +8,8 @@
 import SwiftUI
 
 extension Color {
+    static var dynamicAccent: Color = .accent
+    
     static let cisumBg = Color(hex: "FDF6E3")
     static let cisumSurface = Color(hex: "EEE8D5")
     static let cisumAccent = Color(hex: "CB4B16")

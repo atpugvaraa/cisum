@@ -21,6 +21,11 @@ struct ContentView: View {
     let hideThresholds: CGFloat = 40
     let showThresholds: CGFloat = -10
     
+    @Namespace private var namespace
+    
+    @State private var player = Player()
+    @State private var properties = PlayerProperties.shared
+    
     var body: some View {
 #if os(iOS)
         iOSTabView(
@@ -54,7 +59,7 @@ struct ContentView: View {
             searchViewModel.performDebouncedSearch()
         }
         .tabbarBottomViewAccessory {
-            DynamicPlayerIsland()
+            DynamicPlayerIsland(namespace: namespace)
         }
         .tabbarVisibility(tabBarVisibility)
         .animation(.smooth(duration: 0.3), value: tabBarVisibility)
