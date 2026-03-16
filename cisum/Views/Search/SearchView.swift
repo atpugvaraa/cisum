@@ -12,7 +12,6 @@ struct SearchView: View {
     @Environment(SearchViewModel.self) private var searchViewModel
     @Environment(PlayerViewModel.self) private var playerViewModel
 
-    @State private var showPlayer = false
     @FocusState private var isSearchFocused: Bool
     @State private var showNonPlayableAlert: Bool = false
     @State private var nonPlayableMessage: String = ""
@@ -112,7 +111,7 @@ struct SearchView: View {
                             }
                         }
                     }
-                    .listRowSeparator(.hidden)
+                    .contentShape(.rect)
                     .onAppear {
                         searchViewModel.prefetchIfNeeded(id: song.videoId)
                     }
@@ -265,13 +264,13 @@ struct SearchView: View {
     private func playMusic(_ song: YouTubeMusicSong) {
         searchViewModel.recordSuccessfulPlayFromCurrentQuery()
         playerViewModel.load(song: song)
-        properties.expandPlayer = true
+        properties.expandPlayer()
     }
     
     private func playVideo(_ video: YouTubeVideo) {
         searchViewModel.recordSuccessfulPlayFromCurrentQuery()
         playerViewModel.load(video: video)
-        properties.expandPlayer = true
+        properties.expandPlayer()
     }
 
     private func formatDuration(_ seconds: TimeInterval) -> String {

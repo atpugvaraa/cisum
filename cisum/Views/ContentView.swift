@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(SearchViewModel.self) private var searchViewModel
+    @Environment(PlayerViewModel.self) private var playerViewModel
     @Environment(\.router) private var router
     
     @State private var activeTab: TabItem = .home
@@ -23,7 +24,6 @@ struct ContentView: View {
     
     @Namespace private var namespace
     
-    @State private var player = Player()
     @State private var properties = PlayerProperties.shared
     
     var body: some View {

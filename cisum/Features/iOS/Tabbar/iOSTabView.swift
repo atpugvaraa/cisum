@@ -9,6 +9,7 @@ import SwiftUI
 
 #if os(iOS)
 struct iOSTabView<SelectionValue: Hashable>: View {
+    @Environment(PlayerViewModel.self) private var playerViewModel
     @Environment(\.tabBarVisibility) private var tabBarVisibility
     @Environment(\.tabBarBottomAccessory) private var tabBarBottomAccessory
     
@@ -48,12 +49,14 @@ struct iOSTabView<SelectionValue: Hashable>: View {
                             accessory
                                 .contentShape(.rect)
                                 .matchedTransitionSource(id: "MiniPlayer", in: namespace)
-                                .onTapGesture {
-                                    properties.expandPlayer.toggle()
-                                }
+                                .highPriorityGesture(
+                                    TapGesture().onEnded {
+                                        properties.expandPlayer()
+                                    }
+                                )
                         }
                     }
-                    .fullScreenCover(isPresented: $properties.expandPlayer) {
+                    .fullScreenCover(isPresented: $properties.isPlayerExpanded) {
                         NowPlayingView(namespace: namespace)
                             .navigationTransition(.zoom(sourceID: "MiniPlayer", in: namespace))
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -69,6 +72,7 @@ struct iOSTabView<SelectionValue: Hashable>: View {
 //                            .padding(.bottom, isSearchExpanded ? -5 : 0)
 //                            .animation(.smooth(duration: 0.3), value: isSearchExpanded)
                             .ignoresSafeArea(.keyboard)
+                            .environment(playerViewModel)
                     }
                     .onAppear {
                         showMiniPlayer = true

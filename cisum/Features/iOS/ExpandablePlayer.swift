@@ -11,7 +11,6 @@ struct ExpandablePlayer: View {
     @Binding var show: Bool
     @Namespace private var namespace
     
-    @State private var player = Player()
     @State private var properties = PlayerProperties.shared
     
     #if DEBUG
@@ -28,20 +27,20 @@ struct ExpandablePlayer: View {
                 background
                 
                 DynamicPlayerIsland(namespace: namespace)
-                    .opacity(properties.expandPlayer ? 0 : 1)
+                    .opacity(properties.isPlayerExpanded ? 0 : 1)
                 
                 NowPlayingView(namespace: namespace)
-                    .opacity(properties.expandPlayer ? 1 : 0)
+                    .opacity(properties.isPlayerExpanded ? 1 : 0)
             }
-            .frame(height: properties.expandPlayer ? nil : 45, alignment: .top)
+            .frame(height: properties.isPlayerExpanded ? nil : 45, alignment: .top)
             .frame(maxHeight: .infinity, alignment: .bottom)
-            .padding(.bottom, properties.expandPlayer ? 0 : safeArea.bottom + 55)
-            .padding(.horizontal, properties.expandPlayer ? 0 : 20)
+            .padding(.bottom, properties.isPlayerExpanded ? 0 : safeArea.bottom + 55)
+            .padding(.horizontal, properties.isPlayerExpanded ? 0 : 20)
             .offset(y: properties.offsetY)
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        guard properties.expandPlayer else { return }
+                        guard properties.isPlayerExpanded else { return }
                         let translation = max(value.translation.height, 0)
                         properties.offsetY = translation
                         properties.windowProgress = max(min(translation / size.height, 1), 0) * 0.1
@@ -49,14 +48,14 @@ struct ExpandablePlayer: View {
                         properties.resizeWindow(0.1 - properties.windowProgress)
                     }
                     .onEnded { value in
-                        guard properties.expandPlayer else { return }
+                        guard properties.isPlayerExpanded else { return }
                         let translation = max(value.translation.height, 0)
                         let velocity = value.velocity.height / 5
                         
                         withAnimation(.smooth(duration: 0.3, extraBounce: 0)) {
                             if (translation + velocity) > (size.height * 0.3) {
                                 /// Closing View
-                                properties.expandPlayer = false
+                                properties.isPlayerExpanded = false
                                 /// Resetting Window to identity with Animation
                                 properties.resetWindowWithAnimation()
                             } else {
@@ -84,7 +83,7 @@ struct ExpandablePlayer: View {
             .ignoresSafeArea()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
-            if properties.expandPlayer {
+            if properties.isPlayerExpanded {
                 properties.resetWindowToIdentity()
             }
         }
@@ -92,6 +91,10 @@ struct ExpandablePlayer: View {
             properties.handleOrientationChange(UIDevice.current.orientation)
         }
         .enableInjection()
+    }
+    
+    var playerBackgroundClipShape: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(topLeadingRadius: properties.isPlayerExpanded ? 150 : 50, bottomLeadingRadius: properties.isPlayerExpanded ? deviceCornerRadius : 50, bottomTrailingRadius: properties.isPlayerExpanded ? deviceCornerRadius : 50, topTrailingRadius: properties.isPlayerExpanded ? 150 : 50)
     }
     
     var background: some View {
@@ -104,10 +107,10 @@ struct ExpandablePlayer: View {
                 .overlay {
                     nowPlayingBackground
                 }
-                .opacity(properties.expandPlayer ? 1 : 0)
+                .opacity(properties.isPlayerExpanded ? 1 : 0)
         }
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: properties.expandPlayer ? 150 : 50, bottomLeadingRadius: properties.expandPlayer ? deviceCornerRadius : 50, bottomTrailingRadius: properties.expandPlayer ? deviceCornerRadius : 50, topTrailingRadius: properties.expandPlayer ? 150 : 50))
-        .frame(height: properties.expandPlayer ? nil : 44)
+        .clipShape(playerBackgroundClipShape)
+        .frame(height: properties.isPlayerExpanded ? nil : 44)
     }
     
     var nowPlayingBackground: some View {

@@ -57,9 +57,6 @@ struct DynamicPlayerIsland: View {
                             .padding(.trailing, 10)
                         }
                 }
-                .onTapGesture {
-                    
-                }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             } else {
                 HStack(spacing: 12) {
@@ -76,14 +73,7 @@ struct DynamicPlayerIsland: View {
                 .frame(height: 44)
                 .contentShape(.rect)
                 .onTapGesture {
-                    withAnimation(.smooth(duration: 0.3, extraBounce: 0)) {
-                        properties.expandPlayer = true
-                    }
-                    
-                    /// Resizing window when opening player
-                    UIView.animate(withDuration: 0.3) {
-                        properties.resizeWindow(0.1)
-                    }
+                    properties.expandPlayer()
                 }
 //                .overlay {
 //                    cisumMiniPlayerProgress(currentTime: .constant(60), inRange: 0...240)
@@ -169,14 +159,14 @@ struct DynamicPlayerIsland: View {
     
     var artwork: some View {
         ZStack {
-            if !properties.expandPlayer {
+            if !properties.isPlayerExpanded {
                 AsyncImage(url: playerViewModel.currentImageURL)
                     .matchedGeometryEffect(id: "Artwork", in: namespace)
+                    .frame(width: 40, height: 40)
                     .aspectRatio(contentMode: .fit)
                     .clipShape(.circle)
             }
         }
-        .frame(width: 40, height: 40)
     }
     
     var playButton: some View {

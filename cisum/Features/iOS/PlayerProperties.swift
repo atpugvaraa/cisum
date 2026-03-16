@@ -15,7 +15,7 @@ class PlayerProperties {
     private var mainWindow: UIWindow?
     
     // View Properties
-    var expandPlayer: Bool = false
+    var isPlayerExpanded: Bool = false
     var offsetY: CGFloat = 0
     var windowProgress: CGFloat = 0
     var currentOrientation: UIDeviceOrientation = .portrait
@@ -34,6 +34,23 @@ class PlayerProperties {
         
         // Initialize with current orientation
         currentOrientation = UIDevice.current.orientation.isValidInterfaceOrientation ? UIDevice.current.orientation : .portrait
+    }
+    
+    func expandPlayer() {
+        if #available(iOS 26.0, *) {
+            withAnimation(.smooth(duration: 0.3, extraBounce: 0)) {
+                isPlayerExpanded = true
+            }
+        } else {
+            withAnimation(.smooth(duration: 0.3, extraBounce: 0)) {
+                isPlayerExpanded = true
+            }
+            
+            /// Resizing window when opening player
+            UIView.animate(withDuration: 0.3) {
+                self.resizeWindow(0.1)
+            }
+        }
     }
     
     // Window resize methods
@@ -70,13 +87,13 @@ class PlayerProperties {
         currentOrientation = newOrientation
         
         // If orientation actually changed and player is expanded
-        if oldOrientation != newOrientation && expandPlayer {
+        if oldOrientation != newOrientation && isPlayerExpanded {
             // First reset to identity to avoid transform stacking
             resetWindowToIdentity()
             
             // Then reapply the current transform with a slight delay to ensure the window has updated its frame
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-                guard let self = self, self.expandPlayer else { return }
+                guard let self = self, self.isPlayerExpanded else { return }
                 self.resizeWindow(0.1 - self.windowProgress)
             }
         }

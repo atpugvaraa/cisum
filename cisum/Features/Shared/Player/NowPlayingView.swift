@@ -22,16 +22,31 @@ struct NowPlayingView: View {
     #if DEBUG
     @ObserveInjection var forceRedraw
     #endif
+    
+    var playerBackgroundClipShape: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(topLeadingRadius: properties.isPlayerExpanded ? 150 : 50, bottomLeadingRadius: properties.isPlayerExpanded ? deviceCornerRadius : 50, bottomTrailingRadius: properties.isPlayerExpanded ? deviceCornerRadius : 50, topTrailingRadius: properties.isPlayerExpanded ? 150 : 50)
+    }
 
     var body: some View {
         ZStack {
-            Rectangle()
-                .fill(.ultraThickMaterial)
-                .overlay {
-                    nowPlayingBackground
-                }
-                .ignoresSafeArea()
-                .opacity(properties.expandPlayer ? 1 : 0)
+            if #available(iOS 26.0, *) {
+                Rectangle()
+                    .fill(.ultraThickMaterial)
+                    .overlay {
+                        nowPlayingBackground
+                    }
+                    .ignoresSafeArea()
+                    .opacity(properties.isPlayerExpanded ? 1 : 0)
+            } else {
+                Rectangle()
+                    .fill(.ultraThickMaterial)
+                    .overlay {
+                        nowPlayingBackground
+                    }
+                    .ignoresSafeArea()
+                    .opacity(properties.isPlayerExpanded ? 1 : 0)
+                    .clipShape(playerBackgroundClipShape)
+            }
             
             VStack(spacing: 12) {
                 header
@@ -49,7 +64,7 @@ struct NowPlayingView: View {
         .onChange(of: playerMode) { _, _ in
             playerViewModel.reloadCurrentVideo()
         }
-        .animation(.smooth(duration: 0.35), value: properties.expandPlayer)
+        .animation(.smooth(duration: 0.35), value: properties.isPlayerExpanded)
         .enableInjection()
         
         //        ZStack {
@@ -210,7 +225,7 @@ struct NowPlayingView: View {
                 .onTapGesture {
                     withAnimation(.smooth(duration: 0.3, extraBounce: 0)) {
                         /// Closing View
-                        properties.expandPlayer = false
+                        properties.isPlayerExpanded = false
                         /// Resetting Window to identity with Animation
                         properties.resetWindowWithAnimation()
                         
@@ -224,7 +239,7 @@ struct NowPlayingView: View {
     var artwork: some View {
         GeometryReader { geometry in
             VStack {
-                if properties.expandPlayer {
+                if properties.isPlayerExpanded {
                 ZStack {
 //                    Image(.notPlaying)
 //                        .resizable()
@@ -235,16 +250,16 @@ struct NowPlayingView: View {
 //                        .transition(.offset(y: 1))
                     
                     VideoPlayer(player: playerViewModel.player)
-                        .matchedGeometryEffect(id: "Artwork", in: namespace, properties: .frame, anchor: .center)
+                        .matchedGeometryEffect(id: "Artwork", in: namespace, properties: .frame)
                         .transition(.offset(y: 1))
                         .frame(width: 300, height: 300)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .shadow(radius: 20)
-                        .onTapGesture(count: 2) {
-                            withAnimation {
-                                playerMode = (playerMode == .video) ? .audio : .video
-                            }
-                        }
+//                        .onTapGesture(count: 2) {
+//                            withAnimation {
+//                                playerMode = (playerMode == .video) ? .audio : .video
+//                            }
+//                        }
                 }
                 .frame(width: geometry.size.width, height: geometry.size.width)
             }
