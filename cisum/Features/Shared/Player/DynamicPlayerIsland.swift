@@ -9,7 +9,10 @@ import SwiftUI
 
 struct DynamicPlayerIsland: View {
 #if os(iOS)
-    @Namespace private var namespace
+    var namespace: Namespace.ID
+    
+    @State private var properties = PlayerProperties.shared
+    @Environment(PlayerViewModel.self) private var playerViewModel
 
     #if DEBUG
     @ObserveInjection var forceRedraw
@@ -23,17 +26,19 @@ struct DynamicPlayerIsland: View {
                         .fill(.clear)
                         .glassEffect(.identity)
                         .matchedGeometryEffect(id: "GLASS", in: namespace)
-                        .frame(height: 56)
+                        .frame(height: 48)
                         .overlay {
                             HStack(spacing: 12) {
-                                Circle()
+                                AsyncImage(url: playerViewModel.currentImageURL)
                                     .matchedGeometryEffect(id: "Artwork", in: namespace)
                                     .frame(width: 40, height: 40)
+                                    .aspectRatio(contentMode: .fit)
+                                    .clipShape(.circle)
 
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Now Playing")
+                                    Text(playerViewModel.currentTitle)
                                         .fontWeight(.semibold)
-                                    Text("Artist")
+                                    Text(playerViewModel.currentArtist)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -52,49 +57,27 @@ struct DynamicPlayerIsland: View {
                             .padding(.trailing, 10)
                         }
                 }
-                .onTapGesture {
-                    
-                }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             } else {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 50)
-                        .fill(.bar)
-                        .matchedGeometryEffect(id: "GLASS", in: namespace)
-                        .frame(height: 45)
-                        .overlay {
-                            HStack(spacing: 12) {
-                                Circle()
-                                    .matchedGeometryEffect(id: "Artwork", in: namespace)
-                                    .frame(width: 36, height: 36)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Now Playing")
-                                        .fontWeight(.semibold)
-                                    Text("Artist")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-
-                                Spacer()
-
-                                HStack(spacing: 14) {
-                                    Image(systemName: "backward.fill")
-                                    Image(systemName: "play.fill")
-                                    Image(systemName: "forward.fill")
-                                }
-                                .font(.title3)
-                                .fontWeight(.bold)
-                            }
-                            .padding(.leading, 4)
-                            .padding(.trailing, 10)
-                        }
-                }
-                .padding(.horizontal, 20)
-                .onTapGesture {
+                HStack(spacing: 12) {
+                    artwork
                     
+                    Text(playerViewModel.currentTitle)
+                    
+                    Spacer(minLength: 0)
+                    
+                    playButton
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .padding(.leading, 3)
+                .padding(.trailing, 4)
+                .frame(height: 44)
+                .contentShape(.rect)
+                .onTapGesture {
+                    properties.expandPlayer()
+                }
+//                .overlay {
+//                    cisumMiniPlayerProgress(currentTime: .constant(60), inRange: 0...240)
+//                }
             }
         }
         .enableInjection()
@@ -173,8 +156,48 @@ struct DynamicPlayerIsland: View {
         .enableInjection()
     }
 #endif
-}
-
-#Preview {
-    DynamicPlayerIsland()
+    
+    var artwork: some View {
+        ZStack {
+            if !properties.isPlayerExpanded {
+                AsyncImage(url: playerViewModel.currentImageURL)
+                    .matchedGeometryEffect(id: "Artwork", in: namespace)
+                    .frame(width: 40, height: 40)
+                    .aspectRatio(contentMode: .fit)
+                    .clipShape(.circle)
+            }
+        }
+    }
+    
+    var playButton: some View {
+        Button {
+            //            player.togglePlay()
+            properties.transparency = 0.6
+            withAnimation(.easeOut(duration: 0.2)) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    properties.transparency = 0.0
+                }
+            }
+        } label: {
+            ZStack {
+                Circle()
+                    .frame(width: 35, height: 35)
+                    .opacity(properties.transparency)
+                #warning("uncomment this when player observable is written")
+//                    Image(systemName: "pause.fill")
+//                        .font(.title2)
+                //                    .scaleEffect(player.isPlaying ? 1 : 0)
+                //                    .opacity(player.isPlaying ? 1 : 0)
+                //                    .animation(.interpolatingSpring(stiffness: 170, damping: 15), value: player.isPlaying)
+                Image(systemName: "play.fill")
+                    .font(.title2)
+                //                    .scaleEffect(player.isPlaying ? 0 : 1)
+                //                    .opacity(player.isPlaying ? 0 : 1)
+                //                    .animation(.interpolatingSpring(stiffness: 170, damping: 15), value: player.isPlaying)
+            }
+        }
+        .font(.title3)
+        .foregroundStyle(Color.primary)
+        .padding(.trailing, 5)
+    }
 }

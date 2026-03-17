@@ -29,7 +29,9 @@ enum ScrollPhases: Equatable {
             self = .interacting
         case .decelerating:
             self = .decelerating
-        @unknown default:
+        case .tracking:
+            self = .idle
+        case .animating:
             self = .idle
         }
     }

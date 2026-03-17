@@ -6,13 +6,20 @@
 //
 
 import SwiftUI
+import LNPopupUI
 
 #if os(iOS)
 struct iOSTabView<SelectionValue: Hashable>: View {
-    @Binding var selection: SelectionValue
-    let tabs: [TabViewData<SelectionValue>]
+    @Environment(PlayerViewModel.self) private var playerViewModel
     @Environment(\.tabBarVisibility) private var tabBarVisibility
     @Environment(\.tabBarBottomAccessory) private var tabBarBottomAccessory
+    
+    @Binding var selection: SelectionValue
+    let tabs: [TabViewData<SelectionValue>]
+    
+    @State private var showMiniPlayer: Bool = false
+    @State private var properties = PlayerProperties.shared
+    @Namespace private var namespace
 
     var searchText: Binding<String>
     var onSearchSubmit: () -> Void
@@ -37,13 +44,39 @@ struct iOSTabView<SelectionValue: Hashable>: View {
         Group {
             if #available(iOS 26.0, *) {
                 NativeTabView
-                    .tabViewBottomAccessory {
+                    .popup(isBarPresented: Binding(
+                        get: { true },
+                        set: { _ in }
+                    ), isPopupOpen: $properties.isPlayerExpanded) {
+                        NowPlayingView(namespace: namespace)
+                            .environment(playerViewModel)
+                    }
+                    .popupBarCustomView(wantsDefaultTapGesture: true, wantsDefaultPanGesture: true, wantsDefaultHighlightGesture: false) {
                         if let accessory = tabBarBottomAccessory {
                             accessory
+                                .contentShape(.rect)
+                                .onTapGesture {
+                                    properties.expandPlayer()
+                                }
                         }
                     }
+                    .popupBarStyle(.floatingCompact)
+                    .popupCloseButtonStyle(.none)
             } else {
                 iOS26TabView
+                    .universalOverlay(show: $showMiniPlayer) {
+//                        let searchTab = tabs.first(where: { $0.role == .search })
+//                        let isSearchExpanded = selection == searchTab?.value
+                        
+                        ExpandablePlayer(show: $showMiniPlayer)
+//                            .padding(.bottom, isSearchExpanded ? -5 : 0)
+//                            .animation(.smooth(duration: 0.3), value: isSearchExpanded)
+                            .ignoresSafeArea(.keyboard)
+                            .environment(playerViewModel)
+                    }
+                    .onAppear {
+                        showMiniPlayer = true
+                    }
             }
         }
         .enableInjection()
@@ -62,6 +95,7 @@ struct iOSTabView<SelectionValue: Hashable>: View {
                 ) {
                     tab.content
                         .toolbarVisibility(tabBarVisibility, for: .tabBar)
+                        .animation(.bouncy(duration: 0.3), value: tabBarVisibility)
                 }
             }
         }
@@ -91,16 +125,7 @@ struct iOSTabView<SelectionValue: Hashable>: View {
 
     @ViewBuilder
     private var bottomChrome: some View {
-        let searchTab = tabs.first(where: { $0.role == .search })
-        let isSearchExpanded = selection == searchTab?.value
-
         VStack(spacing: 6) {
-            if let accessory = tabBarBottomAccessory {
-                accessory
-                    .padding(.bottom, isSearchExpanded ? -5 : 5)
-                    .allowsHitTesting(tabBarVisibility == .visible)
-            }
-
             if tabBarVisibility == .visible {
                 iOS26TabBar(
                     tabs: tabs,
@@ -121,7 +146,6 @@ struct iOSTabView<SelectionValue: Hashable>: View {
         .padding(.bottom, tabBarVisibility == .hidden ? -20 : 4)
         .allowsHitTesting(tabBarVisibility != .hidden)
         .animation(.smooth(duration: 0.3), value: tabBarVisibility)
-        .animation(.smooth(duration: 0.3), value: isSearchExpanded)
     }
 }
 #endif

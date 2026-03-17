@@ -11,6 +11,8 @@ import SwiftData
 
 @main
 struct cisumApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+    
     private let youtube = YouTube.shared
     private let router = Router.shared
     private let modelContainer: ModelContainer
@@ -56,17 +58,52 @@ struct cisumApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .modelContainer(modelContainer)
-                .environment(\.youtube, youtube)
-                .environment(\.router, router)
-                .environment(prefetchSettings)
-                .environment(playerViewModel)
-                .environment(searchViewModel)
-                .environment(networkMonitor)
 #if os(iOS)
-                .persistentSystemOverlays(.hidden)
+            if #available(iOS 26.0, *) {
+                ContentView()
+                    .modelContainer(modelContainer)
+                    .environment(\.youtube, youtube)
+                    .environment(\.router, router)
+                    .environment(prefetchSettings)
+                    .environment(playerViewModel)
+                    .environment(searchViewModel)
+                    .environment(networkMonitor)
+                    .persistentSystemOverlays(.hidden)
+            } else {
+                RootView {
+                    ContentView()
+                        .modelContainer(modelContainer)
+                        .environment(\.youtube, youtube)
+                        .environment(\.router, router)
+                        .environment(prefetchSettings)
+                        .environment(playerViewModel)
+                        .environment(searchViewModel)
+                        .environment(networkMonitor)
+                        .persistentSystemOverlays(.hidden)
+                }
+            }
+#elseif os(macOS)
+ContentView()
+    .modelContainer(modelContainer)
+    .environment(\.youtube, youtube)
+    .environment(\.router, router)
+    .environment(prefetchSettings)
+    .environment(playerViewModel)
+    .environment(searchViewModel)
+    .environment(networkMonitor)
 #endif
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            switch newPhase {
+            case .active:
+                print("App became active")
+            case .inactive:
+                print("App became inactive")
+            case .background:
+                print("App went to background")
+            @unknown default:
+                print("Unknown scene phase")
+            }
         }
         
         #if os(macOS)

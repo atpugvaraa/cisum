@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(SearchViewModel.self) private var searchViewModel
+    @Environment(PlayerViewModel.self) private var playerViewModel
     @Environment(\.router) private var router
     
     @State private var activeTab: TabItem = .home
@@ -20,6 +21,10 @@ struct ContentView: View {
     
     let hideThresholds: CGFloat = 40
     let showThresholds: CGFloat = -10
+    
+    @Namespace private var namespace
+    
+    @State private var properties = PlayerProperties.shared
     
     var body: some View {
 #if os(iOS)
@@ -54,7 +59,7 @@ struct ContentView: View {
             searchViewModel.performDebouncedSearch()
         }
         .tabbarBottomViewAccessory {
-            DynamicPlayerIsland()
+            DynamicPlayerIsland(namespace: namespace)
         }
         .tabbarVisibility(tabBarVisibility)
         .animation(.smooth(duration: 0.3), value: tabBarVisibility)

@@ -12,10 +12,11 @@ struct SearchView: View {
     @Environment(SearchViewModel.self) private var searchViewModel
     @Environment(PlayerViewModel.self) private var playerViewModel
 
-    @State private var showPlayer = false
     @FocusState private var isSearchFocused: Bool
     @State private var showNonPlayableAlert: Bool = false
     @State private var nonPlayableMessage: String = ""
+    
+    @State private var properties = PlayerProperties.shared
 
     #if DEBUG
     @ObserveInjection var forceRedraw
@@ -23,10 +24,6 @@ struct SearchView: View {
 
     var body: some View {
         searchContent
-            .sheet(isPresented: $showPlayer) {
-                NowPlayingView()
-                    .environment(playerViewModel)
-            }
             .optionalSearchable(
                 text: Bindable(searchViewModel).searchText,
                 scope: Bindable(searchViewModel).searchScope,
@@ -114,7 +111,7 @@ struct SearchView: View {
                             }
                         }
                     }
-                    .listRowSeparator(.hidden)
+                    .contentShape(.rect)
                     .onAppear {
                         searchViewModel.prefetchIfNeeded(id: song.videoId)
                     }
@@ -267,13 +264,13 @@ struct SearchView: View {
     private func playMusic(_ song: YouTubeMusicSong) {
         searchViewModel.recordSuccessfulPlayFromCurrentQuery()
         playerViewModel.load(song: song)
-        showPlayer = true
+        properties.expandPlayer()
     }
     
     private func playVideo(_ video: YouTubeVideo) {
         searchViewModel.recordSuccessfulPlayFromCurrentQuery()
         playerViewModel.load(video: video)
-        showPlayer = true
+        properties.expandPlayer()
     }
 
     private func formatDuration(_ seconds: TimeInterval) -> String {
