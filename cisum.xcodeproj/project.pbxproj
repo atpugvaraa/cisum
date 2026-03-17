@@ -11,6 +11,7 @@
 		7725A1BC2F63F3C6008D5716 /* YouTubeSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 7733B1D62F03B95800BA9C73 /* YouTubeSDK */; };
 		7725A1BE2F63F3C6008D5716 /* YouTubeSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 7733B1E32F03B99A00BA9C73 /* YouTubeSDK */; };
 		7725A1BF2F63F3C6008D5716 /* YouTubeSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 7733B1ED2F03B9CC00BA9C73 /* YouTubeSDK */; };
+		7774D9902F6923C900952714 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 7774D98F2F6923C900952714 /* Kingfisher */; };
 		778645E92F6710D500B7FA67 /* TabBarVisibilityKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778645E82F6710D500B7FA67 /* TabBarVisibilityKey.swift */; };
 		778645EC2F6711DC00B7FA67 /* ScrollViewModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778645EB2F6711DC00B7FA67 /* ScrollViewModifiers.swift */; };
 		778645EE2F67127D00B7FA67 /* View+Modifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 778645ED2F67127D00B7FA67 /* View+Modifiers.swift */; };
@@ -155,6 +156,7 @@
 			files = (
 				7725A1BF2F63F3C6008D5716 /* YouTubeSDK in Frameworks */,
 				77864AF02F68762B00B7FA67 /* LNPopupUI in Frameworks */,
+				7774D9902F6923C900952714 /* Kingfisher in Frameworks */,
 				7725A1BE2F63F3C6008D5716 /* YouTubeSDK in Frameworks */,
 				77A3EC212F6674A600B13358 /* InjectionNext in Frameworks */,
 				7725A1BC2F63F3C6008D5716 /* YouTubeSDK in Frameworks */,
@@ -502,6 +504,7 @@
 				7725A14E2F63DF8D008D5716 /* YouTubeSDK */,
 				77A3EC202F6674A600B13358 /* InjectionNext */,
 				77864AEF2F68762B00B7FA67 /* LNPopupUI */,
+				7774D98F2F6923C900952714 /* Kingfisher */,
 			);
 			productName = cisum;
 			productReference = 772721402EDB2728002F5866 /* cisum.app */;
@@ -535,6 +538,7 @@
 				7725A14D2F63DF8D008D5716 /* XCLocalSwiftPackageReference "../../Packages/StreamingKit/YouTubeSDK" */,
 				77A3EC1F2F6674A600B13358 /* XCRemoteSwiftPackageReference "InjectionNext" */,
 				77864AE82F6874A200B7FA67 /* XCRemoteSwiftPackageReference "LNPopupUI" */,
+				7774D98E2F6923C900952714 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 772721412EDB2728002F5866 /* Products */;
@@ -874,6 +878,14 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		7774D98E2F6923C900952714 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.8.0;
+			};
+		};
 		77864AE82F6874A200B7FA67 /* XCRemoteSwiftPackageReference "LNPopupUI" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/LeoNatan/LNPopupUI.git";
@@ -908,6 +920,11 @@
 		7733B1ED2F03B9CC00BA9C73 /* YouTubeSDK */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = YouTubeSDK;
+		};
+		7774D98F2F6923C900952714 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7774D98E2F6923C900952714 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
 		};
 		77864AEF2F68762B00B7FA67 /* LNPopupUI */ = {
 			isa = XCSwiftPackageProductDependency;

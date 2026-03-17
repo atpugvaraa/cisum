@@ -6,8 +6,11 @@
 //
 
 import SwiftUI
+import Kingfisher
 
 struct ExpandablePlayer: View {
+    @Environment(PlayerViewModel.self) private var playerViewModel
+    
     @Binding var show: Bool
     @Namespace private var namespace
     
@@ -130,7 +133,7 @@ struct ExpandablePlayer: View {
     }
     
     var backgroundEffects: some View {
-        Image(.notPlaying)
+        KFImage(playerViewModel.currentImageURL)
             .resizable()
             .scaledToFill()
             .blur(radius: 100, opaque: true)

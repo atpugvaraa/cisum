@@ -197,7 +197,7 @@ private extension StretchySlider {
                 content
                     .foregroundStyle(isActive ? config.minimumTrackActiveColor : config.minimumTrackInactiveColor)
             }
-            .animation(nil, value: isActive)
+            .animation(.bouncy, value: isActive)
             .blendMode(isActive ? .normal : config.blendMode)
             .transformEffect(.identity)
         } else {
@@ -213,11 +213,13 @@ private extension StretchySlider {
                 let padding = (isActive ? 0 : config.growth) + config.maxStretch
                 
                 styled(leadingLabel)
-                    .padding(.leading, padding - leadingStretch)
+//                    .padding(.leading, padding - leadingStretch)
+                    .offset(x: padding - leadingStretch + 3)
 
                 Spacer()
                 styled(trailingLabel)
-                    .padding(.trailing, padding - trailingStretch)
+//                    .padding(.trailing, padding - trailingStretch)
+                    .offset(x: trailingStretch - padding - 3)
             }
         }
     }

@@ -61,6 +61,7 @@ struct iOSTabView<SelectionValue: Hashable>: View {
                         }
                     }
                     .popupBarStyle(.floatingCompact)
+                    .popupInteractionStyle(.customizedSnap(percent: 0.05))
                     .popupCloseButtonStyle(.none)
             } else {
                 iOS26TabView

@@ -5,10 +5,11 @@
 //  Created by Aarav Gupta on 05/12/25.
 //
 
-import SwiftUI
 import AVKit
-import YouTubeSDK
 import LNPopupUI
+import Kingfisher
+import YouTubeSDK
+import SwiftUI
 
 struct NowPlayingView: View {
     @Environment(\.dismiss) var dismiss
@@ -26,25 +27,24 @@ struct NowPlayingView: View {
     
     var body: some View {
         ZStack {
-            Rectangle()
-                .fill(.ultraThickMaterial)
-                .overlay {
-                    nowPlayingBackground
-                }
-                .ignoresSafeArea()
-            
-            VStack(spacing: 12) {
-                header
+            if #available(iOS 26.0, *) {
+                Rectangle()
+                    .fill(.ultraThickMaterial)
+                    .overlay {
+                        nowPlayingBackground
+                    }
+                    .ignoresSafeArea()
                 
-                artwork
-                
-                songInfo
-                
-                playerControls
+                playerView
+            } else {
+                playerView
+                    .safeAreaPadding(.top)
+                    .safeAreaPadding(.top)
+                    .safeAreaPadding(.top)
+                    .safeAreaPadding(.top)
+                    .safeAreaPadding(.bottom)
+                    .ignoresSafeArea()
             }
-            .padding(.top, 10)
-            .padding(.vertical, 20)
-            .padding(.horizontal, 15)
         }
         .popupItem {
             let id: String = playerViewModel.currentVideoId ?? UUID().uuidString
@@ -76,6 +76,21 @@ struct NowPlayingView: View {
         .enableInjection()
     }
     
+    var playerView: some View {
+        VStack(spacing: 12) {
+            header
+            
+            artwork
+            
+            songInfo
+            
+            playerControls
+        }
+        .padding(.top, 10)
+        .padding(.vertical, 20)
+        .padding(.horizontal, 15)
+    }
+    
     var nowPlayingBackground: some View {
         ZStack {
             dominantColor
@@ -84,6 +99,7 @@ struct NowPlayingView: View {
             
             overlayEffects
         }
+        .compositingGroup()
     }
     
     var dominantColor: some View {
@@ -93,7 +109,7 @@ struct NowPlayingView: View {
     }
     
     var backgroundEffects: some View {
-        Image(.notPlaying)
+        KFImage(playerViewModel.currentImageURL)
             .resizable()
             .scaledToFill()
             .blur(radius: 100, opaque: true)
@@ -122,8 +138,10 @@ struct NowPlayingView: View {
             
             Color.black.opacity(0.35)
         }
+        .compositingGroup()
     }
     
+    @ViewBuilder
     var header: some View {
         VStack {
             Capsule()
@@ -144,39 +162,37 @@ struct NowPlayingView: View {
         .frame(width: 40, height: 5)
     }
     
+    @ViewBuilder
     var artwork: some View {
         GeometryReader { geometry in
             VStack {
                 if properties.isPlayerExpanded {
-                ZStack {
-//                    Image(.notPlaying)
-//                        .resizable()
-//                        .aspectRatio(1, contentMode: .fit)
-//                        .clipShape(.rect(cornerRadius: 12))
-//                        .shadow(color: Color.black.opacity(0.4), radius: 10, x: 0, y: 4)
-//                        .matchedGeometryEffect(id: "Artwork", in: namespace, properties: .frame, anchor: .center)
-//                        .transition(.offset(y: 1))
-                    
-                    VideoPlayer(player: playerViewModel.player)
-                        .matchedGeometryEffect(id: "Artwork", in: namespace, properties: .frame)
-                        .transition(.offset(y: 1))
-                        .frame(width: 300, height: 300)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .shadow(radius: 20)
-//                        .onTapGesture(count: 2) {
-//                            withAnimation {
-//                                playerMode = (playerMode == .video) ? .audio : .video
-//                            }
-//                        }
+                    ZStack {
+                        //                        Image(.notPlaying)
+                        //                            .resizable()
+                        //                            .aspectRatio(1, contentMode: .fit)
+                        //                            .clipShape(.rect(cornerRadius: 12))
+                        //                            .shadow(color: Color.black.opacity(0.4), radius: 10, x: 0, y: 4)
+                        //                            .transition(.offset(y: 1))
+                        
+                        VideoPlayer(player: playerViewModel.player)
+                            .matchedGeometryEffect(id: "Artwork", in: namespace, properties: .frame, anchor: .center)
+                        //                            .onTapGesture(count: 2) {
+                        //                                withAnimation {
+                        //                                    playerMode = (playerMode == .video) ? .audio : .video
+                        //                                }
+                        //                            }
+                    }
                 }
-                .frame(width: geometry.size.width, height: geometry.size.width)
             }
-        }
-        .frame(width: geometry.size.width, height: geometry.size.width)
+            .frame(width: geometry.size.width, height: geometry.size.width)
+            .clipShape(.rect(cornerRadius: 12))
+            .shadow(radius: 20)
         }
         .padding(.horizontal, 15)
     }
     
+    @ViewBuilder
     var songInfo: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
@@ -220,10 +236,11 @@ struct NowPlayingView: View {
             .frame(alignment: .trailing)
         }
         .frame(height: 80)
-        .padding(.top, 15)
+        .padding(.top, 80)
         .padding(.horizontal, 15)
     }
     
+    @ViewBuilder
     var playerControls: some View {
         GeometryReader {
             let size = $0.size
@@ -307,7 +324,6 @@ struct NowPlayingView: View {
         }
         .foregroundColor(.white)
         .blendMode(.overlay)
-        .padding(.bottom, safeArea.bottom)
     }
     
     func formatTime(_ seconds: Double) -> String {

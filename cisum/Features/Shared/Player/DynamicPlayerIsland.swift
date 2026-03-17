@@ -5,6 +5,7 @@
 //  Created by Aarav Gupta on 13/03/26.
 //
 
+import Kingfisher
 import SwiftUI
 
 struct DynamicPlayerIsland: View {
@@ -29,7 +30,7 @@ struct DynamicPlayerIsland: View {
                         .frame(height: 48)
                         .overlay {
                             HStack(spacing: 12) {
-                                AsyncImage(url: playerViewModel.currentImageURL)
+                                KFImage(playerViewModel.currentImageURL)
                                     .matchedGeometryEffect(id: "Artwork", in: namespace)
                                     .frame(width: 40, height: 40)
                                     .aspectRatio(contentMode: .fit)
@@ -160,7 +161,7 @@ struct DynamicPlayerIsland: View {
     var artwork: some View {
         ZStack {
             if !properties.isPlayerExpanded {
-                AsyncImage(url: playerViewModel.currentImageURL)
+                KFImage(playerViewModel.currentImageURL)
                     .matchedGeometryEffect(id: "Artwork", in: namespace)
                     .frame(width: 40, height: 40)
                     .aspectRatio(contentMode: .fit)

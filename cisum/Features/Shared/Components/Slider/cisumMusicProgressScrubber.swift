@@ -39,7 +39,7 @@ struct cisumMusicProgressScrubber: View {
             onEditingChanged: onEditingChanged
         )
         .sliderStyle(.playbackProgress)
-        .frame(height: 60)
+        .frame(height: 35)
         .transformEffect(.identity)
         .enableInjection()
     }
@@ -49,7 +49,6 @@ private extension cisumMusicProgressScrubber {
     func label(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 12, weight: .semibold))
-            .padding(.top, 11)
     }
 
     var leadingDuration: String {

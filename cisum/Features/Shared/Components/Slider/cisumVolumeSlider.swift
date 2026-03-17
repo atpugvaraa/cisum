@@ -36,12 +36,12 @@ struct cisumVolumeSlider: View {
             in: range,
             leadingLabel: {
                 Image(systemName: "speaker.fill")
-                    .padding(.trailing, 10)
+                    .padding(.trailing, 20)
                     .symbolEffect(.bounce, value: minVolumeAnimationTrigger)
             },
             trailingLabel: {
                 Image(systemName: "speaker.wave.3.fill")
-                    .padding(.leading, 10)
+                    .padding(.leading, 20)
                     .symbolEffect(.bounce, value: maxVolumeAnimationTrigger)
             },
             onEditingChanged: onEditingChanged

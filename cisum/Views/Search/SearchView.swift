@@ -5,8 +5,9 @@
 //  Created by Aarav Gupta on 04/12/25.
 //
 
-import SwiftUI
+import Kingfisher
 import YouTubeSDK
+import SwiftUI
 
 struct SearchView: View {
     @Environment(SearchViewModel.self) private var searchViewModel
@@ -186,13 +187,11 @@ struct SearchView: View {
                         } label: {
                             HStack(spacing: 12) {
                                 if let url = normalizedThumbnailURL(from: playlist.thumbnailURL) {
-                                    AsyncImage(url: url) { image in
-                                        image.resizable().scaledToFill()
-                                    } placeholder: {
-                                        Color.gray.opacity(0.3)
-                                    }
-                                    .frame(width: 50, height: 50)
-                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    KFImage(url)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 50, height: 50)
+                                        .clipShape(RoundedRectangle(cornerRadius: 6))
                                 } else {
                                     Color.gray.frame(width: 50, height: 50).clipShape(RoundedRectangle(cornerRadius: 6))
                                 }
