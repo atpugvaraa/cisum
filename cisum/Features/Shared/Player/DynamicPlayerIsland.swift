@@ -26,7 +26,7 @@ struct DynamicPlayerIsland: View {
                         .fill(.clear)
                         .glassEffect(.identity)
                         .matchedGeometryEffect(id: "GLASS", in: namespace)
-                        .frame(height: 56)
+                        .frame(height: 48)
                         .overlay {
                             HStack(spacing: 12) {
                                 AsyncImage(url: playerViewModel.currentImageURL)

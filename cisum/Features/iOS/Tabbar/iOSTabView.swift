@@ -6,13 +6,13 @@
 //
 
 import SwiftUI
+import LNPopupUI
 
 #if os(iOS)
 struct iOSTabView<SelectionValue: Hashable>: View {
     @Environment(PlayerViewModel.self) private var playerViewModel
     @Environment(\.tabBarVisibility) private var tabBarVisibility
     @Environment(\.tabBarBottomAccessory) private var tabBarBottomAccessory
-    
     
     @Binding var selection: SelectionValue
     let tabs: [TabViewData<SelectionValue>]
@@ -44,24 +44,24 @@ struct iOSTabView<SelectionValue: Hashable>: View {
         Group {
             if #available(iOS 26.0, *) {
                 NativeTabView
-                    .tabViewBottomAccessory {
+                    .popup(isBarPresented: Binding(
+                        get: { true },
+                        set: { _ in }
+                    ), isPopupOpen: $properties.isPlayerExpanded) {
+                        NowPlayingView(namespace: namespace)
+                            .environment(playerViewModel)
+                    }
+                    .popupBarCustomView(wantsDefaultTapGesture: true, wantsDefaultPanGesture: true, wantsDefaultHighlightGesture: false) {
                         if let accessory = tabBarBottomAccessory {
                             accessory
                                 .contentShape(.rect)
-                                .matchedTransitionSource(id: "MiniPlayer", in: namespace)
-                                .highPriorityGesture(
-                                    TapGesture().onEnded {
-                                        properties.expandPlayer()
-                                    }
-                                )
+                                .onTapGesture {
+                                    properties.expandPlayer()
+                                }
                         }
                     }
-                    .fullScreenCover(isPresented: $properties.isPlayerExpanded) {
-                        NowPlayingView(namespace: namespace)
-                            .navigationTransition(.zoom(sourceID: "MiniPlayer", in: namespace))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(.background)
-                    }
+                    .popupBarStyle(.floatingCompact)
+                    .popupCloseButtonStyle(.none)
             } else {
                 iOS26TabView
                     .universalOverlay(show: $showMiniPlayer) {
@@ -95,6 +95,7 @@ struct iOSTabView<SelectionValue: Hashable>: View {
                 ) {
                     tab.content
                         .toolbarVisibility(tabBarVisibility, for: .tabBar)
+                        .animation(.bouncy(duration: 0.3), value: tabBarVisibility)
                 }
             }
         }

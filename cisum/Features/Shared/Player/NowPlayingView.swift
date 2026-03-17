@@ -8,6 +8,7 @@
 import SwiftUI
 import AVKit
 import YouTubeSDK
+import LNPopupUI
 
 struct NowPlayingView: View {
     @Environment(\.dismiss) var dismiss
@@ -23,30 +24,14 @@ struct NowPlayingView: View {
     @ObserveInjection var forceRedraw
     #endif
     
-    var playerBackgroundClipShape: UnevenRoundedRectangle {
-        UnevenRoundedRectangle(topLeadingRadius: properties.isPlayerExpanded ? 150 : 50, bottomLeadingRadius: properties.isPlayerExpanded ? deviceCornerRadius : 50, bottomTrailingRadius: properties.isPlayerExpanded ? deviceCornerRadius : 50, topTrailingRadius: properties.isPlayerExpanded ? 150 : 50)
-    }
-
     var body: some View {
         ZStack {
-            if #available(iOS 26.0, *) {
-                Rectangle()
-                    .fill(.ultraThickMaterial)
-                    .overlay {
-                        nowPlayingBackground
-                    }
-                    .ignoresSafeArea()
-                    .opacity(properties.isPlayerExpanded ? 1 : 0)
-            } else {
-                Rectangle()
-                    .fill(.ultraThickMaterial)
-                    .overlay {
-                        nowPlayingBackground
-                    }
-                    .ignoresSafeArea()
-                    .opacity(properties.isPlayerExpanded ? 1 : 0)
-                    .clipShape(playerBackgroundClipShape)
-            }
+            Rectangle()
+                .fill(.ultraThickMaterial)
+                .overlay {
+                    nowPlayingBackground
+                }
+                .ignoresSafeArea()
             
             VStack(spacing: 12) {
                 header
@@ -61,111 +46,34 @@ struct NowPlayingView: View {
             .padding(.vertical, 20)
             .padding(.horizontal, 15)
         }
+        .popupItem {
+            let id: String = playerViewModel.currentVideoId ?? UUID().uuidString
+            let title: String = playerViewModel.currentTitle
+            let subtitle: String = playerViewModel.currentArtist
+            let image: Image = Image(systemName: "music.note")
+            let progress: Float = Float(playerViewModel.currentTime / max(playerViewModel.duration, 1))
+            
+            return PopupItem(
+                id: id,
+                title: title,
+                subtitle: subtitle,
+                image: image,
+                progress: progress
+            ) {
+                ToolbarItemGroup(placement: .popupBar) {
+                    Button {
+                        playerViewModel.togglePlayPause()
+                    } label: {
+                        Image(systemName: playerViewModel.isPlaying ? "pause.fill" : "play.fill")
+                    }
+                }
+            }
+        }
         .onChange(of: playerMode) { _, _ in
             playerViewModel.reloadCurrentVideo()
         }
         .animation(.smooth(duration: 0.35), value: properties.isPlayerExpanded)
         .enableInjection()
-        
-        //        ZStack {
-        //            LinearGradient(colors: [.red.opacity(0.8), .black], startPoint: .top, endPoint: .bottom)
-        //                .ignoresSafeArea()
-        //
-        //            VStack(spacing: 20) {
-        //
-        //                Spacer()
-        //
-        //
-        //
-        //                Picker("Mode", selection: $playerMode) {
-        //                    Image(systemName: "video.fill").tag(PlayerMode.video)
-        //                    Image(systemName: "music.note").tag(PlayerMode.audio)
-        //                }
-        //                    .pickerStyle(.segmented)
-        //                    .frame(width: 150)
-        //                    .padding(.top, 10)
-        //
-        //                Spacer()
-        //
-        //                VStack(alignment: .leading, spacing: 5) {
-        //                    HStack {
-        //                        Text(playerViewModel.currentTitle)
-        //                            .font(.title2.bold())
-        //                            .foregroundStyle(.white)
-        //                            .lineLimit(1)
-        //
-        //                        if playerViewModel.isExplicit {
-        //                            Text("E")
-        //                                .font(.caption2.bold())
-        //                                .foregroundStyle(.white.opacity(0.8))
-        //                                .padding(4)
-        //                                .background(.white.opacity(0.2), in: RoundedRectangle(cornerRadius: 4))
-        //                        }
-        //                    }
-        //
-        //                    Text(playerViewModel.currentArtist)
-        //                        .font(.title3)
-        //                        .foregroundStyle(.gray)
-        //                        .lineLimit(1)
-        //                }
-        //                .frame(maxWidth: .infinity, alignment: .leading)
-        //                .padding(.horizontal, 30)
-        //
-        //                VStack(spacing: 5) {
-        //                    if #available(iOS 26.0, *), #available(macOS 26.0, *) {
-        //                         Slider(
-        //                             value: Binding(
-        //                                 get: { playerViewModel.currentTime },
-        //                                 set: { playerViewModel.seek(to: $0) }
-        //                             ),
-        //                             in: 0...(playerViewModel.duration > 0 ? playerViewModel.duration : 1)
-        //                         )
-        //                         .tint(.red)
-        //                         .sliderThumbVisibility(.hidden)
-        //                    } else {
-        //                         Slider(
-        //                             value: Binding(
-        //                                 get: { playerViewModel.currentTime },
-        //                                 set: { playerViewModel.seek(to: $0) }
-        //                             ),
-        //                             in: 0...(playerViewModel.duration > 0 ? playerViewModel.duration : 1)
-        //                         )
-        //                         .tint(.red)
-        //                    }
-        //
-        //                    HStack {
-        //                        Text(formatTime(playerViewModel.currentTime))
-        //                        Spacer()
-        //                        Text(formatTime(playerViewModel.duration))
-        //                    }
-        //                    .font(.caption)
-        //                    .foregroundStyle(.gray)
-        //                }
-        //                .padding(.horizontal, 30)
-        //
-        //                HStack(spacing: 50) {
-        //                    Button {
-        //                    } label: {
-        //                        Image(systemName: "backward.fill")
-        //                    }
-        //
-        //                    Button {
-        //                        playerViewModel.togglePlayPause()
-        //                    } label: {
-        //                        Image(systemName: playerViewModel.player.timeControlStatus == .playing ? "pause.circle.fill" : "play.circle.fill")
-        //                            .font(.system(size: 70))
-        //                    }
-        //
-        //                    Button {
-        //                    } label: {
-        //                        Image(systemName: "forward.fill")
-        //                    }
-        //                }
-        //                .foregroundStyle(.white)
-        //                .font(.largeTitle)
-        //                .padding(.bottom, 50)
-        //            }
-        //        }
     }
     
     var nowPlayingBackground: some View {
