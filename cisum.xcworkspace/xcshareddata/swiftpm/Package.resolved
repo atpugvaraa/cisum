@@ -1,0 +1,60 @@
+{
+  "originHash" : "bdb048ccd5d3a7d53b8807b38a17c211d4af1b7d156f35ed6a8647a836db7370",
+  "pins" : [
+    {
+      "identity" : "injectionnext",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/johnno1962/InjectionNext.git",
+      "state" : {
+        "revision" : "a24d3d1451d1d2efd753474a3885c8a1df741a84",
+        "version" : "1.5.3"
+      }
+    },
+    {
+      "identity" : "kingfisher",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/onevcat/Kingfisher.git",
+      "state" : {
+        "revision" : "c92b84898e34ab46ff0dad86c02a0acbe2d87008",
+        "version" : "8.8.0"
+      }
+    },
+    {
+      "identity" : "lnpopupcontroller",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/LeoNatan/LNPopupController.git",
+      "state" : {
+        "revision" : "6f4bfa89a32cc7254599869b4bca8d2638e74671",
+        "version" : "4.4.1"
+      }
+    },
+    {
+      "identity" : "lnpopupui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/LeoNatan/LNPopupUI.git",
+      "state" : {
+        "revision" : "715bf763ae4afcc4c1a9e3d720784713d6c58ac6",
+        "version" : "3.0.2"
+      }
+    },
+    {
+      "identity" : "lnswiftuiutils",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/LeoNatan/LNSwiftUIUtils.git",
+      "state" : {
+        "revision" : "181a95b992f84d99a14c562c86e8ebef3cbcdca9",
+        "version" : "1.1.5"
+      }
+    },
+    {
+      "identity" : "youtubesdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/atpugvaraa/YouTubeSDK.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "c9208540add4e0d85a6780533adf6cc7976390e1"
+      }
+    }
+  ],
+  "version" : 3
+}
