@@ -96,7 +96,7 @@ struct NowPlayingView: View {
         ZStack {
             dominantColor
             
-            backgroundEffects
+            vinylEffect
             
             overlayEffects
         }
@@ -109,26 +109,12 @@ struct NowPlayingView: View {
             .blur(radius: 10)
     }
     
-    var backgroundEffects: some View {
-        KFImage(playerViewModel.currentImageURL)
-            .resizable()
-            .scaledToFill()
-            .blur(radius: 100, opaque: true)
-            .scaleEffect(1.25)
-            .opacity(0.6)
-            .saturation(properties.saturation)
-            .rotationEffect(.degrees(properties.isRotating))
-            .onAppear {
-                withAnimation(.linear(duration: 36)
-                    .repeatForever(autoreverses: false)) {
-                        properties.isRotating = properties.isRotating + 360
-                    }
-            }
-            .onReceive(properties.timer) { _ in
-                withAnimation(.linear(duration: 6)) {
-                    properties.saturation = Double.random(in: 0.7...2)
-                }
-            }
+    var vinylEffect: some View {
+        Vinyl {
+            KFImage(playerViewModel.currentImageURL)
+                .resizable()
+                .scaledToFill()
+        }
     }
     
     var overlayEffects: some View {
@@ -178,6 +164,7 @@ struct NowPlayingView: View {
                         
                         VideoPlayer(player: playerViewModel.player)
                             .matchedGeometryEffect(id: "Artwork", in: namespace, properties: .frame, anchor: .center)
+                            .opacity(0)
                         //                            .onTapGesture(count: 2) {
                         //                                withAnimation {
                         //                                    playerMode = (playerMode == .video) ? .audio : .video
@@ -264,6 +251,7 @@ struct NowPlayingView: View {
                     cisumBackwardButton()
                     
                     cisumPlayButton()
+                        .disabled(playerViewModel.currentVideoId == nil)
                     
                     cisumForwardButton()
                 }

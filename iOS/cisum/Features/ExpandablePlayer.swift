@@ -27,7 +27,6 @@ struct ExpandablePlayer: View {
             let safeArea = proxy.safeAreaInsets
             
             ZStack(alignment: .top) {
-                // Background
                 background
                 
                 DynamicPlayerIsland(namespace: namespace)
@@ -37,8 +36,8 @@ struct ExpandablePlayer: View {
                     .opacity(properties.isPlayerExpanded ? 1 : 0)
             }
             .frame(height: properties.isPlayerExpanded ? nil : 45, alignment: .top)
-            .frame(maxHeight: .infinity, alignment: .bottom)
-            .padding(.bottom, properties.isPlayerExpanded ? 0 : safeArea.bottom + 55)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .padding(.bottom, properties.isPlayerExpanded ? 0 : safeArea.bottom + 88)
             .padding(.horizontal, properties.isPlayerExpanded ? 0 : 20)
             .offset(y: properties.offsetY)
             .gesture(
@@ -73,17 +72,6 @@ struct ExpandablePlayer: View {
                         }
                     }
             , including: .all)
-            // .simultaneousGesture(
-            //     TapGesture(count: 2)
-            //         .onEnded {
-            //             if expandPlayer {
-            //                 withAnimation(.smooth(duration: 0.3, extraBounce: 0)) {
-            //                     expandPlayer = false
-            //                     resetWindowWithAnimation()
-            //                 }
-            //             }
-            //         }
-            // )
             .ignoresSafeArea()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
@@ -97,8 +85,8 @@ struct ExpandablePlayer: View {
         .enableInjection()
     }
     
-    var playerBackgroundClipShape: UnevenRoundedRectangle {
-        UnevenRoundedRectangle(topLeadingRadius: properties.isPlayerExpanded ? 150 : 50, bottomLeadingRadius: properties.isPlayerExpanded ? deviceCornerRadius : 50, bottomTrailingRadius: properties.isPlayerExpanded ? deviceCornerRadius : 50, topTrailingRadius: properties.isPlayerExpanded ? 150 : 50)
+    var playerBackgroundClipShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: properties.isPlayerExpanded ? deviceCornerRadius : 50)
     }
     
     var background: some View {
@@ -121,10 +109,11 @@ struct ExpandablePlayer: View {
         ZStack {
             dominantColor
             
-            backgroundEffects
+            vinylEffect
             
             overlayEffects
         }
+        .compositingGroup()
     }
     
     var dominantColor: some View {
@@ -133,26 +122,12 @@ struct ExpandablePlayer: View {
             .blur(radius: 10)
     }
     
-    var backgroundEffects: some View {
-        KFImage(playerViewModel.currentImageURL)
-            .resizable()
-            .scaledToFill()
-            .blur(radius: 100, opaque: true)
-            .scaleEffect(1.25)
-            .opacity(0.6)
-            .saturation(properties.saturation)
-            .rotationEffect(.degrees(properties.isRotating))
-            .onAppear {
-                withAnimation(.linear(duration: 36)
-                    .repeatForever(autoreverses: false)) {
-                        properties.isRotating = properties.isRotating + 360
-                    }
-            }
-            .onReceive(properties.timer) { _ in
-                withAnimation(.linear(duration: 6)) {
-                    properties.saturation = Double.random(in: 0.7...2)
-                }
-            }
+    var vinylEffect: some View {
+        Vinyl {
+            KFImage(playerViewModel.currentImageURL)
+                .resizable()
+                .scaledToFill()
+        }
     }
     
     var overlayEffects: some View {
@@ -163,6 +138,7 @@ struct ExpandablePlayer: View {
             
             Color.black.opacity(0.35)
         }
+        .compositingGroup()
     }
 }
 #endif

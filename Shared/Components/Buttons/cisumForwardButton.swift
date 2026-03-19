@@ -9,11 +9,12 @@
 import SwiftUI
 
 struct cisumForwardButton: View {
+    @Environment(PlayerViewModel.self) private var playerViewModel
     @State private var transparency: Double = 0.0
     
     var body: some View {
         Button {
-            // Action to forward
+//            playerViewModel.jumpForward()
             transparency = 0.6
             withAnimation(.easeOut(duration: 0.2)) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {

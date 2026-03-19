@@ -33,7 +33,7 @@ class SearchViewModel {
     var searchText: String = "" {
         didSet { performDebouncedSearch() }
     }
-    var searchScope: SearchScope = .music {
+    var searchScope: SearchScope = .video {
         didSet { performDebouncedSearch() }
     }
     

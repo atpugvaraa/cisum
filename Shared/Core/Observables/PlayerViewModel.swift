@@ -7,12 +7,17 @@
 
 import SwiftUI
 import AVKit
+import AVFoundation
 import MediaPlayer
 import YouTubeSDK
 
+#if os(iOS)
+import UIKit
+#endif
+
 @Observable
 @MainActor
-class PlayerViewModel {
+final class PlayerViewModel {
     
     // MARK: - State
     var player: AVPlayer
@@ -48,7 +53,7 @@ class PlayerViewModel {
     }
     
     // MARK: - Loaders
-        
+    
     func load(song: YouTubeMusicSong) {
         let tapStartedAt = Date()
         // 1. Set Metadata immediately (for instant UI feedback)
@@ -57,28 +62,27 @@ class PlayerViewModel {
         self.currentImageURL = song.thumbnailURL
         self.isExplicit = song.isExplicit
         self.currentVideoId = song.videoId
-
+        
         currentLoadTask?.cancel()
         currentLoadTask = Task {
             if Task.isCancelled { return }
-
+            
             do {
                 let entry = try await metadataCache.resolve(id: song.videoId, metricsEnabled: settings.metricsEnabled) { id in
                     try await self.youtube.main.video(id: id)
                 }
-
+                
                 if Task.isCancelled { return }
-                await MainActor.run {
-                    self.playFromBeginning(url: entry.resolvedURL)
-                }
+                
+                self.playFromBeginning(url: entry.resolvedURL)
+                
                 if settings.metricsEnabled {
                     let elapsed = Date().timeIntervalSince(tapStartedAt) * 1000
                     await PlaybackMetricsStore.shared.recordTapToPlay(durationMs: elapsed)
                 }
             } catch {
-                await MainActor.run {
-                    self.playbackError = error.localizedDescription
-                }
+                togglePlayPause()
+                self.playbackError = error.localizedDescription
             }
         }
     }
@@ -90,28 +94,28 @@ class PlayerViewModel {
         self.currentImageURL = URL(string: video.thumbnailURL ?? "")
         self.isExplicit = false
         self.currentVideoId = video.id
-
+        
         currentLoadTask?.cancel()
         currentLoadTask = Task {
             if Task.isCancelled { return }
-
+            
             do {
                 let entry = try await metadataCache.resolve(id: video.id, metricsEnabled: settings.metricsEnabled) { id in
                     try await self.youtube.main.video(id: id)
                 }
-
+                
                 if Task.isCancelled { return }
-                await MainActor.run {
-                    self.playFromBeginning(url: entry.resolvedURL)
-                }
+                
+                self.playFromBeginning(url: entry.resolvedURL)
+                
                 if settings.metricsEnabled {
                     let elapsed = Date().timeIntervalSince(tapStartedAt) * 1000
+                    togglePlayPause()
                     await PlaybackMetricsStore.shared.recordTapToPlay(durationMs: elapsed)
                 }
             } catch {
-                await MainActor.run {
-                    self.playbackError = error.localizedDescription
-                }
+                togglePlayPause()
+                self.playbackError = error.localizedDescription
             }
         }
     }
@@ -120,18 +124,20 @@ class PlayerViewModel {
     func togglePlayPause() {
         if player.timeControlStatus == .playing {
             player.pause()
+            isPlaying = false
         } else {
+            isPlaying = true
             player.play()
         }
     }
-        
+    
     func seek(to seconds: Double) {
         let time = CMTime(seconds: seconds, preferredTimescale: 600)
         player.seek(to: time)
     }
-        
+    
     // MARK: - Internal Setup
-        
+    
     private func setupTimeObserver() {
         // Observe the stable player instance once
         let interval = CMTime(seconds: 0.5, preferredTimescale: 600)
@@ -150,17 +156,15 @@ class PlayerViewModel {
     private func setupRemoteCommands() {
         let center = MPRemoteCommandCenter.shared()
         center.playCommand.addTarget { [weak self] _ in
-            self?.player.play()
-            self?.isPlaying = true
+            self?.togglePlayPause()
             return .success
         }
         center.pauseCommand.addTarget { [weak self] _ in
-            self?.player.pause()
-            self?.isPlaying = false
+            self?.togglePlayPause()
             return .success
         }
     }
-
+    
     /// Reload the current video with current playback configuration.
     func reloadCurrentVideo() {
         guard let id = currentVideoId else { return }
@@ -171,25 +175,22 @@ class PlayerViewModel {
                 let entry = try await metadataCache.resolve(id: id, metricsEnabled: settings.metricsEnabled) { key in
                     try await self.youtube.main.video(id: key)
                 }
-
+                
                 if Task.isCancelled { return }
-                await MainActor.run {
-                    self.playFromBeginning(url: entry.resolvedURL)
-                }
+                
+                self.playFromBeginning(url: entry.resolvedURL)
             } catch {
-                await MainActor.run {
-                    self.playbackError = error.localizedDescription
-                }
+                self.playbackError = error.localizedDescription
             }
         }
     }
-
+    
     private func playFromBeginning(url: URL) {
         let item = AVPlayerItem(url: url)
         player.replaceCurrentItem(with: item)
-        player.seek(to: .zero)
+        seek(to: .zero)
         currentTime = 0
         duration = 0
-        player.play()
+        togglePlayPause()
     }
 }

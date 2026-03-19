@@ -236,16 +236,26 @@ struct ScrollOffsetChangeModifier<Value: Equatable>: ViewModifier {
     let transform: (ScrollGeometryReader) -> Value
     let action: (Value, Value) -> Void
 
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
+
     func body(content: Content) -> some View {
         content
+        .enableInjection()
     }
 }
 
 struct ScrollPhaseUpdateModifier: ViewModifier {
     let action: (ScrollPhases, ScrollPhases) -> Void
 
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
+
     func body(content: Content) -> some View {
         content
+        .enableInjection()
     }
 }
 #endif

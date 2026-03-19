@@ -39,11 +39,16 @@ struct RootView<Content: View>: View {
             .onAppear {
                 if let windowScene = (UIApplication.shared.connectedScenes.first as? UIWindowScene), properties.window == nil {
                     let window = PassThroughWindow(windowScene: windowScene)
+                    window.frame = windowScene.coordinateSpace.bounds
+                    window.backgroundColor = .clear
+                    window.windowLevel = .statusBar + 1
                     window.isHidden = false
                     window.isUserInteractionEnabled = true
                     /// Setting up SwiftUI Based RootView Controller
                     let rootViewController = UIHostingController(rootView: UniversalOverlayViews().environment(properties))
                     rootViewController.view.backgroundColor = .clear
+                    rootViewController.view.frame = window.bounds
+                    rootViewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
                     window.rootViewController = rootViewController
                     
                     properties.window = window
@@ -79,6 +84,11 @@ fileprivate struct UniversalOverlayModifier<ViewContent: View>: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .onAppear {
+                if show {
+                    addView()
+                }
+            }
             .onChange(of: show) { oldValue, newValue in
                 if newValue {
                     addView()
@@ -95,7 +105,16 @@ fileprivate struct UniversalOverlayModifier<ViewContent: View>: ViewModifier {
             guard let viewID else { return }
             
             withAnimation(animation) {
-                properties.views.append(.init(id: viewID, view: .init(viewContent)))
+                properties.views.append(
+                    .init(
+                        id: viewID,
+                        view: .init(
+                            viewContent
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .ignoresSafeArea()
+                        )
+                    )
+                )
             }
         }
     }
@@ -123,6 +142,8 @@ fileprivate struct UniversalOverlayViews: View {
                 $0.view
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
         .enableInjection()
     }
 }
