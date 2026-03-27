@@ -10,27 +10,50 @@
 import SwiftUI
 import MediaPlayer
 import AVFoundation
+import UIKit
+
+extension View {
+    public func systemVolumeController(
+        _ controller: SystemVolumeController,
+        showsSystemVolumeHUD: Bool = false
+    ) -> some View {
+        modifier(SystemVolumeModifier(controller: controller, showsSystemVolumeHUD: showsSystemVolumeHUD))
+    }
+}
 
 // MARK: - System Volume Controller
 /// Single source of truth for system volume.
 /// Observes hardware changes via KVO and sets volume through MPVolumeView's UISlider.
 @Observable @MainActor
-final class SystemVolumeController {
+public final class SystemVolumeController {
     /// The current volume (0.0 – 1.0).
     var volume: Double = 0.0
     
     /// Whether the user is currently dragging the custom slider.
     var isUserDragging: Bool = false
+
+    /// Controls whether the backing MPVolumeView is visually hidden.
+    var showsSystemVolumeHUD: Bool = false {
+        didSet {
+            volumeView.alpha = showsSystemVolumeHUD ? 1.0 : 0.0001
+        }
+    }
     
-    /// Reference to the MPVolumeView in the hierarchy (used to find UISlider lazily).
-    weak var volumeView: MPVolumeView?
+    /// Hidden MPVolumeView used to hijack the system volume UI.
+    private let volumeView: MPVolumeView
+    private weak var window: UIWindow?
+    private var isActivated = false
     
     private var observation: NSKeyValueObservation?
     
     init() {
         let session = AVAudioSession.sharedInstance()
-        try? session.setActive(true)
         self.volume = Double(session.outputVolume)
+        self.volumeView = MPVolumeView(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
+        self.volumeView.showsVolumeSlider = true
+        self.volumeView.showsRouteButton = false
+        self.volumeView.isUserInteractionEnabled = false
+        self.volumeView.alpha = 0.0001
         
         observation = session.observe(\.outputVolume, options: [.new]) { [weak self] _, change in
             guard let self, let newValue = change.newValue else { return }
@@ -45,33 +68,96 @@ final class SystemVolumeController {
     
     /// Lazily finds the UISlider inside the on-screen MPVolumeView and sets volume.
     func applyVolumeToSystem() {
-        guard let slider = volumeView?.subviews.first(where: { $0 is UISlider }) as? UISlider else { return }
+        guard let slider = volumeView.subviews.first(where: { $0 is UISlider }) as? UISlider else { return }
         slider.setValue(Float(volume), animated: false)
+    }
+
+    func activate() {
+        guard !isActivated else { return }
+        isActivated = true
+        attachVolumeViewIfNeeded()
+    }
+
+    func deactivate() {
+        guard isActivated else { return }
+        isActivated = false
+        volumeView.removeFromSuperview()
+    }
+
+    func registerWindow(_ window: UIWindow) {
+        self.window = window
+        attachVolumeViewIfNeeded()
+    }
+
+    private func attachVolumeViewIfNeeded() {
+        guard isActivated, let window else { return }
+        if volumeView.superview !== window {
+            volumeView.removeFromSuperview()
+            window.addSubview(volumeView)
+        }
     }
     
     @MainActor deinit {
         observation?.invalidate()
+        volumeView.removeFromSuperview()
     }
 }
 
 // MARK: - Hidden MPVolumeView
-/// Must be in the view hierarchy for programmatic volume control to work.
-/// Uses a Coordinator to hand the live MPVolumeView reference to the controller.
-struct SystemVolumeView: UIViewRepresentable {
+fileprivate struct SystemVolumeModifier: ViewModifier {
     let controller: SystemVolumeController
-    
-    func makeUIView(context: Context) -> MPVolumeView {
-        let view = MPVolumeView(frame: .zero)
-        view.alpha = 0.001
-        view.showsVolumeSlider = true
-        // Store the live view reference — UISlider subview exists once it's in a window
-        controller.volumeView = view
-        return view
+    let showsSystemVolumeHUD: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .topLeading) {
+                IntrospectView { view in
+                    guard let window = view.window else { return }
+                    controller.registerWindow(window)
+                }
+                .frame(width: 1, height: 1)
+                .opacity(0.001)
+                .allowsHitTesting(false)
+            }
+            .onAppear {
+                controller.showsSystemVolumeHUD = showsSystemVolumeHUD
+                controller.activate()
+            }
+            .onDisappear {
+                controller.deactivate()
+            }
+            .onChange(of: showsSystemVolumeHUD, initial: true) { value, _ in
+                controller.showsSystemVolumeHUD = value
+            }
     }
-    
-    func updateUIView(_ uiView: MPVolumeView, context: Context) {
-        // Re-grab reference in case SwiftUI recreated the view
-        controller.volumeView = uiView
+}
+
+@MainActor
+fileprivate struct IntrospectView: UIViewRepresentable {
+    let handler: (UIView) -> Void
+
+    func makeUIView(context: Context) -> UIView {
+        ObservableView(didMoveToWindowHandler: handler)
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+}
+
+fileprivate final class ObservableView: UIView {
+    let didMoveToWindowHandler: (UIView) -> Void
+
+    init(didMoveToWindowHandler: @escaping (UIView) -> Void) {
+        self.didMoveToWindowHandler = didMoveToWindowHandler
+        super.init(frame: .zero)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        didMoveToWindowHandler(self)
     }
 }
 
@@ -101,10 +187,6 @@ struct cisumVolumeSlider: View {
 
     public var body: some View {
         ZStack {
-            // Hidden MPVolumeView must be in the view hierarchy
-            SystemVolumeView(controller: volumeController)
-                .frame(width: 0, height: 0)
-            
             StretchySlider(
                 value: $volumeController.volume,
                 in: range,
@@ -147,6 +229,7 @@ struct cisumVolumeSlider: View {
             }
         }
         .frame(height: 50)
+        .systemVolumeController(volumeController, showsSystemVolumeHUD: false)
         .enableInjection()
     }
 }

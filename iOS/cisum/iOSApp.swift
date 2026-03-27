@@ -83,6 +83,7 @@ struct iOSApp: App {
             }
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
+            playerViewModel.handleScenePhaseChange(newPhase)
             switch newPhase {
             case .active:
                 print("App became active")

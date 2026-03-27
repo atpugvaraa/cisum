@@ -99,8 +99,10 @@ struct Vinyl<Content: View>: View {
                             }()
                         )
                         .onChange(of: timeline.date) {
-                            updatePhysics(delta: delta)
-                            lastUpdate = now
+                            Task { @MainActor in
+                                updatePhysics(delta: delta)
+                                lastUpdate = now
+                            }
                         }
                 }
             }
