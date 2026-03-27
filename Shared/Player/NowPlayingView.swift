@@ -22,9 +22,9 @@ struct NowPlayingView: View {
     var namespace: Namespace.ID
     @State private var properties = PlayerProperties.shared
     
-    #if DEBUG
+#if DEBUG
     @ObserveInjection var forceRedraw
-    #endif
+#endif
     
     var body: some View {
         ZStack {
@@ -114,6 +114,12 @@ struct NowPlayingView: View {
             KFImage(playerViewModel.currentImageURL)
                 .resizable()
                 .scaledToFill()
+        } previous: {
+            Image(.notPlaying)
+                .resizable()
+        } upnext: {
+            Image(.notPlaying)
+                .resizable()
         }
     }
     
@@ -236,11 +242,11 @@ struct NowPlayingView: View {
             
             VStack {
                 VStack {
-                    #if os(iOS)
+#if os(iOS)
                     cisumMusicProgressScrubber(currentTime: .constant(60), inRange: 0...240) { isEditing in
                         
                     }
-                    #endif
+#endif
                 }
                 .frame(height: 30)
                 
@@ -260,11 +266,9 @@ struct NowPlayingView: View {
                 Spacer(minLength: 0)
                 
                 VStack {
-                    #if os(iOS)
-                        cisumVolumeSlider(volume: .constant(60)) { isEditing in
-                            
-                        }
-                    #endif
+#if os(iOS)
+                    cisumVolumeSlider()
+#endif
                 }
                 .frame(height: 30)
                 
@@ -287,23 +291,9 @@ struct NowPlayingView: View {
                     .font(.title2)
             }
             
-//                    AirPlayButton()
-//                        .frame(width: 48, height: 48)
-//                        .padding(.top, -13)
-            
-//                    Button {
-//                        player.toggleStreamType()
-//                    } label: {
-//                        if player.streamType == .song {
-//                            Image(systemName: "airplayvideo")
-//                                .font(.title2)
-//                        } else {
-//                            Image(systemName: "waveform")
-//                                .font(.title2)
-//                        }
-//                    }
-//                    .disabled(player.streamType == .song && !player.isVideoAvailable)
-//                    .opacity((player.streamType == .song && !player.isVideoAvailable) ? 0.5 : 1.0)
+            AirPlayButton()
+                .frame(width: 48, height: 48)
+                .padding(.top, -13)
             
             Button {
                 withAnimation {

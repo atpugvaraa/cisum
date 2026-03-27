@@ -172,10 +172,12 @@ private extension StretchySlider {
             )
             .onChange(of: value, initial: true) { oldValue, newValue in
                 /// Initial Progress Settings
-                guard value != progress, (value > 0 && value < 1) else { return }
-                progress =  max(min(value, 1.0), .zero)
-                dragOffset = progress * orientationSize
-                lastDragOffset = dragOffset
+                guard value != progress else { return }
+                withAnimation(.smooth(duration: 0.25)) {
+                    progress = max(min(value, 1.0), .zero)
+                    dragOffset = progress * orientationSize
+                    lastDragOffset = dragOffset
+                }
             }
             .onChange(of: progress) { oldValue, newValue in
                 value = max(min(progress, 1.0), .zero)

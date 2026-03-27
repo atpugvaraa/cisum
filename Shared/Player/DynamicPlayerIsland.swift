@@ -76,9 +76,6 @@ struct DynamicPlayerIsland: View {
                 .onTapGesture {
                     properties.expandPlayer()
                 }
-//                .overlay {
-//                    cisumMiniPlayerProgress(currentTime: .constant(60), inRange: 0...240)
-//                }
             }
         }
         .enableInjection()

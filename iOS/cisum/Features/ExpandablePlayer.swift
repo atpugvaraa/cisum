@@ -122,11 +122,18 @@ struct ExpandablePlayer: View {
             .blur(radius: 10)
     }
     
+    #warning("please fix Vinyl quick")
     var vinylEffect: some View {
         Vinyl {
             KFImage(playerViewModel.currentImageURL)
                 .resizable()
                 .scaledToFill()
+        } previous: {
+            Image(.notPlaying)
+                .resizable()
+        } upnext: {
+            Image(.notPlaying)
+                .resizable()
         }
     }
     
@@ -142,3 +149,7 @@ struct ExpandablePlayer: View {
     }
 }
 #endif
+
+
+
+

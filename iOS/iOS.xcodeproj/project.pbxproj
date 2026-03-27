@@ -11,10 +11,35 @@
 		7720397F2F6AAB2F00E85D4A /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 7720397E2F6AAB2F00E85D4A /* Kingfisher */; };
 		772039852F6AAB5100E85D4A /* InjectionNext in Frameworks */ = {isa = PBXBuildFile; productRef = 772039842F6AAB5100E85D4A /* InjectionNext */; };
 		7720398B2F6AAB7300E85D4A /* LNPopupUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7720398A2F6AAB7300E85D4A /* LNPopupUI */; };
+		7736DD082F6ECEB50077B88B /* iTunesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7736DD072F6ECEB50077B88B /* iTunesKit */; };
+		77C8BF5A2F6E36D200E7354F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77C8BF592F6E36D200E7354F /* WidgetKit.framework */; };
+		77C8BF5C2F6E36D200E7354F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77C8BF5B2F6E36D200E7354F /* SwiftUI.framework */; };
+		77C8BF6D2F6E36D200E7354F /* LyricsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 77C8BF572F6E36D200E7354F /* LyricsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		77EC570E2F6AB9B5002B5513 /* LNPopupUI in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 7720398A2F6AAB7300E85D4A /* LNPopupUI */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		77C8BF6B2F6E36D200E7354F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7720394A2F6AAAA700E85D4A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 77C8BF562F6E36D200E7354F;
+			remoteInfo = LyricsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
+		77C8BF722F6E36D200E7354F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				77C8BF6D2F6E36D200E7354F /* LyricsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		77EC570F2F6AB9B5002B5513 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -30,6 +55,9 @@
 
 /* Begin PBXFileReference section */
 		772039522F6AAAA700E85D4A /* cisum.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = cisum.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		77C8BF572F6E36D200E7354F /* LyricsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LyricsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		77C8BF592F6E36D200E7354F /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		77C8BF5B2F6E36D200E7354F /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -39,6 +67,13 @@
 				Info.plist,
 			);
 			target = 772039512F6AAAA700E85D4A /* cisum */;
+		};
+		77C8BF712F6E36D200E7354F /* Exceptions for "Lyrics" folder in "LyricsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 77C8BF562F6E36D200E7354F /* LyricsExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -57,6 +92,14 @@
 			path = ../Shared;
 			sourceTree = SOURCE_ROOT;
 		};
+		77C8BF5D2F6E36D200E7354F /* Lyrics */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				77C8BF712F6E36D200E7354F /* Exceptions for "Lyrics" folder in "LyricsExtension" target */,
+			);
+			path = Lyrics;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,9 +108,19 @@
 			buildActionMask = 2147483647;
 			files = (
 				7720397F2F6AAB2F00E85D4A /* Kingfisher in Frameworks */,
+				7736DD082F6ECEB50077B88B /* iTunesKit in Frameworks */,
 				7720398B2F6AAB7300E85D4A /* LNPopupUI in Frameworks */,
 				772039792F6AAB1200E85D4A /* YouTubeSDK in Frameworks */,
 				772039852F6AAB5100E85D4A /* InjectionNext in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		77C8BF542F6E36D200E7354F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				77C8BF5C2F6E36D200E7354F /* SwiftUI.framework in Frameworks */,
+				77C8BF5A2F6E36D200E7354F /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,6 +132,8 @@
 			children = (
 				77AB98532F6AB57C00D31B8E /* Shared */,
 				772039542F6AAAA700E85D4A /* cisum */,
+				77C8BF5D2F6E36D200E7354F /* Lyrics */,
+				77C8BF582F6E36D200E7354F /* Frameworks */,
 				772039532F6AAAA700E85D4A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -87,8 +142,18 @@
 			isa = PBXGroup;
 			children = (
 				772039522F6AAAA700E85D4A /* cisum.app */,
+				77C8BF572F6E36D200E7354F /* LyricsExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		77C8BF582F6E36D200E7354F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				77C8BF592F6E36D200E7354F /* WidgetKit.framework */,
+				77C8BF5B2F6E36D200E7354F /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -102,10 +167,12 @@
 				7720394F2F6AAAA700E85D4A /* Frameworks */,
 				772039502F6AAAA700E85D4A /* Resources */,
 				77EC570F2F6AB9B5002B5513 /* Embed Frameworks */,
+				77C8BF722F6E36D200E7354F /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				77C8BF6C2F6E36D200E7354F /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				772039542F6AAAA700E85D4A /* cisum */,
@@ -117,10 +184,33 @@
 				7720397E2F6AAB2F00E85D4A /* Kingfisher */,
 				772039842F6AAB5100E85D4A /* InjectionNext */,
 				7720398A2F6AAB7300E85D4A /* LNPopupUI */,
+				7736DD072F6ECEB50077B88B /* iTunesKit */,
 			);
 			productName = iOS;
 			productReference = 772039522F6AAAA700E85D4A /* cisum.app */;
 			productType = "com.apple.product-type.application";
+		};
+		77C8BF562F6E36D200E7354F /* LyricsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 77C8BF6E2F6E36D200E7354F /* Build configuration list for PBXNativeTarget "LyricsExtension" */;
+			buildPhases = (
+				77C8BF532F6E36D200E7354F /* Sources */,
+				77C8BF542F6E36D200E7354F /* Frameworks */,
+				77C8BF552F6E36D200E7354F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				77C8BF5D2F6E36D200E7354F /* Lyrics */,
+			);
+			name = LyricsExtension;
+			packageProductDependencies = (
+			);
+			productName = LyricsExtension;
+			productReference = 77C8BF572F6E36D200E7354F /* LyricsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -133,6 +223,9 @@
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					772039512F6AAAA700E85D4A = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					77C8BF562F6E36D200E7354F = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
@@ -151,6 +244,7 @@
 				7720397D2F6AAB2F00E85D4A /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				772039832F6AAB5100E85D4A /* XCRemoteSwiftPackageReference "InjectionNext" */,
 				772039892F6AAB7300E85D4A /* XCRemoteSwiftPackageReference "LNPopupUI" */,
+				7736DD062F6ECEB50077B88B /* XCLocalSwiftPackageReference "../../../Packages/StreamingKit/iTunesKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 772039532F6AAAA700E85D4A /* Products */;
@@ -158,12 +252,20 @@
 			projectRoot = "";
 			targets = (
 				772039512F6AAAA700E85D4A /* cisum */,
+				77C8BF562F6E36D200E7354F /* LyricsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		772039502F6AAAA700E85D4A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		77C8BF552F6E36D200E7354F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -180,7 +282,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		77C8BF532F6E36D200E7354F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		77C8BF6C2F6E36D200E7354F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 77C8BF562F6E36D200E7354F /* LyricsExtension */;
+			targetProxy = 77C8BF6B2F6E36D200E7354F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		7720395B2F6AAAAA00E85D4A /* Debug */ = {
@@ -390,6 +507,66 @@
 			};
 			name = Release;
 		};
+		77C8BF6F2F6E36D200E7354F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3YK32DPS3W;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Lyrics/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Lyrics;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = aaravgupta.cisum.Lyrics;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		77C8BF702F6E36D200E7354F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3YK32DPS3W;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Lyrics/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Lyrics;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = aaravgupta.cisum.Lyrics;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -411,7 +588,23 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		77C8BF6E2F6E36D200E7354F /* Build configuration list for PBXNativeTarget "LyricsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				77C8BF6F2F6E36D200E7354F /* Debug */,
+				77C8BF702F6E36D200E7354F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		7736DD062F6ECEB50077B88B /* XCLocalSwiftPackageReference "../../../Packages/StreamingKit/iTunesKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../../Packages/StreamingKit/iTunesKit;
+		};
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
 		772039772F6AAB1200E85D4A /* XCRemoteSwiftPackageReference "YouTubeSDK" */ = {
@@ -468,6 +661,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 772039892F6AAB7300E85D4A /* XCRemoteSwiftPackageReference "LNPopupUI" */;
 			productName = LNPopupUI;
+		};
+		7736DD072F6ECEB50077B88B /* iTunesKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = iTunesKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
