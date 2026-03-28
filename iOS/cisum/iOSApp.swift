@@ -23,37 +23,12 @@ struct iOSApp: App {
     @State private var searchViewModel: SearchViewModel
 
     init() {
-        // Ensure the App Group "Application Support" directory exists so
-        // CoreData/SwiftData can create its sqlite store there without
-        // noisy "Failed to stat path" errors at startup on device.
-        if let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.aaravgupta.cisum") {
-            let appSupport = groupURL.appendingPathComponent("Library/Application Support")
-            do {
-                try FileManager.default.createDirectory(at: appSupport, withIntermediateDirectories: true, attributes: nil)
-            } catch {
-                // Non-fatal: if creation fails, ModelContainer will attempt recovery.
-            }
-        }
-
-        self.modelContainer = try! ModelContainer(for: SearchHistoryEntry.self)
-        let historyContext = ModelContext(modelContainer)
-        let settings = PrefetchSettings.shared
-        let monitor = NetworkPathMonitor.shared
-        let historyStore = SearchHistoryStore(context: historyContext)
-
-        if let cookieString = Keychain.load(key: "user_cookies") {
-            youtube.cookies = cookieString
-        }
-
-        self.prefetchSettings = settings
-        self.networkMonitor = monitor
-        self.playerViewModel = PlayerViewModel(youtube: youtube, settings: settings)
-        self.searchViewModel = SearchViewModel(
-            youtube: youtube,
-            settings: settings,
-            networkMonitor: monitor,
-            historyStore: historyStore
-        )
+        let bootstrap = try! AppBootstrap.makeDependencies(youtube: YouTube.shared)
+        self.modelContainer = bootstrap.modelContainer
+        self.prefetchSettings = bootstrap.prefetchSettings
+        self.networkMonitor = bootstrap.networkMonitor
+        self.playerViewModel = bootstrap.playerViewModel
+        self.searchViewModel = bootstrap.searchViewModel
     }
 
     var body: some Scene {
@@ -83,6 +58,7 @@ struct iOSApp: App {
             }
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
+            playerViewModel.handleScenePhaseChange(newPhase)
             switch newPhase {
             case .active:
                 print("App became active")

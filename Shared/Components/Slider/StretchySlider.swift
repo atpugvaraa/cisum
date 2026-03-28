@@ -58,7 +58,7 @@ struct StretchySlider<LeadingContent: View, TrailingContent: View>: View {
                 miniPlayerProgress
             }
         }
-        .animation(.smooth(duration: 0.3, extraBounce: 0.3), value: isActive)
+        .animation(.smooth(duration: 0.25, extraBounce: 0.05), value: isActive)
         .sensoryFeedback(.increase, trigger: isValueExtreme) { true && $1 }
         .enableInjection()
     }
@@ -172,8 +172,8 @@ private extension StretchySlider {
             )
             .onChange(of: value, initial: true) { oldValue, newValue in
                 /// Initial Progress Settings
-                guard value != progress, (value > 0 && value < 1) else { return }
-                progress =  max(min(value, 1.0), .zero)
+                guard value != progress else { return }
+                progress = max(min(value, 1.0), .zero)
                 dragOffset = progress * orientationSize
                 lastDragOffset = dragOffset
             }

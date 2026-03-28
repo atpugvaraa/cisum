@@ -23,40 +23,43 @@ struct DynamicPlayerIsland: View {
         Group {
             if #available(iOS 26.0, *) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 50)
-                        .fill(.clear)
-                        .glassEffect(.identity)
-                        .matchedGeometryEffect(id: "GLASS", in: namespace)
-                        .frame(height: 48)
-                        .overlay {
-                            HStack(spacing: 12) {
-                                KFImage(playerViewModel.currentImageURL)
-                                    .matchedGeometryEffect(id: "Artwork", in: namespace)
-                                    .frame(width: 40, height: 40)
-                                    .aspectRatio(contentMode: .fit)
-                                    .clipShape(.circle)
+                    PlayerGlassBar(namespace: namespace) {
+                        HStack(spacing: 12) {
+                            KFImage(playerViewModel.currentImageURL)
+                                .frame(width: 40, height: 40)
+                                .aspectRatio(contentMode: .fit)
+                                .clipShape(.circle)
 
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(playerViewModel.currentTitle)
-                                        .fontWeight(.semibold)
-                                    Text(playerViewModel.currentArtist)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-
-                                Spacer()
-
-                                HStack(spacing: 14) {
-                                    Image(systemName: "backward.fill")
-                                    Image(systemName: "play.fill")
-                                    Image(systemName: "forward.fill")
-                                }
-                                .font(.title3)
-                                .fontWeight(.bold)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(playerViewModel.currentTitle)
+                                    .fontWeight(.semibold)
+                                Text(playerViewModel.currentArtist)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                             }
-                            .padding(.leading, 5)
-                            .padding(.trailing, 10)
+
+                            Spacer()
+
+                            HStack(spacing: 14) {
+                                Image(systemName: "backward.fill")
+                                    .opacity(0.6)
+                                Button {
+                                    playerViewModel.togglePlayPause()
+                                } label: {
+                                    Image(systemName: playerViewModel.isPlaying ? "pause.fill" : "play.fill")
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(playerViewModel.currentVideoId == nil)
+                                .accessibilityLabel(playerViewModel.isPlaying ? "Pause" : "Play")
+                                Image(systemName: "forward.fill")
+                                    .opacity(0.6)
+                            }
+                            .font(.title3)
+                            .fontWeight(.bold)
                         }
+                        .padding(.leading, 5)
+                        .padding(.trailing, 10)
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             } else {
@@ -76,9 +79,6 @@ struct DynamicPlayerIsland: View {
                 .onTapGesture {
                     properties.expandPlayer()
                 }
-//                .overlay {
-//                    cisumMiniPlayerProgress(currentTime: .constant(60), inRange: 0...240)
-//                }
             }
         }
         .enableInjection()
@@ -167,7 +167,6 @@ struct DynamicPlayerIsland: View {
         ZStack {
             if !properties.isPlayerExpanded {
                 KFImage(playerViewModel.currentImageURL)
-                    .matchedGeometryEffect(id: "Artwork", in: namespace)
                     .frame(width: 40, height: 40)
                     .aspectRatio(contentMode: .fit)
                     .clipShape(.circle)
@@ -177,31 +176,14 @@ struct DynamicPlayerIsland: View {
     
     var playButton: some View {
         Button {
-            //            player.togglePlay()
-            properties.transparency = 0.6
-            withAnimation(.easeOut(duration: 0.2)) {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    properties.transparency = 0.0
-                }
-            }
+            playerViewModel.togglePlayPause()
         } label: {
-            ZStack {
-                Circle()
-                    .frame(width: 35, height: 35)
-                    .opacity(properties.transparency)
-                #warning("uncomment this when player observable is written")
-//                    Image(systemName: "pause.fill")
-//                        .font(.title2)
-                //                    .scaleEffect(player.isPlaying ? 1 : 0)
-                //                    .opacity(player.isPlaying ? 1 : 0)
-                //                    .animation(.interpolatingSpring(stiffness: 170, damping: 15), value: player.isPlaying)
-                Image(systemName: "play.fill")
-                    .font(.title2)
-                //                    .scaleEffect(player.isPlaying ? 0 : 1)
-                //                    .opacity(player.isPlaying ? 0 : 1)
-                //                    .animation(.interpolatingSpring(stiffness: 170, damping: 15), value: player.isPlaying)
-            }
+            Image(systemName: playerViewModel.isPlaying ? "pause.fill" : "play.fill")
+                .font(.title2)
         }
+        .buttonStyle(.plain)
+        .disabled(playerViewModel.currentVideoId == nil)
+        .accessibilityLabel(playerViewModel.isPlaying ? "Pause" : "Play")
         .font(.title3)
         .foregroundStyle(Color.primary)
         .padding(.trailing, 5)

@@ -10,6 +10,7 @@
 		7720397C2F6AAB1D00E85D4A /* YouTubeSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 7720397B2F6AAB1D00E85D4A /* YouTubeSDK */; };
 		772039822F6AAB3900E85D4A /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 772039812F6AAB3900E85D4A /* Kingfisher */; };
 		772039882F6AAB5900E85D4A /* InjectionNext in Frameworks */ = {isa = PBXBuildFile; productRef = 772039872F6AAB5900E85D4A /* InjectionNext */; };
+		7736DD052F6ECE800077B88B /* iTunesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7736DD042F6ECE800077B88B /* iTunesKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +50,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				772039822F6AAB3900E85D4A /* Kingfisher in Frameworks */,
+				7736DD052F6ECE800077B88B /* iTunesKit in Frameworks */,
 				7720397C2F6AAB1D00E85D4A /* YouTubeSDK in Frameworks */,
 				772039882F6AAB5900E85D4A /* InjectionNext in Frameworks */,
 			);
@@ -98,6 +100,7 @@
 				7720397B2F6AAB1D00E85D4A /* YouTubeSDK */,
 				772039812F6AAB3900E85D4A /* Kingfisher */,
 				772039872F6AAB5900E85D4A /* InjectionNext */,
+				7736DD042F6ECE800077B88B /* iTunesKit */,
 			);
 			productName = macOS;
 			productReference = 772039692F6AAAD500E85D4A /* cisum.app */;
@@ -111,7 +114,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2630;
-				LastUpgradeCheck = 2630;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					772039682F6AAAD500E85D4A = {
 						CreatedOnToolsVersion = 26.3;
@@ -131,6 +134,7 @@
 				7720397A2F6AAB1D00E85D4A /* XCRemoteSwiftPackageReference "YouTubeSDK" */,
 				772039802F6AAB3900E85D4A /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				772039862F6AAB5900E85D4A /* XCRemoteSwiftPackageReference "InjectionNext" */,
+				7736DD032F6ECE800077B88B /* XCLocalSwiftPackageReference "../../../Packages/StreamingKit/iTunesKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7720396A2F6AAAD500E85D4A /* Products */;
@@ -197,6 +201,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 3YK32DPS3W;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -222,6 +227,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -261,6 +267,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 3YK32DPS3W;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -279,6 +286,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -295,6 +303,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 3YK32DPS3W;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -316,6 +325,10 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-Xlinker",
+					"-interposable",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = aaravgupta.cisum;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -346,6 +359,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 3YK32DPS3W;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -367,6 +381,10 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-Xlinker",
+					"-interposable",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = aaravgupta.cisum;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -407,6 +425,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		7736DD032F6ECE800077B88B /* XCLocalSwiftPackageReference "../../../Packages/StreamingKit/iTunesKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../../Packages/StreamingKit/iTunesKit;
+		};
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
 		7720397A2F6AAB1D00E85D4A /* XCRemoteSwiftPackageReference "YouTubeSDK" */ = {
@@ -450,6 +475,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 772039862F6AAB5900E85D4A /* XCRemoteSwiftPackageReference "InjectionNext" */;
 			productName = InjectionNext;
+		};
+		7736DD042F6ECE800077B88B /* iTunesKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = iTunesKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

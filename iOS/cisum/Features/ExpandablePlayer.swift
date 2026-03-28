@@ -6,12 +6,9 @@
 //
 
 import SwiftUI
-import Kingfisher
 
 #if os(iOS)
 struct ExpandablePlayer: View {
-    @Environment(PlayerViewModel.self) private var playerViewModel
-    
     @Binding var show: Bool
     @Namespace private var namespace
     
@@ -90,55 +87,9 @@ struct ExpandablePlayer: View {
     }
     
     var background: some View {
-        ZStack {
-            Rectangle()
-                .fill(.bar)
-            
-            Rectangle()
-                .fill(.ultraThickMaterial)
-                .overlay {
-                    nowPlayingBackground
-                }
-                .opacity(properties.isPlayerExpanded ? 1 : 0)
-        }
+        PlayerExpandedBackground(isExpanded: properties.isPlayerExpanded)
         .clipShape(playerBackgroundClipShape)
         .frame(height: properties.isPlayerExpanded ? nil : 44)
-    }
-    
-    var nowPlayingBackground: some View {
-        ZStack {
-            dominantColor
-            
-            vinylEffect
-            
-            overlayEffects
-        }
-        .compositingGroup()
-    }
-    
-    var dominantColor: some View {
-        Color.dynamicAccent
-            .scaleEffect(1.1)
-            .blur(radius: 10)
-    }
-    
-    var vinylEffect: some View {
-        Vinyl {
-            KFImage(playerViewModel.currentImageURL)
-                .resizable()
-                .scaledToFill()
-        }
-    }
-    
-    var overlayEffects: some View {
-        ZStack {
-            Color.white.opacity(0.1)
-                .scaleEffect(1.8)
-                .blur(radius: 100)
-            
-            Color.black.opacity(0.35)
-        }
-        .compositingGroup()
     }
 }
 #endif

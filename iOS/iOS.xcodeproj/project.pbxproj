@@ -11,16 +11,62 @@
 		7720397F2F6AAB2F00E85D4A /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 7720397E2F6AAB2F00E85D4A /* Kingfisher */; };
 		772039852F6AAB5100E85D4A /* InjectionNext in Frameworks */ = {isa = PBXBuildFile; productRef = 772039842F6AAB5100E85D4A /* InjectionNext */; };
 		7720398B2F6AAB7300E85D4A /* LNPopupUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7720398A2F6AAB7300E85D4A /* LNPopupUI */; };
+		7736DD082F6ECEB50077B88B /* iTunesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7736DD072F6ECEB50077B88B /* iTunesKit */; };
+		775785FE2F7774DF005CB07D /* FFmpeg in Frameworks */ = {isa = PBXBuildFile; productRef = 775785FD2F7774DF005CB07D /* FFmpeg */; };
+		775786002F7774DF005CB07D /* FFmpeg-Kit in Frameworks */ = {isa = PBXBuildFile; productRef = 775785FF2F7774DF005CB07D /* FFmpeg-Kit */; };
+		775786022F7774DF005CB07D /* libavcodec in Frameworks */ = {isa = PBXBuildFile; productRef = 775786012F7774DF005CB07D /* libavcodec */; };
+		775786042F7774DF005CB07D /* libavdevice in Frameworks */ = {isa = PBXBuildFile; productRef = 775786032F7774DF005CB07D /* libavdevice */; };
+		775786062F7774DF005CB07D /* libavfilter in Frameworks */ = {isa = PBXBuildFile; productRef = 775786052F7774DF005CB07D /* libavfilter */; };
+		775786082F7774DF005CB07D /* libavformat in Frameworks */ = {isa = PBXBuildFile; productRef = 775786072F7774DF005CB07D /* libavformat */; };
+		7757860A2F7774DF005CB07D /* libavutil in Frameworks */ = {isa = PBXBuildFile; productRef = 775786092F7774DF005CB07D /* libavutil */; };
+		7757860C2F7774DF005CB07D /* libswresample in Frameworks */ = {isa = PBXBuildFile; productRef = 7757860B2F7774DF005CB07D /* libswresample */; };
+		7757860E2F7774DF005CB07D /* libswscale in Frameworks */ = {isa = PBXBuildFile; productRef = 7757860D2F7774DF005CB07D /* libswscale */; };
+		7757860F2F77778E005CB07D /* FFmpeg-Kit in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 775785FF2F7774DF005CB07D /* FFmpeg-Kit */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		775786102F777791005CB07D /* FFmpeg in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 775785FD2F7774DF005CB07D /* FFmpeg */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		77C8BF5A2F6E36D200E7354F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77C8BF592F6E36D200E7354F /* WidgetKit.framework */; };
+		77C8BF5C2F6E36D200E7354F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77C8BF5B2F6E36D200E7354F /* SwiftUI.framework */; };
+		77C8BF6D2F6E36D200E7354F /* LyricsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 77C8BF572F6E36D200E7354F /* LyricsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		77EC570E2F6AB9B5002B5513 /* LNPopupUI in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 7720398A2F6AAB7300E85D4A /* LNPopupUI */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		A1B2C3D42F6F000100E7354F /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1B2C3D52F6F000100E7354F /* XCTest.framework */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		77C8BF6B2F6E36D200E7354F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7720394A2F6AAAA700E85D4A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 77C8BF562F6E36D200E7354F;
+			remoteInfo = LyricsExtension;
+		};
+		A1B2C3D92F6F000100E7354F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7720394A2F6AAAA700E85D4A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 772039512F6AAAA700E85D4A;
+			remoteInfo = cisum;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
+		77C8BF722F6E36D200E7354F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				77C8BF6D2F6E36D200E7354F /* LyricsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		77EC570F2F6AB9B5002B5513 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				7757860F2F77778E005CB07D /* FFmpeg-Kit in Embed Frameworks */,
+				775786102F777791005CB07D /* FFmpeg in Embed Frameworks */,
 				77EC570E2F6AB9B5002B5513 /* LNPopupUI in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -30,6 +76,11 @@
 
 /* Begin PBXFileReference section */
 		772039522F6AAAA700E85D4A /* cisum.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = cisum.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		77C8BF572F6E36D200E7354F /* LyricsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LyricsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		77C8BF592F6E36D200E7354F /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		77C8BF5B2F6E36D200E7354F /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		A1B2C3D52F6F000100E7354F /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		A1B2C3D62F6F000100E7354F /* cisumTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = cisumTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -39,6 +90,13 @@
 				Info.plist,
 			);
 			target = 772039512F6AAAA700E85D4A /* cisum */;
+		};
+		77C8BF712F6E36D200E7354F /* Exceptions for "Lyrics" folder in "LyricsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 77C8BF562F6E36D200E7354F /* LyricsExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -57,6 +115,19 @@
 			path = ../Shared;
 			sourceTree = SOURCE_ROOT;
 		};
+		77C8BF5D2F6E36D200E7354F /* Lyrics */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				77C8BF712F6E36D200E7354F /* Exceptions for "Lyrics" folder in "LyricsExtension" target */,
+			);
+			path = Lyrics;
+			sourceTree = "<group>";
+		};
+		A1B2C3D72F6F000100E7354F /* cisumTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = cisumTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,10 +135,37 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				775786042F7774DF005CB07D /* libavdevice in Frameworks */,
 				7720397F2F6AAB2F00E85D4A /* Kingfisher in Frameworks */,
+				775785FE2F7774DF005CB07D /* FFmpeg in Frameworks */,
+				775786062F7774DF005CB07D /* libavfilter in Frameworks */,
+				775786002F7774DF005CB07D /* FFmpeg-Kit in Frameworks */,
+				7757860A2F7774DF005CB07D /* libavutil in Frameworks */,
+				775786082F7774DF005CB07D /* libavformat in Frameworks */,
+				7736DD082F6ECEB50077B88B /* iTunesKit in Frameworks */,
 				7720398B2F6AAB7300E85D4A /* LNPopupUI in Frameworks */,
+				7757860E2F7774DF005CB07D /* libswscale in Frameworks */,
+				7757860C2F7774DF005CB07D /* libswresample in Frameworks */,
 				772039792F6AAB1200E85D4A /* YouTubeSDK in Frameworks */,
+				775786022F7774DF005CB07D /* libavcodec in Frameworks */,
 				772039852F6AAB5100E85D4A /* InjectionNext in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		77C8BF542F6E36D200E7354F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				77C8BF5C2F6E36D200E7354F /* SwiftUI.framework in Frameworks */,
+				77C8BF5A2F6E36D200E7354F /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1B2C3DC2F6F000100E7354F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C3D42F6F000100E7354F /* XCTest.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -77,8 +175,11 @@
 		772039492F6AAAA700E85D4A = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D72F6F000100E7354F /* cisumTests */,
 				77AB98532F6AB57C00D31B8E /* Shared */,
 				772039542F6AAAA700E85D4A /* cisum */,
+				77C8BF5D2F6E36D200E7354F /* Lyrics */,
+				77C8BF582F6E36D200E7354F /* Frameworks */,
 				772039532F6AAAA700E85D4A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -87,8 +188,20 @@
 			isa = PBXGroup;
 			children = (
 				772039522F6AAAA700E85D4A /* cisum.app */,
+				A1B2C3D62F6F000100E7354F /* cisumTests.xctest */,
+				77C8BF572F6E36D200E7354F /* LyricsExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		77C8BF582F6E36D200E7354F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D52F6F000100E7354F /* XCTest.framework */,
+				77C8BF592F6E36D200E7354F /* WidgetKit.framework */,
+				77C8BF5B2F6E36D200E7354F /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -102,10 +215,12 @@
 				7720394F2F6AAAA700E85D4A /* Frameworks */,
 				772039502F6AAAA700E85D4A /* Resources */,
 				77EC570F2F6AB9B5002B5513 /* Embed Frameworks */,
+				77C8BF722F6E36D200E7354F /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				77C8BF6C2F6E36D200E7354F /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				772039542F6AAAA700E85D4A /* cisum */,
@@ -117,10 +232,65 @@
 				7720397E2F6AAB2F00E85D4A /* Kingfisher */,
 				772039842F6AAB5100E85D4A /* InjectionNext */,
 				7720398A2F6AAB7300E85D4A /* LNPopupUI */,
+				7736DD072F6ECEB50077B88B /* iTunesKit */,
+				775785FD2F7774DF005CB07D /* FFmpeg */,
+				775785FF2F7774DF005CB07D /* FFmpeg-Kit */,
+				775786012F7774DF005CB07D /* libavcodec */,
+				775786032F7774DF005CB07D /* libavdevice */,
+				775786052F7774DF005CB07D /* libavfilter */,
+				775786072F7774DF005CB07D /* libavformat */,
+				775786092F7774DF005CB07D /* libavutil */,
+				7757860B2F7774DF005CB07D /* libswresample */,
+				7757860D2F7774DF005CB07D /* libswscale */,
 			);
 			productName = iOS;
 			productReference = 772039522F6AAAA700E85D4A /* cisum.app */;
 			productType = "com.apple.product-type.application";
+		};
+		77C8BF562F6E36D200E7354F /* LyricsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 77C8BF6E2F6E36D200E7354F /* Build configuration list for PBXNativeTarget "LyricsExtension" */;
+			buildPhases = (
+				77C8BF532F6E36D200E7354F /* Sources */,
+				77C8BF542F6E36D200E7354F /* Frameworks */,
+				77C8BF552F6E36D200E7354F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				77C8BF5D2F6E36D200E7354F /* Lyrics */,
+			);
+			name = LyricsExtension;
+			packageProductDependencies = (
+			);
+			productName = LyricsExtension;
+			productReference = 77C8BF572F6E36D200E7354F /* LyricsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		A1B2C3D82F6F000100E7354F /* cisumTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1B2C3E02F6F000100E7354F /* Build configuration list for PBXNativeTarget "cisumTests" */;
+			buildPhases = (
+				A1B2C3DB2F6F000100E7354F /* Sources */,
+				A1B2C3DC2F6F000100E7354F /* Frameworks */,
+				A1B2C3DD2F6F000100E7354F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1B2C3DA2F6F000100E7354F /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A1B2C3D72F6F000100E7354F /* cisumTests */,
+			);
+			name = cisumTests;
+			packageProductDependencies = (
+			);
+			productName = cisumTests;
+			productReference = A1B2C3D62F6F000100E7354F /* cisumTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -130,9 +300,15 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2630;
-				LastUpgradeCheck = 2630;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					772039512F6AAAA700E85D4A = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					77C8BF562F6E36D200E7354F = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					A1B2C3D82F6F000100E7354F = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
@@ -151,6 +327,8 @@
 				7720397D2F6AAB2F00E85D4A /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				772039832F6AAB5100E85D4A /* XCRemoteSwiftPackageReference "InjectionNext" */,
 				772039892F6AAB7300E85D4A /* XCRemoteSwiftPackageReference "LNPopupUI" */,
+				7736DD062F6ECEB50077B88B /* XCLocalSwiftPackageReference "../../../Packages/StreamingKit/iTunesKit" */,
+				775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 772039532F6AAAA700E85D4A /* Products */;
@@ -158,12 +336,28 @@
 			projectRoot = "";
 			targets = (
 				772039512F6AAAA700E85D4A /* cisum */,
+				A1B2C3D82F6F000100E7354F /* cisumTests */,
+				77C8BF562F6E36D200E7354F /* LyricsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		772039502F6AAAA700E85D4A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		77C8BF552F6E36D200E7354F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1B2C3DD2F6F000100E7354F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -180,7 +374,34 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		77C8BF532F6E36D200E7354F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1B2C3DB2F6F000100E7354F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		77C8BF6C2F6E36D200E7354F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 77C8BF562F6E36D200E7354F /* LyricsExtension */;
+			targetProxy = 77C8BF6B2F6E36D200E7354F /* PBXContainerItemProxy */;
+		};
+		A1B2C3DA2F6F000100E7354F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 772039512F6AAAA700E85D4A /* cisum */;
+			targetProxy = A1B2C3D92F6F000100E7354F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		7720395B2F6AAAAA00E85D4A /* Debug */ = {
@@ -242,6 +463,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -299,6 +521,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -390,6 +613,118 @@
 			};
 			name = Release;
 		};
+		77C8BF6F2F6E36D200E7354F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3YK32DPS3W;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Lyrics/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Lyrics;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = aaravgupta.cisum.Lyrics;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		77C8BF702F6E36D200E7354F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3YK32DPS3W;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Lyrics/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Lyrics;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = aaravgupta.cisum.Lyrics;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A1B2C3DE2F6F000100E7354F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3YK32DPS3W;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = aaravgupta.cisumTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/cisum.app/cisum";
+			};
+			name = Debug;
+		};
+		A1B2C3DF2F6F000100E7354F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3YK32DPS3W;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = aaravgupta.cisumTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/cisum.app/cisum";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -411,7 +746,32 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		77C8BF6E2F6E36D200E7354F /* Build configuration list for PBXNativeTarget "LyricsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				77C8BF6F2F6E36D200E7354F /* Debug */,
+				77C8BF702F6E36D200E7354F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1B2C3E02F6F000100E7354F /* Build configuration list for PBXNativeTarget "cisumTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3DE2F6F000100E7354F /* Debug */,
+				A1B2C3DF2F6F000100E7354F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		7736DD062F6ECEB50077B88B /* XCLocalSwiftPackageReference "../../../Packages/StreamingKit/iTunesKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../../Packages/StreamingKit/iTunesKit;
+		};
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
 		772039772F6AAB1200E85D4A /* XCRemoteSwiftPackageReference "YouTubeSDK" */ = {
@@ -446,6 +806,14 @@
 				minimumVersion = 3.0.2;
 			};
 		};
+		775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tylerjonesio/ffmpeg-kit-spm";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -468,6 +836,55 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 772039892F6AAB7300E85D4A /* XCRemoteSwiftPackageReference "LNPopupUI" */;
 			productName = LNPopupUI;
+		};
+		7736DD072F6ECEB50077B88B /* iTunesKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = iTunesKit;
+		};
+		775785FD2F7774DF005CB07D /* FFmpeg */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = FFmpeg;
+		};
+		775785FF2F7774DF005CB07D /* FFmpeg-Kit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = "FFmpeg-Kit";
+		};
+		775786012F7774DF005CB07D /* libavcodec */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libavcodec;
+		};
+		775786032F7774DF005CB07D /* libavdevice */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libavdevice;
+		};
+		775786052F7774DF005CB07D /* libavfilter */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libavfilter;
+		};
+		775786072F7774DF005CB07D /* libavformat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libavformat;
+		};
+		775786092F7774DF005CB07D /* libavutil */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libavutil;
+		};
+		7757860B2F7774DF005CB07D /* libswresample */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libswresample;
+		};
+		7757860D2F7774DF005CB07D /* libswscale */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libswscale;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
