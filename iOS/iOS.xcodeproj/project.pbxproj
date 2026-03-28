@@ -26,6 +26,7 @@
 		77C8BF5A2F6E36D200E7354F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77C8BF592F6E36D200E7354F /* WidgetKit.framework */; };
 		77C8BF5C2F6E36D200E7354F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77C8BF5B2F6E36D200E7354F /* SwiftUI.framework */; };
 		77C8BF6D2F6E36D200E7354F /* LyricsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 77C8BF572F6E36D200E7354F /* LyricsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		77D703412F781F9100358D03 /* iTunesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 77D703402F781F9100358D03 /* iTunesKit */; };
 		77EC570E2F6AB9B5002B5513 /* LNPopupUI in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 7720398A2F6AAB7300E85D4A /* LNPopupUI */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		A1B2C3D42F6F000100E7354F /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1B2C3D52F6F000100E7354F /* XCTest.framework */; };
 /* End PBXBuildFile section */
@@ -123,11 +124,6 @@
 			path = Lyrics;
 			sourceTree = "<group>";
 		};
-		A1B2C3D72F6F000100E7354F /* cisumTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = cisumTests;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -141,6 +137,7 @@
 				775786062F7774DF005CB07D /* libavfilter in Frameworks */,
 				775786002F7774DF005CB07D /* FFmpeg-Kit in Frameworks */,
 				7757860A2F7774DF005CB07D /* libavutil in Frameworks */,
+				77D703412F781F9100358D03 /* iTunesKit in Frameworks */,
 				775786082F7774DF005CB07D /* libavformat in Frameworks */,
 				7736DD082F6ECEB50077B88B /* iTunesKit in Frameworks */,
 				7720398B2F6AAB7300E85D4A /* LNPopupUI in Frameworks */,
@@ -175,7 +172,6 @@
 		772039492F6AAAA700E85D4A = {
 			isa = PBXGroup;
 			children = (
-				A1B2C3D72F6F000100E7354F /* cisumTests */,
 				77AB98532F6AB57C00D31B8E /* Shared */,
 				772039542F6AAAA700E85D4A /* cisum */,
 				77C8BF5D2F6E36D200E7354F /* Lyrics */,
@@ -242,6 +238,7 @@
 				775786092F7774DF005CB07D /* libavutil */,
 				7757860B2F7774DF005CB07D /* libswresample */,
 				7757860D2F7774DF005CB07D /* libswscale */,
+				77D703402F781F9100358D03 /* iTunesKit */,
 			);
 			productName = iOS;
 			productReference = 772039522F6AAAA700E85D4A /* cisum.app */;
@@ -281,9 +278,6 @@
 			);
 			dependencies = (
 				A1B2C3DA2F6F000100E7354F /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				A1B2C3D72F6F000100E7354F /* cisumTests */,
 			);
 			name = cisumTests;
 			packageProductDependencies = (
@@ -327,8 +321,8 @@
 				7720397D2F6AAB2F00E85D4A /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				772039832F6AAB5100E85D4A /* XCRemoteSwiftPackageReference "InjectionNext" */,
 				772039892F6AAB7300E85D4A /* XCRemoteSwiftPackageReference "LNPopupUI" */,
-				7736DD062F6ECEB50077B88B /* XCLocalSwiftPackageReference "../../../Packages/StreamingKit/iTunesKit" */,
 				775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */,
+				77D7033F2F781F9100358D03 /* XCRemoteSwiftPackageReference "ituneskit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 772039532F6AAAA700E85D4A /* Products */;
@@ -766,13 +760,6 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		7736DD062F6ECEB50077B88B /* XCLocalSwiftPackageReference "../../../Packages/StreamingKit/iTunesKit" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../../Packages/StreamingKit/iTunesKit;
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
 		772039772F6AAB1200E85D4A /* XCRemoteSwiftPackageReference "YouTubeSDK" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -809,6 +796,14 @@
 		775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tylerjonesio/ffmpeg-kit-spm";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+		77D7033F2F781F9100358D03 /* XCRemoteSwiftPackageReference "ituneskit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://gitlab.com/atpugvaraa/ituneskit.git";
 			requirement = {
 				branch = main;
 				kind = branch;
@@ -885,6 +880,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
 			productName = libswscale;
+		};
+		77D703402F781F9100358D03 /* iTunesKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 77D7033F2F781F9100358D03 /* XCRemoteSwiftPackageReference "ituneskit" */;
+			productName = iTunesKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
