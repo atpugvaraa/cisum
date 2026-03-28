@@ -1,5 +1,5 @@
 {
-  "originHash" : "f907e2e5a659f46c10bf1b38a28999e2338627ea91d03f5fdd0a913ca9e17030",
+  "originHash" : "ee94d098a80f0ce7e2d76eef8c292ba361b3cd1ca48d60aa5b314109d9b84880",
   "pins" : [
     {
       "identity" : "ffmpeg-kit-spm",
@@ -25,7 +25,7 @@
       "location" : "https://gitlab.com/atpugvaraa/ituneskit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "54d2c664a546c5791694f4f8619b8ab4f1b5a663"
+        "revision" : "44ec2f4fbb7ae8b61c77748536022734944ef188"
       }
     },
     {
