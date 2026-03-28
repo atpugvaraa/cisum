@@ -38,8 +38,22 @@ actor ArtworkVideoProcessor {
     }
 
     private enum StreamMapping {
-        static let primary = "0:v:8"
-        static let fallback = "0:v:0"
+        static let primary = "0:v:0"
+    }
+
+    private enum EncodingStrategy {
+        case hardwareTranscode
+        case softwareFallback
+    }
+
+    private enum CacheProfile {
+        static let version = "v3-hw-source-aware"
+        static let markerFilename = ".profile"
+    }
+
+    private struct SourceMetadata {
+        let duration: Double?
+        let videoSize: CGSize?
     }
 
     private enum FFmpegExecutionOutcome: Sendable {
@@ -85,8 +99,11 @@ actor ArtworkVideoProcessor {
             throw ArtworkVideoProcessorError.invalidInput(sourceHLSURL)
         }
 
-        let outputURL = try cachedFileURL(for: mediaID)
+        let cacheDirectory = try artworkVideoCacheDirectory()
+        try ensureCurrentCacheProfile(in: cacheDirectory)
+        let outputURL = cacheDirectory.appending(path: "\(mediaID).mp4")
         if fileManager.fileExists(atPath: outputURL.path(percentEncoded: false)) {
+            print("🖼️ ArtworkVideoProcessor: Cache hit for id=\(mediaID)")
             progress(1)
             return outputURL
         }
@@ -99,7 +116,12 @@ actor ArtworkVideoProcessor {
             task = existingTask
         } else {
             task = Task(priority: .utility) {
-                try await self.processVideo(for: mediaID, sourceHLSURL: sourceHLSURL, outputURL: outputURL)
+                try await self.processVideo(
+                    for: mediaID,
+                    sourceHLSURL: sourceHLSURL,
+                    outputURL: outputURL,
+                    cacheDirectory: cacheDirectory
+                )
             }
             inFlight[mediaID] = task
         }
@@ -114,10 +136,12 @@ actor ArtworkVideoProcessor {
     private func processVideo(
         for mediaID: String,
         sourceHLSURL: URL,
-        outputURL: URL
+        outputURL: URL,
+        cacheDirectory: URL
     ) async throws -> URL {
         let tempURL = try temporaryOutputURL(for: mediaID)
-        let estimatedDuration = await loadEstimatedDuration(for: sourceHLSURL)
+        let sourceMetadata = await loadSourceMetadata(from: sourceHLSURL)
+        let estimatedDuration = sourceMetadata.duration
 
         defer {
             inFlight[mediaID] = nil
@@ -127,45 +151,41 @@ actor ArtworkVideoProcessor {
 
         do {
             if fileManager.fileExists(atPath: outputURL.path(percentEncoded: false)) {
+                print("🖼️ ArtworkVideoProcessor: Reusing cached artwork video for id=\(mediaID)")
                 notifyProgress(1, for: mediaID)
                 return outputURL
             }
 
+            print("🖼️ ArtworkVideoProcessor: Probing source for id=\(mediaID)")
+            let durationText = sourceMetadata.duration.map { String(format: "%.2f", $0) } ?? "unknown"
+            let sizeText: String
+            if let videoSize = sourceMetadata.videoSize {
+                sizeText = "\(videoSize.width)x\(videoSize.height)"
+            } else {
+                sizeText = "unknown"
+            }
+            print("🖼️ ArtworkVideoProcessor: Source probe for id=\(mediaID) duration=\(durationText)s size=\(sizeText)")
             try cleanupItem(at: tempURL)
 
-            do {
-                try await runFFmpegCommand(
-                    command: makeCommand(
-                        sourceHLSURL: sourceHLSURL,
-                        streamMap: StreamMapping.primary,
-                        outputURL: tempURL
-                    ),
-                    mediaID: mediaID,
-                    estimatedDuration: estimatedDuration
-                )
-            } catch let error as ArtworkVideoProcessorError {
-                if shouldRetryWithFallback(for: error) {
-                    try cleanupItem(at: tempURL)
-                    try await runFFmpegCommand(
-                        command: makeCommand(
-                            sourceHLSURL: sourceHLSURL,
-                            streamMap: StreamMapping.fallback,
-                            outputURL: tempURL
-                        ),
-                        mediaID: mediaID,
-                        estimatedDuration: estimatedDuration
-                    )
-                } else {
-                    throw error
-                }
-            }
+            print("🖼️ ArtworkVideoProcessor: Encoding motion artwork for id=\(mediaID) with hardware-first preset")
+            try await runBestEffortFFmpegCommands(
+                sourceHLSURL: sourceHLSURL,
+                streamMap: StreamMapping.primary,
+                outputURL: tempURL,
+                mediaID: mediaID,
+                estimatedDuration: estimatedDuration,
+                sourceSize: sourceMetadata.videoSize
+            )
 
             guard fileManager.fileExists(atPath: tempURL.path(percentEncoded: false)) else {
                 throw ArtworkVideoProcessorError.noOutputProduced
             }
 
+            print("🖼️ ArtworkVideoProcessor: Finalizing motion artwork for id=\(mediaID)")
             try commitTemporaryOutput(from: tempURL, to: outputURL)
+            try? writeCacheProfileMarker(in: cacheDirectory)
             notifyProgress(1, for: mediaID)
+            print("🖼️ ArtworkVideoProcessor: Motion artwork ready for id=\(mediaID)")
             return outputURL
         } catch is CancellationError {
             try? cleanupItem(at: tempURL)
@@ -179,6 +199,45 @@ actor ArtworkVideoProcessor {
         }
     }
 
+    private func runBestEffortFFmpegCommands(
+        sourceHLSURL: URL,
+        streamMap: String,
+        outputURL: URL,
+        mediaID: String,
+        estimatedDuration: Double?,
+        sourceSize: CGSize?
+    ) async throws {
+        let strategies: [EncodingStrategy] = [.hardwareTranscode, .softwareFallback]
+        var lastError: ArtworkVideoProcessorError?
+
+        for strategy in strategies {
+            try cleanupItem(at: outputURL)
+
+            do {
+                try await runFFmpegCommand(
+                    command: makeCommand(
+                        sourceHLSURL: sourceHLSURL,
+                        streamMap: streamMap,
+                        outputURL: outputURL,
+                        strategy: strategy,
+                        sourceSize: sourceSize
+                    ),
+                    mediaID: mediaID,
+                    estimatedDuration: estimatedDuration
+                )
+                return
+            } catch let error as ArtworkVideoProcessorError {
+                lastError = error
+
+                if shouldRetryWithFallback(for: error) {
+                    throw error
+                }
+            }
+        }
+
+        throw lastError ?? .ffmpegFailure(message: "FFmpeg exhausted all artwork video strategies.")
+    }
+
     private func awaitResult(
         for mediaID: String,
         observerID: UUID,
@@ -187,7 +246,7 @@ actor ArtworkVideoProcessor {
         try await withTaskCancellationHandler {
             defer {
                 Task {
-                    await self.removeProgressObserver(for: mediaID, id: observerID)
+                    self.removeProgressObserver(for: mediaID, id: observerID)
                 }
             }
             return try await task.value
@@ -328,7 +387,7 @@ actor ArtworkVideoProcessor {
         }
     }
 
-    private func cachedFileURL(for mediaID: String) throws -> URL {
+    private func artworkVideoCacheDirectory() throws -> URL {
         guard let containerURL = appGroupContainerURLProvider(appGroupIdentifier) else {
             throw ArtworkVideoProcessorError.cachePathFailure
         }
@@ -343,12 +402,44 @@ actor ArtworkVideoProcessor {
             withIntermediateDirectories: true
         )
 
-        return cachesURL.appending(path: "\(mediaID).mp4")
+        return cachesURL
     }
 
     private func temporaryOutputURL(for mediaID: String) throws -> URL {
-        let directory = try cachedFileURL(for: mediaID).deletingLastPathComponent()
+        let directory = try artworkVideoCacheDirectory()
         return directory.appending(path: "\(mediaID)-\(UUID().uuidString).tmp.mp4")
+    }
+
+    private func cacheProfileURL(in cacheDirectory: URL) -> URL {
+        cacheDirectory.appending(path: CacheProfile.markerFilename)
+    }
+
+    private func ensureCurrentCacheProfile(in cacheDirectory: URL) throws {
+        let profileURL = cacheProfileURL(in: cacheDirectory)
+        if let storedProfile = try? String(contentsOf: profileURL, encoding: .utf8),
+           storedProfile.trimmingCharacters(in: .whitespacesAndNewlines) == CacheProfile.version {
+            return
+        }
+
+        try clearArtworkVideoCache(in: cacheDirectory)
+        try writeCacheProfileMarker(in: cacheDirectory)
+    }
+
+    private func writeCacheProfileMarker(in cacheDirectory: URL) throws {
+        let profileURL = cacheProfileURL(in: cacheDirectory)
+        try CacheProfile.version.write(to: profileURL, atomically: true, encoding: .utf8)
+    }
+
+    private func clearArtworkVideoCache(in cacheDirectory: URL) throws {
+        let contents = try fileManager.contentsOfDirectory(
+            at: cacheDirectory,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )
+
+        for item in contents {
+            try? fileManager.removeItem(at: item)
+        }
     }
 
     private func commitTemporaryOutput(from tempURL: URL, to outputURL: URL) throws {
@@ -366,17 +457,138 @@ actor ArtworkVideoProcessor {
         try fileManager.removeItem(at: url)
     }
 
-    private func makeCommand(sourceHLSURL: URL, streamMap: String, outputURL: URL) -> String {
-        [
-            "-protocol_whitelist \(quotedFFmpegArgument("file,http,https,tcp,tls"))",
-            "-i \(quotedFFmpegArgument(sourceHLSURL.absoluteString))",
-            "-map \(streamMap)",
-            "-vf \(quotedFFmpegArgument("scale=1080:-2"))",
+    private func makeCommand(
+        sourceHLSURL: URL,
+        streamMap: String,
+        outputURL: URL,
+        strategy: EncodingStrategy,
+        sourceSize: CGSize?
+    ) -> String {
+        let codecArguments: [String]
+        switch strategy {
+        case .hardwareTranscode:
+            codecArguments = hardwareCodecArguments(for: sourceSize)
+        case .softwareFallback:
+            codecArguments = softwareCodecArguments(for: sourceSize)
+        }
+
+        let videoFilter = "scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos"
+
+        return (
+            [
+                "-protocol_whitelist \(quotedFFmpegArgument("file,http,https,tcp,tls"))",
+                "-i \(quotedFFmpegArgument(sourceHLSURL.absoluteString))",
+                "-map \(streamMap)",
+                "-vf \(quotedFFmpegArgument(videoFilter))",
+                "-an"
+            ]
+            + codecArguments
+            + [
+                "-movflags +faststart",
+                quotedFFmpegArgument(outputURL.path(percentEncoded: false))
+            ]
+        ).joined(separator: " ")
+    }
+
+    private func hardwareCodecArguments(for sourceSize: CGSize?) -> [String] {
+        let maxDimension = max(sourceSize?.width ?? 0, sourceSize?.height ?? 0)
+        if maxDimension >= 1920 {
+            return [
+                "-c:v h264_videotoolbox",
+                "-b:v 18000k",
+                "-maxrate 24000k",
+                "-bufsize 48000k",
+                "-pix_fmt yuv420p"
+            ]
+        }
+
+        if maxDimension >= 1280 {
+            return [
+                "-c:v h264_videotoolbox",
+                "-b:v 14000k",
+                "-maxrate 18000k",
+                "-bufsize 36000k",
+                "-pix_fmt yuv420p"
+            ]
+        }
+
+        return [
+            "-c:v h264_videotoolbox",
+            "-b:v 10000k",
+            "-maxrate 12000k",
+            "-bufsize 24000k",
+            "-pix_fmt yuv420p"
+        ]
+    }
+
+    private func softwareCodecArguments(for sourceSize: CGSize?) -> [String] {
+        let maxDimension = max(sourceSize?.width ?? 0, sourceSize?.height ?? 0)
+        if maxDimension >= 1920 {
+            return [
+                "-c:v mpeg4",
+                "-q:v 1",
+                "-pix_fmt yuv420p"
+            ]
+        }
+
+        return [
             "-c:v mpeg4",
-            "-pix_fmt yuv420p",
-            "-movflags +faststart",
-            quotedFFmpegArgument(outputURL.path(percentEncoded: false))
-        ].joined(separator: " ")
+            "-q:v 2",
+            "-pix_fmt yuv420p"
+        ]
+    }
+
+    private func loadSourceMetadata(from sourceHLSURL: URL) async -> SourceMetadata {
+        let asset = AVURLAsset(url: sourceHLSURL)
+
+        do {
+            async let duration = asset.load(.duration)
+            async let videoTracks = asset.loadTracks(withMediaType: .video)
+
+            let loadedDuration = try await duration
+            let loadedTracks = try await videoTracks
+
+            let seconds = loadedDuration.seconds
+            let durationValue: Double?
+            if seconds.isFinite, !seconds.isNaN, seconds > 0 {
+                durationValue = seconds
+            } else {
+                durationValue = nil
+            }
+
+            return SourceMetadata(
+                duration: durationValue,
+                videoSize: await largestVideoSize(from: loadedTracks)
+            )
+        } catch {
+            return SourceMetadata(duration: nil, videoSize: nil)
+        }
+    }
+
+    private func largestVideoSize(from tracks: [AVAssetTrack]) async -> CGSize? {
+        var sizes: [CGSize] = []
+
+        for track in tracks {
+            do {
+                let loadedNaturalSize = try await track.load(.naturalSize)
+                let loadedPreferredTransform = try await track.load(.preferredTransform)
+                let transformedSize = loadedNaturalSize.applying(loadedPreferredTransform)
+                let width = abs(transformedSize.width)
+                let height = abs(transformedSize.height)
+
+                guard width > 0, height > 0, width.isFinite, height.isFinite else {
+                    continue
+                }
+
+                sizes.append(CGSize(width: width, height: height))
+            } catch {
+                continue
+            }
+        }
+
+        return sizes.max { lhs, rhs in
+            lhs.width * lhs.height < rhs.width * rhs.height
+        }
     }
 
     private func shouldRetryWithFallback(for error: ArtworkVideoProcessorError) -> Bool {
@@ -385,8 +597,8 @@ actor ArtworkVideoProcessor {
         }
 
         let normalized = message.lowercased()
-        return normalized.contains("stream map '0:v:8' matches no streams")
-            || normalized.contains("stream map '0:v:8'")
+        return normalized.contains("stream map '0:v:0' matches no streams")
+            || normalized.contains("stream map '0:v:0'")
             || normalized.contains("matches no streams")
     }
 
@@ -397,16 +609,4 @@ actor ArtworkVideoProcessor {
         return "\"\(escaped)\""
     }
 
-    private func loadEstimatedDuration(for sourceHLSURL: URL) async -> Double? {
-        let asset = AVURLAsset(url: sourceHLSURL)
-
-        do {
-            let duration = try await asset.load(.duration)
-            let seconds = duration.seconds
-            guard seconds.isFinite, !seconds.isNaN, seconds > 0 else { return nil }
-            return seconds
-        } catch {
-            return nil
-        }
-    }
 }

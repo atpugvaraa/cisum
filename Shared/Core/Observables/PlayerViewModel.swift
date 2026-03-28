@@ -57,6 +57,9 @@ final class PlayerViewModel {
     private var artworkVideoTask: Task<Void, Never>?
     private var playbackRecoveryTask: Task<Void, Never>?
     private var playbackRecoveryAttemptedIDs: Set<String> = []
+    private var playbackCandidates: [URL] = []
+    private var playbackCandidateIndex: Int = 0
+    private var playbackCandidatesMediaID: String?
     private var currentItemStatusObservation: NSKeyValueObservation?
     private let remoteCommandCenter = MPRemoteCommandCenter.shared()
     private let metadataCache = VideoMetadataCache.shared
@@ -123,6 +126,7 @@ final class PlayerViewModel {
         playbackError = nil
         currentTime = 0
         duration = 0
+        resetPlaybackCandidates(for: song.videoId)
         playbackRecoveryAttemptedIDs.remove(song.videoId)
         playbackRecoveryTask?.cancel()
         playbackRecoveryTask = nil
@@ -145,7 +149,8 @@ final class PlayerViewModel {
 
                 if Task.isCancelled { return }
 
-                self.playFromBeginning(url: playbackEntry.resolvedURL)
+                self.configurePlaybackCandidates(for: song.videoId, with: playbackEntry)
+                self.playCurrentPlaybackCandidate()
                 self.startArtworkVideoProcessingIfNeeded(
                     for: song.videoId,
                     title: song.title,
@@ -175,6 +180,7 @@ final class PlayerViewModel {
         playbackError = nil
         currentTime = 0
         duration = 0
+        resetPlaybackCandidates(for: video.id)
         playbackRecoveryAttemptedIDs.remove(video.id)
         playbackRecoveryTask?.cancel()
         playbackRecoveryTask = nil
@@ -197,7 +203,8 @@ final class PlayerViewModel {
 
                 if Task.isCancelled { return }
 
-                self.playFromBeginning(url: playbackEntry.resolvedURL)
+                self.configurePlaybackCandidates(for: video.id, with: playbackEntry)
+                self.playCurrentPlaybackCandidate()
                 self.startArtworkVideoProcessingIfNeeded(
                     for: video.id,
                     title: video.title,
@@ -237,6 +244,7 @@ final class PlayerViewModel {
     /// Reload the current video with current playback configuration.
     func reloadCurrentVideo() {
         guard let id = currentVideoId else { return }
+        resetPlaybackCandidates(for: id)
         currentLoadTask?.cancel()
         currentLoadTask = Task {
             if Task.isCancelled { return }
@@ -245,7 +253,8 @@ final class PlayerViewModel {
 
                 if Task.isCancelled { return }
 
-                self.playFromBeginning(url: playbackEntry.resolvedURL)
+                self.configurePlaybackCandidates(for: id, with: playbackEntry)
+                self.playCurrentPlaybackCandidate()
                 self.startArtworkVideoProcessingIfNeeded(
                     for: id,
                     title: currentTitle,
@@ -289,7 +298,7 @@ final class PlayerViewModel {
     }
 
     private func playFromBeginning(url: URL) {
-        let item = AVPlayerItem(url: url)
+        let item = makePlayerItem(for: url)
         observeCurrentItemStatus(item)
         player.replaceCurrentItem(with: item)
 
@@ -309,6 +318,66 @@ final class PlayerViewModel {
         updateRemoteCommandState()
     }
 
+    private func makePlayerItem(for url: URL) -> AVPlayerItem {
+        let headers: [String: String] = [
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+            "Referer": "https://www.youtube.com/",
+            "Origin": "https://www.youtube.com"
+        ]
+
+        let asset = AVURLAsset(
+            url: url,
+            options: ["AVURLAssetHTTPHeaderFieldsKey": headers]
+        )
+        return AVPlayerItem(asset: asset)
+    }
+
+    private func configurePlaybackCandidates(for mediaID: String, with entry: VideoMetadataCache.Entry) {
+        let candidates = Self.makePlaybackCandidates(from: entry.video, preferredURL: entry.resolvedURL)
+        playbackCandidatesMediaID = mediaID
+        playbackCandidates = candidates
+        playbackCandidateIndex = 0
+        print("🎧 PlayerViewModel: Prepared \(candidates.count) playback candidate(s) for id=\(mediaID)")
+        let hostSummary = candidates
+            .map { $0.host ?? "unknown-host" }
+            .joined(separator: " | ")
+        print("🎧 PlayerViewModel: Candidate hosts for id=\(mediaID): \(hostSummary)")
+    }
+
+    private func resetPlaybackCandidates(for mediaID: String) {
+        playbackCandidatesMediaID = mediaID
+        playbackCandidates = []
+        playbackCandidateIndex = 0
+    }
+
+    private func playCurrentPlaybackCandidate() {
+        guard playbackCandidateIndex < playbackCandidates.count else {
+            if let fallback = playbackCandidates.first {
+                print("🎧 PlayerViewModel: Playback candidate index out of range, retrying first candidate for id=\(playbackCandidatesMediaID ?? "unknown")")
+                playFromBeginning(url: fallback)
+            }
+            return
+        }
+
+        let candidateURL = playbackCandidates[playbackCandidateIndex]
+        print("🎧 PlayerViewModel: Trying playback candidate #\(playbackCandidateIndex + 1) for id=\(playbackCandidatesMediaID ?? "unknown")")
+        playFromBeginning(url: candidateURL)
+    }
+
+    private func attemptNextPlaybackCandidateIfAvailable(errorMessage: String) -> Bool {
+        guard let mediaID = currentVideoId,
+              playbackCandidatesMediaID == mediaID,
+              playbackCandidateIndex + 1 < playbackCandidates.count else {
+            return false
+        }
+
+        playbackCandidateIndex += 1
+        let candidateURL = playbackCandidates[playbackCandidateIndex]
+        print("🔁 PlayerViewModel: Trying fallback playback URL #\(playbackCandidateIndex + 1) for id=\(mediaID) after error=\(errorMessage)")
+        playFromBeginning(url: candidateURL)
+        return true
+    }
+
     private func startArtworkVideoProcessingIfNeeded(
         for mediaID: String,
         title: String,
@@ -322,14 +391,19 @@ final class PlayerViewModel {
         let progressBridge = ArtworkVideoProgressBridge(viewModel: self, mediaID: mediaID)
         artworkVideoTask = Task { @MainActor [weak self, progressBridge] in
             guard let self else { return }
+            self.logAnimatedArtwork("Processing started for id=\(mediaID)")
 
             do {
                 guard let sourceHLSURL = await Self.resolveMotionArtworkURL(using: itunes, title: title, artist: artist) else {
+                    self.logAnimatedArtwork("No Animated Artwork found for id=\(mediaID)")
                     return
                 }
 
+                self.logAnimatedArtwork("Animated Artwork source found for id=\(mediaID): \(sourceHLSURL.absoluteString)")
+
                 guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
 
+                self.logAnimatedArtwork("Preparing motion artwork for id=\(mediaID)")
                 self.artworkVideoStatus = .processing
 
                 let localVideoURL = try await self.artworkVideoProcessor.prepareVideo(
@@ -346,11 +420,13 @@ final class PlayerViewModel {
                 self.artworkVideoProgress = 1
                 self.artworkVideoStatus = .ready
                 self.artworkVideoError = nil
+                self.logAnimatedArtwork("Artwork found, transcoded, and loaded for id=\(mediaID): \(localVideoURL.lastPathComponent)")
                 self.updateNowPlayingMetadata(force: true)
             } catch let error as ArtworkVideoProcessor.ArtworkVideoProcessorError {
                 guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
 
                 if case .cancelled = error {
+                    self.logAnimatedArtwork("Processing cancelled for id=\(mediaID)")
                     return
                 }
 
@@ -358,6 +434,7 @@ final class PlayerViewModel {
                 self.artworkVideoProgress = nil
                 self.artworkVideoStatus = .failed
                 self.artworkVideoError = error.localizedDescription
+                self.logAnimatedArtwork("Artwork found but failed transcoding for id=\(mediaID): \(error.localizedDescription)")
                 print("⚠️ PlayerViewModel: Artwork video processing failed: \(error.localizedDescription)")
             } catch {
                 guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
@@ -366,9 +443,14 @@ final class PlayerViewModel {
                 self.artworkVideoProgress = nil
                 self.artworkVideoStatus = .failed
                 self.artworkVideoError = error.localizedDescription
+                self.logAnimatedArtwork("Artwork found but failed transcoding for id=\(mediaID): \(error.localizedDescription)")
                 print("⚠️ PlayerViewModel: Artwork video processing failed: \(error.localizedDescription)")
             }
         }
+    }
+
+    private func logAnimatedArtwork(_ message: String) {
+        print("🖼️ PlayerViewModel: \(message)")
     }
 
     private func resetArtworkVideoState() {
@@ -396,6 +478,10 @@ final class PlayerViewModel {
                 case .failed:
                     let errorMessage = item.error?.localizedDescription ?? "unknown error"
                     print("❌ PlayerViewModel: AVPlayerItem failed: \(errorMessage)")
+
+                    if self.attemptNextPlaybackCandidateIfAvailable(errorMessage: errorMessage) {
+                        return
+                    }
 
                     if self.handlePlaybackPermissionFailureIfNeeded(errorMessage: errorMessage) {
                         return
@@ -429,7 +515,8 @@ final class PlayerViewModel {
                 let playbackEntry = try await self.resolvePlaybackEntry(forID: mediaID)
 
                 guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
-                self.playFromBeginning(url: playbackEntry.resolvedURL)
+                self.configurePlaybackCandidates(for: mediaID, with: playbackEntry)
+                self.playCurrentPlaybackCandidate()
                 print("🔁 PlayerViewModel: Recovered playback with refreshed stream URL for id=\(mediaID)")
             } catch {
                 guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
@@ -450,6 +537,54 @@ final class PlayerViewModel {
             || normalized.contains("forbidden")
             || normalized.contains("403")
             || normalized.contains("not authorized")
+            || normalized.contains("unknown error")
+            || normalized.contains("failed")
+    }
+
+    nonisolated private static func makePlaybackCandidates(
+        from video: YouTubeVideo,
+        preferredURL: URL
+    ) -> [URL] {
+        var candidates: [URL] = [preferredURL]
+
+        if let hls = video.hlsURL {
+            candidates.append(hls)
+        }
+
+        if let muxedURLString = video.bestMuxedStream?.url,
+           let muxedURL = URL(string: muxedURLString) {
+            candidates.append(muxedURL)
+        }
+
+        if let audio = video.bestAudioStream,
+           let audioURLString = audio.url,
+           let audioURL = URL(string: audioURLString),
+           isLikelyAVPlayerCompatibleAudioStream(audio.mimeType) {
+            candidates.append(audioURL)
+        }
+
+        if candidates.count == 1 {
+            print("🎧 PlayerViewModel: Only one playback candidate available for id=\(video.id)")
+        }
+
+        var seen: Set<String> = []
+        return candidates.filter { url in
+            let key = url.absoluteString
+            if seen.contains(key) { return false }
+            seen.insert(key)
+            return true
+        }
+    }
+
+    nonisolated private static func isLikelyAVPlayerCompatibleAudioStream(_ mimeType: String) -> Bool {
+        let normalized = mimeType.lowercased()
+        if normalized.contains("webm") {
+            return false
+        }
+        return normalized.contains("mp4")
+            || normalized.contains("mpeg")
+            || normalized.contains("aac")
+            || normalized.contains("mp3")
     }
 
     private func handlePlaybackFailure(_ error: Error) {

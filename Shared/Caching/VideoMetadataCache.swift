@@ -48,12 +48,19 @@ actor VideoMetadataCache {
         fetcher: @Sendable @escaping (String) async throws -> YouTubeVideo
     ) async throws -> Entry {
         let startedAt = Date()
-        if let cached = get(id, allowStale: true) {
+        if let cached = get(id, allowStale: false) {
             if metricsEnabled {
                 let elapsed = Date().timeIntervalSince(startedAt) * 1000
                 await PlaybackMetricsStore.shared.recordResolve(cacheHit: true, durationMs: elapsed)
             }
             return cached
+        }
+
+        // Drop stale URL-bearing entries before re-resolve to reduce 403/permission failures.
+        if store[id] != nil {
+            store[id] = nil
+            warmedItems[id] = nil
+            lru.removeAll { $0 == id }
         }
 
         if let task = inFlight[id] {
