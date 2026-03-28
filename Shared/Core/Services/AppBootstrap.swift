@@ -25,6 +25,7 @@ enum AppBootstrap {
         let prefetchSettings = PrefetchSettings.shared
         let networkMonitor = NetworkPathMonitor.shared
         let historyStore = SearchHistoryStore(context: ModelContext(modelContainer))
+        let artworkVideoProcessor = ArtworkVideoProcessor.shared
 
         restoreCookies(into: youtube)
 
@@ -32,7 +33,11 @@ enum AppBootstrap {
             modelContainer: modelContainer,
             prefetchSettings: prefetchSettings,
             networkMonitor: networkMonitor,
-            playerViewModel: PlayerViewModel(youtube: youtube, settings: prefetchSettings),
+            playerViewModel: PlayerViewModel(
+                youtube: youtube,
+                settings: prefetchSettings,
+                artworkVideoProcessor: artworkVideoProcessor
+            ),
             searchViewModel: SearchViewModel(
                 youtube: youtube,
                 settings: prefetchSettings,

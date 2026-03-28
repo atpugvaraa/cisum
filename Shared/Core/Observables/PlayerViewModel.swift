@@ -20,11 +20,23 @@ import UIKit
 @MainActor
 final class PlayerViewModel {
 
+    enum ArtworkVideoProcessingStatus: Equatable {
+        case idle
+        case processing
+        case ready
+        case failed
+    }
+
     // MARK: - State
     var player: AVPlayer
     private let youtube: YouTube
+    private let artworkVideoProcessor: ArtworkVideoProcessor
     var currentVideoId: String?
     var playbackError: String?
+    var animatedArtworkVideoURL: URL?
+    var artworkVideoProgress: Double?
+    var artworkVideoStatus: ArtworkVideoProcessingStatus = .idle
+    var artworkVideoError: String?
 
     // Track Info
     var currentTitle: String = "Not Playing"
@@ -42,6 +54,9 @@ final class PlayerViewModel {
     private var timeObserver: Any?
     private var currentLoadTask: Task<Void, Never>?
     private var artworkLoadTask: Task<Void, Never>?
+    private var artworkVideoTask: Task<Void, Never>?
+    private var playbackRecoveryTask: Task<Void, Never>?
+    private var playbackRecoveryAttemptedIDs: Set<String> = []
     private var currentItemStatusObservation: NSKeyValueObservation?
     private let remoteCommandCenter = MPRemoteCommandCenter.shared()
     private let metadataCache = VideoMetadataCache.shared
@@ -78,9 +93,14 @@ final class PlayerViewModel {
     private var wasPlayingBeforeInterruption = false
 #endif
 
-    init(youtube: YouTube = .shared, settings: PrefetchSettings = .shared) {
+    init(
+        youtube: YouTube = .shared,
+        settings: PrefetchSettings = .shared,
+        artworkVideoProcessor: ArtworkVideoProcessor = .shared
+    ) {
         self.youtube = youtube
         self.settings = settings
+        self.artworkVideoProcessor = artworkVideoProcessor
         self.player = AVPlayer()
 
         configureAudioSession()
@@ -103,6 +123,10 @@ final class PlayerViewModel {
         playbackError = nil
         currentTime = 0
         duration = 0
+        playbackRecoveryAttemptedIDs.remove(song.videoId)
+        playbackRecoveryTask?.cancel()
+        playbackRecoveryTask = nil
+        resetArtworkVideoState()
 #if os(iOS)
         artworkLoadTask?.cancel()
         applyCachedArtworkIfAvailable(for: song.videoId)
@@ -117,11 +141,16 @@ final class PlayerViewModel {
             if Task.isCancelled { return }
 
             do {
-                let resolvedURL = try await self.resolvePlaybackURL(forID: song.videoId)
+                let playbackEntry = try await self.resolvePlaybackEntry(forID: song.videoId)
 
                 if Task.isCancelled { return }
 
-                self.playFromBeginning(url: resolvedURL)
+                self.playFromBeginning(url: playbackEntry.resolvedURL)
+                self.startArtworkVideoProcessingIfNeeded(
+                    for: song.videoId,
+                    title: song.title,
+                    artist: song.artistsDisplay
+                )
                 print("▶️ PlayerViewModel: Started playback for song id=\(song.videoId)")
 
                 if settings.metricsEnabled {
@@ -146,6 +175,10 @@ final class PlayerViewModel {
         playbackError = nil
         currentTime = 0
         duration = 0
+        playbackRecoveryAttemptedIDs.remove(video.id)
+        playbackRecoveryTask?.cancel()
+        playbackRecoveryTask = nil
+        resetArtworkVideoState()
 #if os(iOS)
         artworkLoadTask?.cancel()
         applyCachedArtworkIfAvailable(for: video.id)
@@ -160,11 +193,16 @@ final class PlayerViewModel {
             if Task.isCancelled { return }
 
             do {
-                let resolvedURL = try await self.resolvePlaybackURL(forID: video.id)
+                let playbackEntry = try await self.resolvePlaybackEntry(forID: video.id)
 
                 if Task.isCancelled { return }
 
-                self.playFromBeginning(url: resolvedURL)
+                self.playFromBeginning(url: playbackEntry.resolvedURL)
+                self.startArtworkVideoProcessingIfNeeded(
+                    for: video.id,
+                    title: video.title,
+                    artist: video.author
+                )
                 print("▶️ PlayerViewModel: Started playback for video id=\(video.id)")
 
                 if settings.metricsEnabled {
@@ -203,11 +241,16 @@ final class PlayerViewModel {
         currentLoadTask = Task {
             if Task.isCancelled { return }
             do {
-                let resolvedURL = try await self.resolvePlaybackURL(forID: id)
+                let playbackEntry = try await self.resolvePlaybackEntry(forID: id)
 
                 if Task.isCancelled { return }
 
-                self.playFromBeginning(url: resolvedURL)
+                self.playFromBeginning(url: playbackEntry.resolvedURL)
+                self.startArtworkVideoProcessingIfNeeded(
+                    for: id,
+                    title: currentTitle,
+                    artist: currentArtist
+                )
             } catch {
                 self.playbackError = error.localizedDescription
             }
@@ -230,20 +273,18 @@ final class PlayerViewModel {
 
     // MARK: - Playback Resolution
 
-    private func resolvePlaybackURL(forID id: String) async throws -> URL {
+    private func resolvePlaybackEntry(forID id: String) async throws -> VideoMetadataCache.Entry {
         do {
-            let entry = try await metadataCache.resolve(id: id, metricsEnabled: settings.metricsEnabled) { key in
+            return try await metadataCache.resolve(id: id, metricsEnabled: settings.metricsEnabled) { key in
                 try await self.youtube.main.video(id: key)
             }
-            return entry.resolvedURL
         } catch {
             print("⚠️ PlayerViewModel: First resolve failed for id=\(id): \(error.localizedDescription). Retrying once...")
             try? await Task.sleep(nanoseconds: 350_000_000)
 
-            let retryEntry = try await metadataCache.resolve(id: id, metricsEnabled: settings.metricsEnabled) { key in
+            return try await metadataCache.resolve(id: id, metricsEnabled: settings.metricsEnabled) { key in
                 try await self.youtube.main.video(id: key)
             }
-            return retryEntry.resolvedURL
         }
     }
 
@@ -268,6 +309,77 @@ final class PlayerViewModel {
         updateRemoteCommandState()
     }
 
+    private func startArtworkVideoProcessingIfNeeded(
+        for mediaID: String,
+        title: String,
+        artist: String
+    ) {
+        artworkVideoTask?.cancel()
+        artworkVideoProgress = nil
+        artworkVideoError = nil
+        animatedArtworkVideoURL = nil
+
+        let progressBridge = ArtworkVideoProgressBridge(viewModel: self, mediaID: mediaID)
+        artworkVideoTask = Task { @MainActor [weak self, progressBridge] in
+            guard let self else { return }
+
+            do {
+                guard let sourceHLSURL = await Self.resolveMotionArtworkURL(using: itunes, title: title, artist: artist) else {
+                    return
+                }
+
+                guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
+
+                self.artworkVideoStatus = .processing
+
+                let localVideoURL = try await self.artworkVideoProcessor.prepareVideo(
+                    for: mediaID,
+                    sourceHLSURL: sourceHLSURL,
+                    progress: { progress in
+                        progressBridge.report(progress)
+                    }
+                )
+
+                guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
+
+                self.animatedArtworkVideoURL = localVideoURL
+                self.artworkVideoProgress = 1
+                self.artworkVideoStatus = .ready
+                self.artworkVideoError = nil
+                self.updateNowPlayingMetadata(force: true)
+            } catch let error as ArtworkVideoProcessor.ArtworkVideoProcessorError {
+                guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
+
+                if case .cancelled = error {
+                    return
+                }
+
+                self.animatedArtworkVideoURL = nil
+                self.artworkVideoProgress = nil
+                self.artworkVideoStatus = .failed
+                self.artworkVideoError = error.localizedDescription
+                print("⚠️ PlayerViewModel: Artwork video processing failed: \(error.localizedDescription)")
+            } catch {
+                guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
+
+                self.animatedArtworkVideoURL = nil
+                self.artworkVideoProgress = nil
+                self.artworkVideoStatus = .failed
+                self.artworkVideoError = error.localizedDescription
+                print("⚠️ PlayerViewModel: Artwork video processing failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func resetArtworkVideoState() {
+        artworkVideoTask?.cancel()
+        artworkVideoTask = nil
+        animatedArtworkVideoURL = nil
+        artworkVideoProgress = nil
+        artworkVideoStatus = .idle
+        artworkVideoError = nil
+    }
+
     private func observeCurrentItemStatus(_ item: AVPlayerItem) {
         currentItemStatusObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
             guard let self = self else { return }
@@ -282,7 +394,13 @@ final class PlayerViewModel {
                     self.updateNowPlayingPlaybackInfo(force: true)
                     self.updateRemoteCommandState()
                 case .failed:
-                    print("❌ PlayerViewModel: AVPlayerItem failed: \(item.error?.localizedDescription ?? "unknown error")")
+                    let errorMessage = item.error?.localizedDescription ?? "unknown error"
+                    print("❌ PlayerViewModel: AVPlayerItem failed: \(errorMessage)")
+
+                    if self.handlePlaybackPermissionFailureIfNeeded(errorMessage: errorMessage) {
+                        return
+                    }
+
                     self.isPlaying = false
                     self.playbackError = item.error?.localizedDescription ?? "Failed to load media"
                     self.updateNowPlayingPlaybackInfo(force: true)
@@ -294,6 +412,44 @@ final class PlayerViewModel {
                 }
             }
         }
+    }
+
+    private func handlePlaybackPermissionFailureIfNeeded(errorMessage: String) -> Bool {
+        guard let mediaID = currentVideoId else { return false }
+        guard shouldAttemptPlaybackRecovery(for: errorMessage) else { return false }
+        guard !playbackRecoveryAttemptedIDs.contains(mediaID) else { return false }
+
+        playbackRecoveryAttemptedIDs.insert(mediaID)
+        playbackRecoveryTask?.cancel()
+        playbackRecoveryTask = Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                await self.metadataCache.remove(mediaID)
+                let playbackEntry = try await self.resolvePlaybackEntry(forID: mediaID)
+
+                guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
+                self.playFromBeginning(url: playbackEntry.resolvedURL)
+                print("🔁 PlayerViewModel: Recovered playback with refreshed stream URL for id=\(mediaID)")
+            } catch {
+                guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
+                self.isPlaying = false
+                self.playbackError = error.localizedDescription
+                self.updateNowPlayingPlaybackInfo(force: true)
+                self.updateRemoteCommandState()
+                print("❌ PlayerViewModel: Playback recovery failed for id=\(mediaID): \(error.localizedDescription)")
+            }
+        }
+
+        return true
+    }
+
+    private func shouldAttemptPlaybackRecovery(for errorMessage: String) -> Bool {
+        let normalized = errorMessage.lowercased()
+        return normalized.contains("permission")
+            || normalized.contains("forbidden")
+            || normalized.contains("403")
+            || normalized.contains("not authorized")
     }
 
     private func handlePlaybackFailure(_ error: Error) {
@@ -547,6 +703,24 @@ final class PlayerViewModel {
             nowPlayingInfo[MPMediaItemPropertyArtwork] = mediaArtwork
         }
 
+        if #available(iOS 26.0, *),
+           let mediaID = nowPlayingState.mediaID,
+           let animatedArtworkVideoURL,
+           currentVideoId == mediaID,
+           let animatedArtwork = Self.makeAnimatedArtwork(
+                mediaID: mediaID,
+                videoURL: animatedArtworkVideoURL,
+                previewData: currentArtworkMediaID == mediaID ? currentArtworkResource?.data : nil
+           ) {
+            let supportedKeys = MPNowPlayingInfoCenter.supportedAnimatedArtworkKeys
+            if supportedKeys.contains(MPNowPlayingInfoProperty1x1AnimatedArtwork) {
+                nowPlayingInfo[MPNowPlayingInfoProperty1x1AnimatedArtwork] = animatedArtwork
+            }
+            if supportedKeys.contains(MPNowPlayingInfoProperty3x4AnimatedArtwork) {
+                nowPlayingInfo[MPNowPlayingInfoProperty3x4AnimatedArtwork] = animatedArtwork
+            }
+        }
+
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
         lastPublishedNowPlayingState = nowPlayingState
     }
@@ -652,6 +826,46 @@ final class PlayerViewModel {
         }
     }
 
+    nonisolated private static func resolveMotionArtworkURL(using itunes: iTunesKit, title: String, artist: String) async -> URL? {
+        do {
+            let response = try await itunes.search(term: "\(title) \(artist)", country: "us", media: "music", limit: 1)
+            guard let trackId = response.results.first?.trackId else {
+                return nil
+            }
+
+            let webClient = iTunesWebServiceClient()
+            let catalogService = WebCatalogService(client: webClient)
+            let catalogResponse = try await catalogService.fetchSongDetails(songId: String(trackId))
+            return firstMotionArtworkURL(from: catalogResponse)
+        } catch {
+            return nil
+        }
+    }
+
+    nonisolated private static func firstMotionArtworkURL(from response: iTunesCatalogResponse) -> URL? {
+        for album in response.resources.albums.values {
+            let editorialVideo = album.attributes.editorialVideo
+            if let url = motionArtworkURL(from: editorialVideo.motionDetailTall.video) {
+                return url
+            }
+            if let url = motionArtworkURL(from: editorialVideo.motionTallVideo3X4.video) {
+                return url
+            }
+            if let url = motionArtworkURL(from: editorialVideo.motionDetailSquare.video) {
+                return url
+            }
+            if let url = motionArtworkURL(from: editorialVideo.motionSquareVideo1X1.video) {
+                return url
+            }
+        }
+
+        return nil
+    }
+
+    nonisolated private static func motionArtworkURL(from string: String) -> URL? {
+        URL(string: string)
+    }
+
     nonisolated private static func fetchArtworkResource(from url: URL?) async -> CachedNowPlayingArtworkResource? {
         guard let url else { return nil }
 
@@ -672,9 +886,141 @@ final class PlayerViewModel {
             UIImage(data: imageData) ?? UIImage()
         }
     }
+
+    @available(iOS 26.0, *)
+    nonisolated private static func makeAnimatedArtwork(
+        mediaID: String,
+        videoURL: URL,
+        previewData: Data?
+    ) -> MPMediaItemAnimatedArtwork? {
+        guard videoURL.isFileURL else {
+            return nil
+        }
+
+        let artworkID = "\(mediaID)-\(videoURL.lastPathComponent)"
+        return MPMediaItemAnimatedArtwork(
+            artworkID: artworkID,
+            previewImageRequestHandler: { requestedSize in
+                guard let previewData,
+                      let image = UIImage(data: previewData) else {
+                    return nil
+                }
+
+                return makeAnimatedArtworkPreviewImage(
+                    from: image,
+                    requestedSize: requestedSize
+                )
+            },
+            videoAssetFileURLRequestHandler: { _ in
+                videoURL
+            }
+        )
+    }
+
+    @available(iOS 26.0, *)
+    nonisolated private static func makeAnimatedArtworkPreviewImage(
+        from image: UIImage,
+        requestedSize: CGSize
+    ) -> UIImage {
+        let targetSize = normalizedAnimatedArtworkPreviewSize(
+            requestedSize,
+            fallbackSize: image.size
+        )
+
+        guard targetSize.width > 0,
+              targetSize.height > 0,
+              image.size.width > 0,
+              image.size.height > 0 else {
+            return image
+        }
+
+        let sourceAspectRatio = image.size.width / image.size.height
+        let targetAspectRatio = targetSize.width / targetSize.height
+
+        let drawRect: CGRect
+        if sourceAspectRatio > targetAspectRatio {
+            let scaledHeight = targetSize.height
+            let scaledWidth = scaledHeight * sourceAspectRatio
+            drawRect = CGRect(
+                x: (targetSize.width - scaledWidth) / 2,
+                y: 0,
+                width: scaledWidth,
+                height: scaledHeight
+            )
+        } else {
+            let scaledWidth = targetSize.width
+            let scaledHeight = scaledWidth / sourceAspectRatio
+            drawRect = CGRect(
+                x: 0,
+                y: (targetSize.height - scaledHeight) / 2,
+                width: scaledWidth,
+                height: scaledHeight
+            )
+        }
+
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = image.scale > 0 ? image.scale : 1
+
+        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
+        return renderer.image { _ in
+            image.draw(in: drawRect)
+        }
+    }
+
+    @available(iOS 26.0, *)
+    nonisolated private static func normalizedAnimatedArtworkPreviewSize(
+        _ requestedSize: CGSize,
+        fallbackSize: CGSize
+    ) -> CGSize {
+        if requestedSize.width > 0,
+           requestedSize.height > 0,
+           requestedSize.width.isFinite,
+           requestedSize.height.isFinite {
+            return requestedSize
+        }
+
+        if fallbackSize.width > 0,
+           fallbackSize.height > 0,
+           fallbackSize.width.isFinite,
+           fallbackSize.height.isFinite {
+            return fallbackSize
+        }
+
+        return CGSize(width: 512, height: 512)
+    }
     #else
     private func updateNowPlayingMetadata(force: Bool = true) {}
     private func updateNowPlayingPlaybackInfo(force: Bool = false) {}
     private func publishNowPlayingInfo(force: Bool) {}
     #endif
+}
+
+private final class WeakPlayerViewModelBox: @unchecked Sendable {
+    weak var value: PlayerViewModel?
+
+    init(_ value: PlayerViewModel) {
+        self.value = value
+    }
+}
+
+private final class ArtworkVideoProgressBridge: @unchecked Sendable {
+    private let viewModelBox: WeakPlayerViewModelBox
+    private let mediaID: String
+
+    init(viewModel: PlayerViewModel, mediaID: String) {
+        self.viewModelBox = WeakPlayerViewModelBox(viewModel)
+        self.mediaID = mediaID
+    }
+
+    nonisolated func report(_ progress: Double) {
+        let viewModelBox = viewModelBox
+        let mediaID = mediaID
+
+        Task { @MainActor in
+            guard let viewModel = viewModelBox.value,
+                  viewModel.currentVideoId == mediaID else { return }
+            viewModel.artworkVideoProgress = progress
+            viewModel.artworkVideoStatus = .processing
+        }
+    }
 }
