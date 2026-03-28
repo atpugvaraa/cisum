@@ -7,12 +7,12 @@
 
 import Foundation
 
-func normalizedITunesArtworkURL(from artworkURL: URL?) -> URL? {
+nonisolated func normalizedITunesArtworkURL(from artworkURL: URL?) -> URL? {
     guard let artworkURL else { return nil }
     return normalizedITunesArtworkURL(from: artworkURL.absoluteString)
 }
 
-func normalizedITunesArtworkURL(from artworkURLString: String?) -> URL? {
+nonisolated func normalizedITunesArtworkURL(from artworkURLString: String?) -> URL? {
     guard let artworkURLString else { return nil }
 
     let decoded = artworkURLString.removingPercentEncoding ?? artworkURLString

@@ -5,35 +5,23 @@
 //  Created by Aarav Gupta on 05/12/25.
 //
 
-import AVKit
 #if os(iOS)
-import LNPopupUI
-import Kingfisher
-import YouTubeSDK
 import SwiftUI
 
 struct NowPlayingView: View {
-    @Environment(\.dismiss) var dismiss
     @Environment(PlayerViewModel.self) var playerViewModel
-    
-    enum PlayerMode { case video, audio }
-    @State private var playerMode: PlayerMode = .video
-    
+
     var namespace: Namespace.ID
     @State private var properties = PlayerProperties.shared
     
 #if DEBUG
     @ObserveInjection var forceRedraw
 #endif
-    
+
     var body: some View {
         ZStack {
             if #available(iOS 26.0, *) {
-                Rectangle()
-                    .fill(.ultraThickMaterial)
-                    .overlay {
-                        nowPlayingBackground
-                    }
+                PlayerExpandedBackground(isExpanded: true, includesCollapsedBarLayer: false)
                     .ignoresSafeArea()
                 
                 playerView
@@ -46,32 +34,6 @@ struct NowPlayingView: View {
                     .safeAreaPadding(.bottom)
                     .ignoresSafeArea()
             }
-        }
-        .popupItem {
-            let id: String = playerViewModel.currentVideoId ?? UUID().uuidString
-            let title: String = playerViewModel.currentTitle
-            let subtitle: String = playerViewModel.currentArtist
-            let image: Image = Image(systemName: "music.note")
-            let progress: Float = Float(playerViewModel.currentTime / max(playerViewModel.duration, 1))
-            
-            return PopupItem(
-                id: id,
-                title: title,
-                subtitle: subtitle,
-                image: image,
-                progress: progress
-            ) {
-                ToolbarItemGroup(placement: .popupBar) {
-                    Button {
-                        playerViewModel.togglePlayPause()
-                    } label: {
-                        Image(systemName: playerViewModel.isPlaying ? "pause.fill" : "play.fill")
-                    }
-                }
-            }
-        }
-        .onChange(of: playerMode) { _, _ in
-            playerViewModel.reloadCurrentVideo()
         }
         .animation(.smooth(duration: 0.35), value: properties.isPlayerExpanded)
         .enableInjection()
@@ -90,48 +52,6 @@ struct NowPlayingView: View {
         .padding(.top, 10)
         .padding(.vertical, 20)
         .padding(.horizontal, 15)
-    }
-    
-    var nowPlayingBackground: some View {
-        ZStack {
-            dominantColor
-            
-            vinylEffect
-            
-            overlayEffects
-        }
-        .compositingGroup()
-    }
-    
-    var dominantColor: some View {
-        Color.dynamicAccent
-            .scaleEffect(1.1)
-            .blur(radius: 10)
-    }
-    
-    var vinylEffect: some View {
-        Vinyl {
-            KFImage(playerViewModel.currentImageURL)
-                .resizable()
-                .scaledToFill()
-        } previous: {
-            Image(.notPlaying)
-                .resizable()
-        } upnext: {
-            Image(.notPlaying)
-                .resizable()
-        }
-    }
-    
-    var overlayEffects: some View {
-        ZStack {
-            Color.white.opacity(0.1)
-                .scaleEffect(1.8)
-                .blur(radius: 100)
-            
-            Color.black.opacity(0.35)
-        }
-        .compositingGroup()
     }
     
     @ViewBuilder
@@ -158,30 +78,9 @@ struct NowPlayingView: View {
     @ViewBuilder
     var artwork: some View {
         GeometryReader { geometry in
-            VStack {
-                if properties.isPlayerExpanded {
-                    ZStack {
-                        //                        Image(.notPlaying)
-                        //                            .resizable()
-                        //                            .aspectRatio(1, contentMode: .fit)
-                        //                            .clipShape(.rect(cornerRadius: 12))
-                        //                            .shadow(color: Color.black.opacity(0.4), radius: 10, x: 0, y: 4)
-                        //                            .transition(.offset(y: 1))
-                        
-                        VideoPlayer(player: playerViewModel.player)
-                            .matchedGeometryEffect(id: "Artwork", in: namespace, properties: .frame, anchor: .center)
-                            .opacity(0)
-                        //                            .onTapGesture(count: 2) {
-                        //                                withAnimation {
-                        //                                    playerMode = (playerMode == .video) ? .audio : .video
-                        //                                }
-                        //                            }
-                    }
-                }
-            }
+            Color.clear
             .frame(width: geometry.size.width, height: geometry.size.width)
-            .clipShape(.rect(cornerRadius: 12))
-            .shadow(radius: 20)
+            .accessibilityHidden(true)
         }
         .padding(.horizontal, 15)
     }

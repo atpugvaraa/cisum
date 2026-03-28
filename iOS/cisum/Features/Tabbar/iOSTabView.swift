@@ -42,6 +42,10 @@ struct iOSTabView<SelectionValue: Hashable>: View {
     @ObserveInjection var forceRedraw
     #endif
 
+    private var popupItemID: String {
+        playerViewModel.currentVideoId ?? "cisum-now-playing"
+    }
+
     var body: some View {
         Group {
             if #available(iOS 26.0, *) {
@@ -51,8 +55,7 @@ struct iOSTabView<SelectionValue: Hashable>: View {
                         get: { true },
                         set: { _ in }
                     ), isPopupOpen: $properties.isPlayerExpanded) {
-                        NowPlayingView(namespace: namespace)
-                            .environment(playerViewModel)
+                        popupContent
                     }
                     .popupBarCustomView(wantsDefaultTapGesture: true, wantsDefaultPanGesture: true, wantsDefaultHighlightGesture: false) {
                         if let accessory = tabBarBottomAccessory {
@@ -104,6 +107,33 @@ struct iOSTabView<SelectionValue: Hashable>: View {
                 }
             }
         }
+    }
+
+    @available(iOS 26.0, *)
+    private var popupContent: some View {
+        let title = playerViewModel.currentTitle
+        let subtitle = playerViewModel.currentArtist
+        let progress = Float(playerViewModel.currentTime / max(playerViewModel.duration, 1))
+
+        return NowPlayingView(namespace: namespace)
+            .environment(playerViewModel)
+            .popupItem {
+                PopupItem(
+                    id: popupItemID,
+                    title: title,
+                    subtitle: subtitle,
+                    image: Image(systemName: "music.note"),
+                    progress: progress
+                ) {
+                    ToolbarItemGroup(placement: .popupBar) {
+                        Button {
+                            playerViewModel.togglePlayPause()
+                        } label: {
+                            Image(systemName: playerViewModel.isPlaying ? "pause.fill" : "play.fill")
+                        }
+                    }
+                }
+            }
     }
 
     // MARK: - TabView (iOS 17+)

@@ -49,7 +49,27 @@ final class PlayerViewModel {
     private let settings: PrefetchSettings
 
 #if os(iOS)
-    private var currentNowPlayingArtwork: MPMediaItemArtwork?
+    private struct NowPlayingState: Equatable {
+        var mediaID: String?
+        var title: String = "Not Playing"
+        var artist: String = ""
+        var artworkURL: URL?
+        var duration: Double = 0
+        var elapsedTime: Double = 0
+        var playbackRate: Float = 0
+    }
+
+    private struct CachedNowPlayingArtworkResource {
+        let url: URL
+        let data: Data
+        let size: CGSize
+    }
+
+    private var nowPlayingState = NowPlayingState()
+    private var lastPublishedNowPlayingState: NowPlayingState?
+    private var currentArtworkResource: CachedNowPlayingArtworkResource?
+    private var currentArtworkMediaID: String?
+    private var artworkCache: [String: CachedNowPlayingArtworkResource] = [:]
 #endif
 
 #if os(iOS)
@@ -81,10 +101,15 @@ final class PlayerViewModel {
         isExplicit = song.isExplicit
         currentVideoId = song.videoId
         playbackError = nil
-
+        currentTime = 0
+        duration = 0
 #if os(iOS)
-        currentNowPlayingArtwork = nil
         artworkLoadTask?.cancel()
+        applyCachedArtworkIfAvailable(for: song.videoId)
+#endif
+        updateNowPlayingMetadata(force: true)
+#if os(iOS)
+        loadNowPlayingArtwork(for: song.videoId, title: song.title, artist: song.artistsDisplay, fallbackURL: song.thumbnailURL)
 #endif
 
         currentLoadTask?.cancel()
@@ -103,10 +128,6 @@ final class PlayerViewModel {
                     let elapsed = Date().timeIntervalSince(tapStartedAt) * 1000
                     await PlaybackMetricsStore.shared.recordTapToPlay(durationMs: elapsed)
                 }
-
-#if os(iOS)
-                await self.loadNowPlayingArtwork(title: song.title, artist: song.artistsDisplay, fallbackURL: song.thumbnailURL)
-#endif
             } catch {
                 self.handlePlaybackFailure(error)
             }
@@ -123,11 +144,16 @@ final class PlayerViewModel {
         isExplicit = false
         currentVideoId = video.id
         playbackError = nil
-
-    #if os(iOS)
-        currentNowPlayingArtwork = nil
+        currentTime = 0
+        duration = 0
+#if os(iOS)
         artworkLoadTask?.cancel()
-    #endif
+        applyCachedArtworkIfAvailable(for: video.id)
+#endif
+        updateNowPlayingMetadata(force: true)
+#if os(iOS)
+        loadNowPlayingArtwork(for: video.id, title: video.title, artist: video.author, fallbackURL: fallbackURL)
+#endif
 
         currentLoadTask?.cancel()
         currentLoadTask = Task {
@@ -145,10 +171,6 @@ final class PlayerViewModel {
                     let elapsed = Date().timeIntervalSince(tapStartedAt) * 1000
                     await PlaybackMetricsStore.shared.recordTapToPlay(durationMs: elapsed)
                 }
-
-#if os(iOS)
-                await self.loadNowPlayingArtwork(title: video.title, artist: video.author, fallbackURL: fallbackURL)
-#endif
             } catch {
                 self.handlePlaybackFailure(error)
             }
@@ -158,19 +180,20 @@ final class PlayerViewModel {
     // MARK: - Controls
 
     func togglePlayPause() {
-        if player.timeControlStatus == .playing {
-            player.pause()
-            isPlaying = false
+        if isPlaying {
+            pause()
         } else {
-            isPlaying = true
-            player.play()
+            play()
         }
-        updateNowPlayingPlaybackInfo()
     }
 
     func seek(to seconds: Double) {
         let time = CMTime(seconds: seconds, preferredTimescale: 600)
-        player.seek(to: time)
+        player.seek(to: time) { [weak self] _ in
+            Task { @MainActor in
+                self?.updateNowPlayingPlaybackInfo(force: true)
+            }
+        }
     }
 
     /// Reload the current video with current playback configuration.
@@ -256,12 +279,13 @@ final class PlayerViewModel {
                     if self.isPlaying {
                         self.player.play()
                     }
-                    self.updateNowPlayingPlaybackInfo()
+                    self.updateNowPlayingPlaybackInfo(force: true)
                     self.updateRemoteCommandState()
                 case .failed:
                     print("❌ PlayerViewModel: AVPlayerItem failed: \(item.error?.localizedDescription ?? "unknown error")")
                     self.isPlaying = false
                     self.playbackError = item.error?.localizedDescription ?? "Failed to load media"
+                    self.updateNowPlayingPlaybackInfo(force: true)
                     self.updateRemoteCommandState()
                 case .unknown:
                     print("⏳ PlayerViewModel: AVPlayerItem status unknown")
@@ -276,7 +300,7 @@ final class PlayerViewModel {
         player.pause()
         isPlaying = false
         playbackError = error.localizedDescription
-        updateNowPlayingPlaybackInfo()
+        updateNowPlayingPlaybackInfo(force: true)
         updateRemoteCommandState()
         print("❌ PlayerViewModel: Playback failed: \(error.localizedDescription)")
     }
@@ -344,7 +368,7 @@ final class PlayerViewModel {
             wasPlayingBeforeInterruption = isPlaying
             player.pause()
             isPlaying = false
-            updateNowPlayingPlaybackInfo()
+            updateNowPlayingPlaybackInfo(force: true)
             updateRemoteCommandState()
             print("⚠️ PlayerViewModel: Audio interruption began")
 
@@ -359,7 +383,7 @@ final class PlayerViewModel {
                 print("✅ PlayerViewModel: Resumed after interruption")
             }
 
-            updateNowPlayingPlaybackInfo()
+            updateNowPlayingPlaybackInfo(force: true)
             updateRemoteCommandState()
             wasPlayingBeforeInterruption = false
 
@@ -379,7 +403,7 @@ final class PlayerViewModel {
             if isPlaying {
                 player.pause()
                 isPlaying = false
-                updateNowPlayingPlaybackInfo()
+                updateNowPlayingPlaybackInfo(force: true)
                 updateRemoteCommandState()
                 print("⚠️ PlayerViewModel: Paused because audio route became unavailable")
             }
@@ -404,6 +428,7 @@ final class PlayerViewModel {
     }
     #else
     private func setupAudioLifecycleObservers() {}
+    private func reactivateAudioSessionIfNeeded() {}
     #endif
 
     // MARK: - Internal Setup
@@ -413,11 +438,14 @@ final class PlayerViewModel {
         timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
             Task { @MainActor in
-                self.currentTime = time.seconds
+                let previousDuration = self.duration
+                self.currentTime = max(time.seconds, 0)
                 if let duration = self.player.currentItem?.duration.seconds, !duration.isNaN {
                     self.duration = duration
                 }
-                self.updateNowPlayingPlaybackInfo()
+                if abs(self.duration - previousDuration) > 0.5 {
+                    self.updateNowPlayingPlaybackInfo(force: true)
+                }
             }
         }
     }
@@ -453,7 +481,7 @@ final class PlayerViewModel {
         reactivateAudioSessionIfNeeded()
         player.play()
         isPlaying = true
-        updateNowPlayingPlaybackInfo()
+        updateNowPlayingPlaybackInfo(force: true)
         updateRemoteCommandState()
     }
 
@@ -465,7 +493,7 @@ final class PlayerViewModel {
 
         player.pause()
         isPlaying = false
-        updateNowPlayingPlaybackInfo()
+        updateNowPlayingPlaybackInfo(force: true)
         updateRemoteCommandState()
     }
 
@@ -480,73 +508,173 @@ final class PlayerViewModel {
 
     // MARK: - Now Playing Info
 
-    private func updateNowPlayingMetadata() {
-        var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
-        nowPlayingInfo[MPMediaItemPropertyTitle] = currentTitle
-        nowPlayingInfo[MPMediaItemPropertyArtist] = currentArtist
-        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player.rate
-        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player.currentTime().seconds
-        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = player.currentItem?.duration.seconds ?? 0
-
-#if os(iOS)
-        if let currentNowPlayingArtwork {
-            nowPlayingInfo[MPMediaItemPropertyArtwork] = currentNowPlayingArtwork
-        } else {
-            nowPlayingInfo.removeValue(forKey: MPMediaItemPropertyArtwork)
-        }
-#endif
-
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+    #if os(iOS)
+    private func updateNowPlayingMetadata(force: Bool = true) {
+        nowPlayingState.mediaID = currentVideoId
+        nowPlayingState.title = currentTitle
+        nowPlayingState.artist = currentArtist
+        nowPlayingState.artworkURL = currentImageURL
+        updateNowPlayingPlaybackInfo(force: force)
     }
 
-    private func updateNowPlayingPlaybackInfo() {
-        guard var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo else { return }
-        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player.rate
-        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player.currentTime().seconds
-        if let d = player.currentItem?.duration.seconds, !d.isNaN {
-            nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = d
-        }
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+    private func updateNowPlayingPlaybackInfo(force: Bool = false) {
+        nowPlayingState.elapsedTime = currentElapsedTimeSnapshot()
+        nowPlayingState.duration = currentDurationSnapshot()
+        nowPlayingState.playbackRate = currentPlaybackRateSnapshot()
+
+        publishNowPlayingInfo(force: force)
     }
 
-#if os(iOS)
-    private func loadNowPlayingArtwork(title: String, artist: String, fallbackURL: URL?) async {
+    private func publishNowPlayingInfo(force: Bool) {
+        guard force || nowPlayingState != lastPublishedNowPlayingState else {
+            return
+        }
+
+        var nowPlayingInfo: [String: Any] = [
+            MPMediaItemPropertyTitle: nowPlayingState.title,
+            MPMediaItemPropertyArtist: nowPlayingState.artist,
+            MPNowPlayingInfoPropertyElapsedPlaybackTime: nowPlayingState.elapsedTime,
+            MPNowPlayingInfoPropertyPlaybackRate: nowPlayingState.playbackRate
+        ]
+
+        if nowPlayingState.duration > 0 {
+            nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = nowPlayingState.duration
+        }
+
+        if currentArtworkMediaID == nowPlayingState.mediaID,
+           let currentArtworkResource,
+           let mediaArtwork = Self.makeMediaItemArtwork(from: currentArtworkResource) {
+            nowPlayingInfo[MPMediaItemPropertyArtwork] = mediaArtwork
+        }
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        lastPublishedNowPlayingState = nowPlayingState
+    }
+
+    private func currentElapsedTimeSnapshot() -> Double {
+        let playerTime = player.currentTime().seconds
+        if playerTime.isFinite && !playerTime.isNaN && playerTime >= 0 {
+            return playerTime
+        }
+
+        return max(currentTime, 0)
+    }
+
+    private func currentDurationSnapshot() -> Double {
+        if duration.isFinite && !duration.isNaN && duration > 0 {
+            return duration
+        }
+
+        if let itemDuration = player.currentItem?.duration.seconds,
+           itemDuration.isFinite,
+           !itemDuration.isNaN,
+           itemDuration > 0 {
+            return itemDuration
+        }
+
+        return 0
+    }
+
+    private func currentPlaybackRateSnapshot() -> Float {
+        guard isPlaying else { return 0 }
+        return player.rate > 0 ? player.rate : 1
+    }
+
+    private func applyCachedArtworkIfAvailable(for mediaID: String) {
+        guard let cachedArtwork = artworkCache[mediaID] else {
+            currentArtworkResource = nil
+            currentArtworkMediaID = nil
+            return
+        }
+
+        currentImageURL = cachedArtwork.url
+        currentArtworkResource = cachedArtwork
+        currentArtworkMediaID = mediaID
+    }
+
+    private func loadNowPlayingArtwork(for mediaID: String, title: String, artist: String, fallbackURL: URL?) {
         artworkLoadTask?.cancel()
 
         let artworkTitle = title
         let artworkArtist = artist
-        let normalizedFallbackURL = normalizedITunesArtworkURL(from: fallbackURL)
+        let fallbackArtworkURL = fallbackURL
 
         artworkLoadTask = Task { [itunes] in
             if Task.isCancelled { return }
 
-            var artworkURL: URL?
+            let fallbackTask = Task {
+                await Self.fetchArtworkResource(from: fallbackArtworkURL)
+            }
+            let highQualityTask = Task<CachedNowPlayingArtworkResource?, Never> {
+                if let highQualityURL = await Self.resolveHighQualityArtworkURL(
+                    using: itunes,
+                    title: artworkTitle,
+                    artist: artworkArtist
+                ) {
+                    return await Self.fetchArtworkResource(from: highQualityURL)
+                }
 
-            do {
-                let response = try await itunes.search(term: "\(artworkTitle) \(artworkArtist)", country: "us", media: "music", limit: 1)
-                artworkURL = normalizedITunesArtworkURL(from: response.results.first?.artworkUrl100)
-            } catch {
-                artworkURL = nil
+                return nil
             }
 
-            let resolvedArtworkURL = artworkURL ?? normalizedFallbackURL
-            guard let resolvedArtworkURL else { return }
-
-            do {
-                let (data, _) = try await URLSession.shared.data(from: resolvedArtworkURL)
-                if Task.isCancelled { return }
-
-                guard let image = UIImage(data: data) else { return }
-                let artwork = MPMediaItemArtwork(image: image)
-
+            if let fallbackArtwork = await fallbackTask.value {
                 await MainActor.run {
-                    self.currentNowPlayingArtwork = artwork
-                    self.updateNowPlayingMetadata()
+                    guard self.currentVideoId == mediaID else { return }
+                    guard self.currentArtworkMediaID != mediaID else { return }
+
+                    self.currentImageURL = fallbackArtwork.url
+                    self.currentArtworkResource = fallbackArtwork
+                    self.currentArtworkMediaID = mediaID
+                    self.updateNowPlayingMetadata(force: true)
                 }
-            } catch {
-                print("⚠️ PlayerViewModel: Failed to load now playing artwork: \(error.localizedDescription)")
+            }
+
+            if let highQualityArtwork = await highQualityTask.value {
+                await MainActor.run {
+                    guard self.currentVideoId == mediaID else { return }
+
+                    self.artworkCache[mediaID] = highQualityArtwork
+                    self.currentImageURL = highQualityArtwork.url
+                    self.currentArtworkResource = highQualityArtwork
+                    self.currentArtworkMediaID = mediaID
+                    self.updateNowPlayingMetadata(force: true)
+                }
             }
         }
     }
-#endif
+
+    nonisolated private static func resolveHighQualityArtworkURL(using itunes: iTunesKit, title: String, artist: String) async -> URL? {
+        do {
+            let response = try await itunes.search(term: "\(title) \(artist)", country: "us", media: "music", limit: 1)
+            return normalizedITunesArtworkURL(from: response.results.first?.artworkUrl100)
+        } catch {
+            return nil
+        }
+    }
+
+    nonisolated private static func fetchArtworkResource(from url: URL?) async -> CachedNowPlayingArtworkResource? {
+        guard let url else { return nil }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let image = UIImage(data: data) else { return nil }
+            return CachedNowPlayingArtworkResource(url: url, data: data, size: image.size)
+        } catch {
+            return nil
+        }
+    }
+
+    nonisolated private static func makeMediaItemArtwork(from resource: CachedNowPlayingArtworkResource) -> MPMediaItemArtwork? {
+        let imageData = resource.data
+        let boundsSize = resource.size
+
+        return MPMediaItemArtwork(boundsSize: boundsSize) { _ in
+            UIImage(data: imageData) ?? UIImage()
+        }
+    }
+    #else
+    private func updateNowPlayingMetadata(force: Bool = true) {}
+    private func updateNowPlayingPlaybackInfo(force: Bool = false) {}
+    private func publishNowPlayingInfo(force: Bool) {}
+    #endif
 }

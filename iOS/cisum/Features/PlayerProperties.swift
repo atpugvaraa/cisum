@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Combine
 #if os(iOS)
 import UIKit
 #endif
@@ -26,13 +25,6 @@ class PlayerProperties {
     #if os(iOS)
     var currentOrientation: UIDeviceOrientation = .portrait
     #endif
-    
-    // Now Playing Properties
-    var isRotating = Double.random(in: 0 ..< 360)
-    var saturation = Double.random(in: 0.7...2)
-    var transparency: Double = 0.0
-    
-    let timer = Timer.publish(every: 6, on: .main, in: .common).autoconnect()
     
     init() {
         #if os(iOS)

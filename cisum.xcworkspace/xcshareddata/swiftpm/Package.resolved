@@ -1,6 +1,15 @@
 {
-  "originHash" : "bdb048ccd5d3a7d53b8807b38a17c211d4af1b7d156f35ed6a8647a836db7370",
+  "originHash" : "82c509d7891066afb8b6a1af0cac2cb471a8b7fd0bea9392e7d61d119ba29116",
   "pins" : [
+    {
+      "identity" : "ffmpeg-kit-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tylerjonesio/ffmpeg-kit-spm",
+      "state" : {
+        "branch" : "main",
+        "revision" : "6053b0e4f8607314ff5e14e0b18fc250c0f87c9b"
+      }
+    },
     {
       "identity" : "injectionnext",
       "kind" : "remoteSourceControl",
@@ -52,7 +61,7 @@
       "location" : "https://github.com/atpugvaraa/YouTubeSDK.git",
       "state" : {
         "branch" : "main",
-        "revision" : "c9208540add4e0d85a6780533adf6cc7976390e1"
+        "revision" : "3e6616b823a1c14388ddf49bd7fd294ae6624c61"
       }
     }
   ],

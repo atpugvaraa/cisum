@@ -12,6 +12,17 @@
 		772039852F6AAB5100E85D4A /* InjectionNext in Frameworks */ = {isa = PBXBuildFile; productRef = 772039842F6AAB5100E85D4A /* InjectionNext */; };
 		7720398B2F6AAB7300E85D4A /* LNPopupUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7720398A2F6AAB7300E85D4A /* LNPopupUI */; };
 		7736DD082F6ECEB50077B88B /* iTunesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7736DD072F6ECEB50077B88B /* iTunesKit */; };
+		775785FE2F7774DF005CB07D /* FFmpeg in Frameworks */ = {isa = PBXBuildFile; productRef = 775785FD2F7774DF005CB07D /* FFmpeg */; };
+		775786002F7774DF005CB07D /* FFmpeg-Kit in Frameworks */ = {isa = PBXBuildFile; productRef = 775785FF2F7774DF005CB07D /* FFmpeg-Kit */; };
+		775786022F7774DF005CB07D /* libavcodec in Frameworks */ = {isa = PBXBuildFile; productRef = 775786012F7774DF005CB07D /* libavcodec */; };
+		775786042F7774DF005CB07D /* libavdevice in Frameworks */ = {isa = PBXBuildFile; productRef = 775786032F7774DF005CB07D /* libavdevice */; };
+		775786062F7774DF005CB07D /* libavfilter in Frameworks */ = {isa = PBXBuildFile; productRef = 775786052F7774DF005CB07D /* libavfilter */; };
+		775786082F7774DF005CB07D /* libavformat in Frameworks */ = {isa = PBXBuildFile; productRef = 775786072F7774DF005CB07D /* libavformat */; };
+		7757860A2F7774DF005CB07D /* libavutil in Frameworks */ = {isa = PBXBuildFile; productRef = 775786092F7774DF005CB07D /* libavutil */; };
+		7757860C2F7774DF005CB07D /* libswresample in Frameworks */ = {isa = PBXBuildFile; productRef = 7757860B2F7774DF005CB07D /* libswresample */; };
+		7757860E2F7774DF005CB07D /* libswscale in Frameworks */ = {isa = PBXBuildFile; productRef = 7757860D2F7774DF005CB07D /* libswscale */; };
+		7757860F2F77778E005CB07D /* FFmpeg-Kit in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 775785FF2F7774DF005CB07D /* FFmpeg-Kit */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		775786102F777791005CB07D /* FFmpeg in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 775785FD2F7774DF005CB07D /* FFmpeg */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		77C8BF5A2F6E36D200E7354F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77C8BF592F6E36D200E7354F /* WidgetKit.framework */; };
 		77C8BF5C2F6E36D200E7354F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77C8BF5B2F6E36D200E7354F /* SwiftUI.framework */; };
 		77C8BF6D2F6E36D200E7354F /* LyricsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 77C8BF572F6E36D200E7354F /* LyricsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -46,6 +57,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				7757860F2F77778E005CB07D /* FFmpeg-Kit in Embed Frameworks */,
+				775786102F777791005CB07D /* FFmpeg in Embed Frameworks */,
 				77EC570E2F6AB9B5002B5513 /* LNPopupUI in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -107,10 +120,19 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				775786042F7774DF005CB07D /* libavdevice in Frameworks */,
 				7720397F2F6AAB2F00E85D4A /* Kingfisher in Frameworks */,
+				775785FE2F7774DF005CB07D /* FFmpeg in Frameworks */,
+				775786062F7774DF005CB07D /* libavfilter in Frameworks */,
+				775786002F7774DF005CB07D /* FFmpeg-Kit in Frameworks */,
+				7757860A2F7774DF005CB07D /* libavutil in Frameworks */,
+				775786082F7774DF005CB07D /* libavformat in Frameworks */,
 				7736DD082F6ECEB50077B88B /* iTunesKit in Frameworks */,
 				7720398B2F6AAB7300E85D4A /* LNPopupUI in Frameworks */,
+				7757860E2F7774DF005CB07D /* libswscale in Frameworks */,
+				7757860C2F7774DF005CB07D /* libswresample in Frameworks */,
 				772039792F6AAB1200E85D4A /* YouTubeSDK in Frameworks */,
+				775786022F7774DF005CB07D /* libavcodec in Frameworks */,
 				772039852F6AAB5100E85D4A /* InjectionNext in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -185,6 +207,15 @@
 				772039842F6AAB5100E85D4A /* InjectionNext */,
 				7720398A2F6AAB7300E85D4A /* LNPopupUI */,
 				7736DD072F6ECEB50077B88B /* iTunesKit */,
+				775785FD2F7774DF005CB07D /* FFmpeg */,
+				775785FF2F7774DF005CB07D /* FFmpeg-Kit */,
+				775786012F7774DF005CB07D /* libavcodec */,
+				775786032F7774DF005CB07D /* libavdevice */,
+				775786052F7774DF005CB07D /* libavfilter */,
+				775786072F7774DF005CB07D /* libavformat */,
+				775786092F7774DF005CB07D /* libavutil */,
+				7757860B2F7774DF005CB07D /* libswresample */,
+				7757860D2F7774DF005CB07D /* libswscale */,
 			);
 			productName = iOS;
 			productReference = 772039522F6AAAA700E85D4A /* cisum.app */;
@@ -245,6 +276,7 @@
 				772039832F6AAB5100E85D4A /* XCRemoteSwiftPackageReference "InjectionNext" */,
 				772039892F6AAB7300E85D4A /* XCRemoteSwiftPackageReference "LNPopupUI" */,
 				7736DD062F6ECEB50077B88B /* XCLocalSwiftPackageReference "../../../Packages/StreamingKit/iTunesKit" */,
+				775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 772039532F6AAAA700E85D4A /* Products */;
@@ -641,6 +673,14 @@
 				minimumVersion = 3.0.2;
 			};
 		};
+		775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tylerjonesio/ffmpeg-kit-spm";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -667,6 +707,51 @@
 		7736DD072F6ECEB50077B88B /* iTunesKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = iTunesKit;
+		};
+		775785FD2F7774DF005CB07D /* FFmpeg */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = FFmpeg;
+		};
+		775785FF2F7774DF005CB07D /* FFmpeg-Kit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = "FFmpeg-Kit";
+		};
+		775786012F7774DF005CB07D /* libavcodec */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libavcodec;
+		};
+		775786032F7774DF005CB07D /* libavdevice */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libavdevice;
+		};
+		775786052F7774DF005CB07D /* libavfilter */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libavfilter;
+		};
+		775786072F7774DF005CB07D /* libavformat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libavformat;
+		};
+		775786092F7774DF005CB07D /* libavutil */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libavutil;
+		};
+		7757860B2F7774DF005CB07D /* libswresample */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libswresample;
+		};
+		7757860D2F7774DF005CB07D /* libswscale */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 775785FC2F7774DF005CB07D /* XCRemoteSwiftPackageReference "ffmpeg-kit-spm" */;
+			productName = libswscale;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

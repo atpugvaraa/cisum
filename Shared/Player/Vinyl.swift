@@ -14,13 +14,15 @@ struct Vinyl<Content: View>: View {
     
     @Environment(PlayerViewModel.self) private var playerViewModel
     
-    @State private var rotation: Double = 0
-    @State private var speed: Double = 0
-    @State private var lastUpdate: Date = .now
+    @State private var phaseStartAngle: Double = 0
+    @State private var phaseStartDate: Date?
+    @State private var phaseStartSpeed: Double = 0
+    @State private var phaseTargetSpeed: Double = 0
+    @State private var phaseTau: Double = 0.67
     
-    let targetMaxSpeed: Double = 35
-    let tauStart: Double = 0.6
-    let tauStop: Double = 0.67
+    private let targetMaxSpeed: Double = 35
+    private let tauStart: Double = 0.6
+    private let tauStop: Double = 0.67
     
 #if DEBUG
     @ObserveInjection var forceRedraw
@@ -29,9 +31,6 @@ struct Vinyl<Content: View>: View {
     var body: some View {
         GeometryReader { geo in
             TimelineView(.animation) { timeline in
-                let now = timeline.date
-                let delta = now.timeIntervalSince(lastUpdate)
-                
                 ZStack {
                     VStack {
                         HStack {
@@ -71,6 +70,7 @@ struct Vinyl<Content: View>: View {
                     .offset(y: 35)
                     
                     heroVinyl
+                        .rotationEffect(.degrees(rotation(at: timeline.date)))
                         .overlay {
                             LinearGradient(
                                 colors: [
@@ -98,16 +98,16 @@ struct Vinyl<Content: View>: View {
                                 }
                             }()
                         )
-                        .onChange(of: timeline.date) {
-                            Task { @MainActor in
-                                updatePhysics(delta: delta)
-                                lastUpdate = now
-                            }
-                        }
                 }
             }
         }
         .background(Color(hex: "101010"))
+        .onAppear {
+            syncPlaybackState(at: .now)
+        }
+        .onChange(of: playerViewModel.isPlaying) { _, _ in
+            syncPlaybackState(at: .now)
+        }
         .enableInjection()
     }
     
@@ -136,17 +136,35 @@ struct Vinyl<Content: View>: View {
         VinylDisk(size: 1080) {
             content()
         }
-        .rotationEffect(.degrees(rotation))
     }
     
-    private func updatePhysics(delta: Double) {
-        let targetSpeed = playerViewModel.isPlaying ? targetMaxSpeed : 0
-        let tau = playerViewModel.isPlaying ? tauStart : tauStop
-        
-        let alpha = 1 - exp(-delta / tau)
-        speed += (targetSpeed - speed) * alpha
-        
-        rotation += speed * delta
+    private func rotation(at date: Date) -> Double {
+        guard let phaseStartDate else {
+            return phaseStartAngle
+        }
+
+        let elapsed = max(date.timeIntervalSince(phaseStartDate), 0)
+        let deltaSpeed = phaseStartSpeed - phaseTargetSpeed
+        return phaseStartAngle + (phaseTargetSpeed * elapsed) + (deltaSpeed * phaseTau * (1 - exp(-elapsed / phaseTau)))
+    }
+
+    private func speed(at date: Date) -> Double {
+        guard let phaseStartDate else { return 0 }
+        let elapsed = max(date.timeIntervalSince(phaseStartDate), 0)
+        return phaseTargetSpeed + (phaseStartSpeed - phaseTargetSpeed) * exp(-elapsed / phaseTau)
+    }
+
+    private func syncPlaybackState(at date: Date) {
+        let currentAngle = rotation(at: date)
+        let currentSpeed = speed(at: date)
+        let nextTargetSpeed = playerViewModel.isPlaying ? targetMaxSpeed : 0
+        let nextTau = playerViewModel.isPlaying ? tauStart : tauStop
+
+        phaseStartAngle = currentAngle
+        phaseStartDate = date
+        phaseStartSpeed = currentSpeed
+        phaseTargetSpeed = nextTargetSpeed
+        phaseTau = nextTau
     }
 }
 

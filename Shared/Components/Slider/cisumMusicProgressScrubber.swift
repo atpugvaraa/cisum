@@ -13,6 +13,8 @@ struct cisumMusicProgressScrubber: View {
     let duration: Double
     let onSeek: (Double) -> Void
     @State private var sliderProgress: Double = 0
+    @State private var displayedCurrentTime: Double = 0
+    @State private var displayedDuration: Double = 0
     @State private var isEditing = false
 
     let onEditingChanged: (Bool) -> Void
@@ -34,8 +36,6 @@ struct cisumMusicProgressScrubber: View {
     #endif
 
     var body: some View {
-        let progress = normalizedProgress
-
         StretchySlider(
             value: $sliderProgress,
             in: 0...1,
@@ -54,18 +54,20 @@ struct cisumMusicProgressScrubber: View {
         .frame(height: 35)
         .transformEffect(.identity)
         .onAppear {
-            sliderProgress = progress
+            syncDisplayState(animated: false)
         }
         .onChange(of: currentTime) { _, _ in
             guard !isEditing else { return }
-            sliderProgress = normalizedProgress
+            syncDisplayState(animated: true)
         }
         .onChange(of: duration) { _, _ in
             guard !isEditing else { return }
-            sliderProgress = normalizedProgress
+            syncDisplayState(animated: true)
         }
         .onChange(of: isEditing) { _, newValue in
             if !newValue, duration > 0 {
+                displayedCurrentTime = max(0, min(sliderProgress, 1)) * duration
+                displayedDuration = duration
                 onSeek(max(0, min(sliderProgress, 1)) * duration)
             }
         }
@@ -77,21 +79,44 @@ private extension cisumMusicProgressScrubber {
     func label(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 12, weight: .semibold))
+            .contentTransition(.numericText())
     }
 
     var normalizedProgress: Double {
+        normalizedProgress(for: currentTime, duration: duration)
+    }
+
+    func normalizedProgress(for currentTime: Double, duration: Double) -> Double {
         guard duration.isFinite, duration > 0, currentTime.isFinite else { return 0 }
         return min(max(currentTime / duration, 0), 1)
     }
 
     var elapsedDuration: String {
-        guard currentTime.isFinite else { return "0:00" }
-        return currentTime.asTimeString(style: .positional)
+        guard displayedCurrentTime.isFinite else { return "0:00" }
+        return displayedCurrentTime.asTimeString(style: .positional)
     }
 
     var totalDuration: String {
-        guard duration.isFinite else { return "0:00" }
-        return duration.asTimeString(style: .positional)
+        guard displayedDuration.isFinite else { return "0:00" }
+        return displayedDuration.asTimeString(style: .positional)
+    }
+
+    func syncDisplayState(animated: Bool) {
+        let nextDuration = duration.isFinite ? duration : 0
+        let nextCurrentTime = currentTime.isFinite ? currentTime : 0
+        let nextProgress = normalizedProgress(for: nextCurrentTime, duration: nextDuration)
+
+        if animated {
+            withAnimation(.linear(duration: 0.12)) {
+                displayedDuration = nextDuration
+                displayedCurrentTime = nextCurrentTime
+                sliderProgress = nextProgress
+            }
+        } else {
+            displayedDuration = nextDuration
+            displayedCurrentTime = nextCurrentTime
+            sliderProgress = nextProgress
+        }
     }
 }
 
