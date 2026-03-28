@@ -11,6 +11,7 @@
 		772039822F6AAB3900E85D4A /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 772039812F6AAB3900E85D4A /* Kingfisher */; };
 		772039882F6AAB5900E85D4A /* InjectionNext in Frameworks */ = {isa = PBXBuildFile; productRef = 772039872F6AAB5900E85D4A /* InjectionNext */; };
 		7736DD052F6ECE800077B88B /* iTunesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7736DD042F6ECE800077B88B /* iTunesKit */; };
+		77D703442F781FA500358D03 /* iTunesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 77D703432F781FA500358D03 /* iTunesKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -50,6 +51,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				772039822F6AAB3900E85D4A /* Kingfisher in Frameworks */,
+				77D703442F781FA500358D03 /* iTunesKit in Frameworks */,
 				7736DD052F6ECE800077B88B /* iTunesKit in Frameworks */,
 				7720397C2F6AAB1D00E85D4A /* YouTubeSDK in Frameworks */,
 				772039882F6AAB5900E85D4A /* InjectionNext in Frameworks */,
@@ -101,6 +103,7 @@
 				772039812F6AAB3900E85D4A /* Kingfisher */,
 				772039872F6AAB5900E85D4A /* InjectionNext */,
 				7736DD042F6ECE800077B88B /* iTunesKit */,
+				77D703432F781FA500358D03 /* iTunesKit */,
 			);
 			productName = macOS;
 			productReference = 772039692F6AAAD500E85D4A /* cisum.app */;
@@ -134,7 +137,7 @@
 				7720397A2F6AAB1D00E85D4A /* XCRemoteSwiftPackageReference "YouTubeSDK" */,
 				772039802F6AAB3900E85D4A /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				772039862F6AAB5900E85D4A /* XCRemoteSwiftPackageReference "InjectionNext" */,
-				7736DD032F6ECE800077B88B /* XCLocalSwiftPackageReference "../../../Packages/StreamingKit/iTunesKit" */,
+				77D703422F781FA500358D03 /* XCRemoteSwiftPackageReference "ituneskit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7720396A2F6AAAD500E85D4A /* Products */;
@@ -426,13 +429,6 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		7736DD032F6ECE800077B88B /* XCLocalSwiftPackageReference "../../../Packages/StreamingKit/iTunesKit" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../../Packages/StreamingKit/iTunesKit;
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
 		7720397A2F6AAB1D00E85D4A /* XCRemoteSwiftPackageReference "YouTubeSDK" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -458,6 +454,14 @@
 				minimumVersion = 1.5.3;
 			};
 		};
+		77D703422F781FA500358D03 /* XCRemoteSwiftPackageReference "ituneskit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://gitlab.com/atpugvaraa/ituneskit.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -478,6 +482,11 @@
 		};
 		7736DD042F6ECE800077B88B /* iTunesKit */ = {
 			isa = XCSwiftPackageProductDependency;
+			productName = iTunesKit;
+		};
+		77D703432F781FA500358D03 /* iTunesKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 77D703422F781FA500358D03 /* XCRemoteSwiftPackageReference "ituneskit" */;
 			productName = iTunesKit;
 		};
 /* End XCSwiftPackageProductDependency section */
