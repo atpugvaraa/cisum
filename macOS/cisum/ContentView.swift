@@ -157,8 +157,7 @@ struct ContentView: View {
         
         Task {
             do {
-                let tokenService = iTunesWebTokenService()
-                let webClient = iTunesWebServiceClient(tokenService: tokenService)
+                let webClient = iTunesWebServiceClient()
                 let catalogService = WebCatalogService(client: webClient)
                 
                 let songId = String(trackId)
