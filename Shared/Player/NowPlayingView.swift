@@ -243,9 +243,13 @@ struct NowPlayingView: View {
             VStack {
                 VStack {
 #if os(iOS)
-                    cisumMusicProgressScrubber(currentTime: .constant(60), inRange: 0...240) { isEditing in
-                        
-                    }
+                    cisumMusicProgressScrubber(
+                        currentTime: playerViewModel.currentTime,
+                        duration: playerViewModel.duration,
+                        onSeek: { newTime in
+                            playerViewModel.seek(to: newTime)
+                        }
+                    )
 #endif
                 }
                 .frame(height: 30)
