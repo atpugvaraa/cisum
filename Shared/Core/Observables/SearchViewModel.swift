@@ -126,6 +126,7 @@ class SearchViewModel {
         
         do {
             let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let scope = searchScope
             if query.isEmpty {
                 self.musicResults = []
                 self.videoResults = []
@@ -137,11 +138,13 @@ class SearchViewModel {
 
             if case .success = state,
                lastCompletedQuery == query,
-               lastCompletedScope == searchScope {
+               lastCompletedScope == scope {
                 return
             }
 
-            switch searchScope {
+            let effectiveQuery = effectiveSearchQuery(for: query, scope: scope)
+
+            switch scope {
             case .music:
                 // Serve cache if available (stale-while-revalidate)
                 if let cached = searchCache.getMusicResults(for: query) {
@@ -150,11 +153,11 @@ class SearchViewModel {
                     if cached.isStale {
                         // Refresh in background only when stale.
                         Task(priority: .utility) {
-                            await self.refreshMusicResultsIfNeeded(for: query)
+                            await self.refreshMusicResultsIfNeeded(for: query, scope: scope)
                         }
                     }
                 } else {
-                    let results = try await youtube.music.search(query)
+                    let results = try await youtube.music.search(effectiveQuery)
                     self.musicResults = results
                     searchCache.setMusicResults(results, for: query)
                     self.state = .success
@@ -175,11 +178,11 @@ class SearchViewModel {
                     self.state = .success
                     if cached.isStale {
                         Task(priority: .utility) {
-                            await self.refreshVideoResultsIfNeeded(for: query)
+                            await self.refreshVideoResultsIfNeeded(for: query, scope: scope)
                         }
                     }
                 } else {
-                    let cont = try await youtube.main.search(query)
+                    let cont = try await youtube.main.search(effectiveQuery)
                     updateVideoResults(with: cont, appending: false)
                     // Cache the mapped video results
                     let mapped = mapSearchResults(from: cont.items)
@@ -198,7 +201,7 @@ class SearchViewModel {
             }
 
             self.lastCompletedQuery = query
-            self.lastCompletedScope = searchScope
+            self.lastCompletedScope = scope
             
         } catch {
             if !Task.isCancelled {
@@ -223,12 +226,17 @@ class SearchViewModel {
     // MARK: - Caching Helpers
 
     private func refreshMusicResultsIfNeeded(for query: String) async {
+        await refreshMusicResultsIfNeeded(for: query, scope: searchScope)
+    }
+
+    private func refreshMusicResultsIfNeeded(for query: String, scope: SearchScope) async {
         do {
-            let results = try await youtube.music.search(query)
+            let effectiveQuery = effectiveSearchQuery(for: query, scope: scope)
+            let results = try await youtube.music.search(effectiveQuery)
             searchCache.setMusicResults(results, for: query)
             searchCacheHintStore?.recordMusicResults(query: query, results: results)
             await MainActor.run {
-                if self.searchText == query { self.musicResults = results }
+                if self.searchText == query, self.searchScope == scope { self.musicResults = results }
             }
         } catch {
             // ignore background refresh errors
@@ -236,13 +244,18 @@ class SearchViewModel {
     }
 
     private func refreshVideoResultsIfNeeded(for query: String) async {
+        await refreshVideoResultsIfNeeded(for: query, scope: searchScope)
+    }
+
+    private func refreshVideoResultsIfNeeded(for query: String, scope: SearchScope) async {
         do {
-            let cont = try await youtube.main.search(query)
+            let effectiveQuery = effectiveSearchQuery(for: query, scope: scope)
+            let cont = try await youtube.main.search(effectiveQuery)
             let mapped = mapSearchResults(from: cont.items)
             searchCache.setVideoResults(mapped, for: query)
             searchCacheHintStore?.recordVideoResults(query: query, results: mapped)
             await MainActor.run {
-                if self.searchText == query { self.videoResults = mapped }
+                if self.searchText == query, self.searchScope == scope { self.videoResults = mapped }
             }
         } catch {
             // ignore background refresh errors
@@ -309,7 +322,7 @@ class SearchViewModel {
             case .music:
                 remote = try await youtube.music.getSearchSuggestions(query: query)
             case .video:
-                remote = try await youtube.main.getSearchSuggestions(query: query)
+                remote = try await youtube.main.getSearchSuggestions(query: effectiveSearchQuery(for: query, scope: .video))
             }
 
             let local = historyStore?.topCandidates(prefix: query, limit: 20) ?? []
@@ -356,19 +369,20 @@ class SearchViewModel {
         let normalizedTop = top.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedTop.isEmpty else { return }
 
+        let scope = searchScope
         let mode = effectivePrefetchMode
         let metricsEnabled = settings.metricsEnabled
         let youtube = self.youtube
 
         do {
             let ids: [String]
-            switch searchScope {
+            switch scope {
             case .music:
                 let results: [YouTubeMusicSong]
                 if let cached = searchCache.getMusicResults(for: normalizedTop), !cached.isStale {
                     results = cached.results
                 } else {
-                    results = try await youtube.music.search(normalizedTop)
+                    results = try await youtube.music.search(effectiveSearchQuery(for: normalizedTop, scope: scope))
                     searchCache.setMusicResults(results, for: normalizedTop)
                     searchCacheHintStore?.recordMusicResults(query: normalizedTop, results: results)
                 }
@@ -379,7 +393,7 @@ class SearchViewModel {
                 if let cached = searchCache.getVideoResults(for: normalizedTop), !cached.isStale {
                     results = cached.results
                 } else {
-                    let continuation = try await youtube.main.search(normalizedTop)
+                    let continuation = try await youtube.main.search(effectiveSearchQuery(for: normalizedTop, scope: scope))
                     let mapped = mapSearchResults(from: continuation.items)
                     searchCache.setVideoResults(mapped, for: normalizedTop)
                     searchCacheHintStore?.recordVideoResults(query: normalizedTop, results: mapped)
@@ -554,11 +568,44 @@ class SearchViewModel {
     private func mapSearchResults(from items: [YouTubeItem]) -> [YouTubeSearchResult] {
         return items.compactMap { item in
             switch item {
-            case .video(let v): return .video(v)
+            case .video(let v):
+                guard shouldKeepVideoResult(v) else { return nil }
+                return .video(v)
             case .channel(let c): return .channel(c)
             case .playlist(let p): return .playlist(p)
             default: return nil
             }
+        }
+    }
+
+    private func effectiveSearchQuery(for query: String, scope: SearchScope) -> String {
+        switch scope {
+        case .music:
+            return query
+        case .video:
+            return musicVideoSearchQuery(query)
+        }
+    }
+
+    private func shouldKeepVideoResult(_ video: YouTubeVideo) -> Bool {
+        let title = normalizedMusicDisplayTitle(video.title, artist: video.author).lowercased()
+        let author = normalizedMusicDisplayArtist(video.author, title: video.title).lowercased()
+
+        let blockedMarkers = [
+            "#shorts",
+            "/shorts/",
+            "shorts",
+            "reaction",
+            "review",
+            "podcast",
+            "interview",
+            "tutorial",
+            "gameplay",
+            "gaming"
+        ]
+
+        return !blockedMarkers.contains { marker in
+            title.contains(marker) || author.contains(marker)
         }
     }
 

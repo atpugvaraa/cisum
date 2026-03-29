@@ -9,34 +9,49 @@ actor VideoMetadataCache {
         let video: YouTubeVideo
         let resolvedURL: URL
         let cachedAt: Date
+        let validUntil: Date
         var lastAccessed: Date
+
+        var isExpired: Bool {
+            Date() >= validUntil
+        }
     }
+
+    private static let defaultURLTTL: TimeInterval = 60 * 20
 
     private var store: [String: Entry] = [:]
     private var inFlight: [String: Task<Entry, Error>] = [:]
     private var lru: [String] = []
     private var warmedItems: [String: AVPlayerItem] = [:]
     private let maxEntries: Int = 20
-    private let ttl: TimeInterval = 60 * 20
 
     init() {}
 
     func get(_ id: String, allowStale: Bool = true) -> Entry? {
-        guard var e = store[id] else { return nil }
-        if !allowStale, Date().timeIntervalSince(e.cachedAt) > ttl {
+        guard var entry = store[id] else { return nil }
+        if !allowStale, entry.isExpired {
             return nil
         }
-        e.lastAccessed = Date()
-        store[id] = e
+        entry.lastAccessed = Date()
+        store[id] = entry
         touch(id)
-        return e
+        return entry
     }
 
     func set(_ id: String, video: YouTubeVideo) throws {
         guard let url = Self.resolvePlayableURL(from: video) else {
             throw YouTubeError.decipheringFailed(videoId: id)
         }
-        let entry = Entry(video: video, resolvedURL: url, cachedAt: Date(), lastAccessed: Date())
+
+        let cachedAt = Date()
+        let entry = Entry(
+            video: video,
+            resolvedURL: url,
+            cachedAt: cachedAt,
+            validUntil: Self.resolveValidUntilDate(from: video, cachedAt: cachedAt),
+            lastAccessed: cachedAt
+        )
+
         store[id] = entry
         touch(id)
         evictIfNeeded()
@@ -72,7 +87,15 @@ actor VideoMetadataCache {
             guard let url = Self.resolvePlayableURL(from: video) else {
                 throw YouTubeError.decipheringFailed(videoId: id)
             }
-            return Entry(video: video, resolvedURL: url, cachedAt: Date(), lastAccessed: Date())
+
+            let cachedAt = Date()
+            return Entry(
+                video: video,
+                resolvedURL: url,
+                cachedAt: cachedAt,
+                validUntil: Self.resolveValidUntilDate(from: video, cachedAt: cachedAt),
+                lastAccessed: cachedAt
+            )
         }
 
         inFlight[id] = task
@@ -169,14 +192,63 @@ actor VideoMetadataCache {
     }
 
     private static func resolvePlayableURL(from video: YouTubeVideo) -> URL? {
-        if let hls = video.hlsURL {
-            return hls
-        }
-        if let stream = video.bestMuxedStream ?? video.bestAudioStream,
-           let urlString = stream.url,
+        if let audio = video.bestAudioStream,
+           let urlString = audio.url,
            let url = URL(string: urlString) {
             return url
         }
+
+        if let muxed = video.bestMuxedStream,
+           let urlString = muxed.url,
+           let url = URL(string: urlString) {
+            return url
+        }
+
+        if let hls = video.hlsURL {
+            return hls
+        }
+
+        return nil
+    }
+
+    private static func resolveValidUntilDate(from url: URL, cachedAt: Date) -> Date {
+        if let expirationDate = resolveURLExpiration(from: url) {
+            return expirationDate.addingTimeInterval(-30)
+        }
+
+        return cachedAt.addingTimeInterval(defaultURLTTL)
+    }
+
+    private static func resolveValidUntilDate(from video: YouTubeVideo, cachedAt: Date) -> Date {
+        if let expiresInSeconds = video.streamingData?.expiresInSeconds,
+           let seconds = Double(expiresInSeconds) {
+            return cachedAt.addingTimeInterval(max(0, seconds - 30))
+        }
+
+        if let url = resolvePlayableURL(from: video) {
+            return resolveValidUntilDate(from: url, cachedAt: cachedAt)
+        }
+
+        return cachedAt.addingTimeInterval(defaultURLTTL)
+    }
+
+    private static func resolveURLExpiration(from url: URL) -> Date? {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let queryItems = components.queryItems else {
+            return nil
+        }
+
+        let expiryKeys = ["expire", "expires", "exp", "expiration"]
+        for key in expiryKeys {
+            guard let value = queryItems.first(where: { $0.name.caseInsensitiveCompare(key) == .orderedSame })?.value,
+                  let numericValue = Double(value) else {
+                continue
+            }
+
+            let seconds = numericValue > 1_000_000_000_000 ? numericValue / 1000.0 : numericValue
+            return Date(timeIntervalSince1970: seconds)
+        }
+
         return nil
     }
 }

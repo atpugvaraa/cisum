@@ -47,11 +47,11 @@ struct SongRow: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(result.trackName ?? "Unknown Track")
+                Text(normalizedMusicDisplayTitle(result.trackName ?? "Unknown Track", artist: result.artistName))
                     .font(.headline)
                     .lineLimit(1)
                 
-                Text(result.artistName ?? "Unknown Artist")
+                Text(normalizedMusicDisplayArtist(result.artistName ?? "Unknown Artist", title: result.trackName))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
@@ -135,7 +135,7 @@ struct ContentView: View {
         
         Task {
             do {
-                let songs = try await client.searchSongs(term: searchText)
+                let songs = try await client.searchSongs(term: normalizedMusicDisplayTitle(searchText))
                 await MainActor.run {
                     self.results = songs
                     self.isSearching = false

@@ -11,6 +11,7 @@ final class MediaCacheEntry {
     var playbackAudioURLString: String?
     var playbackAudioMimeType: String?
     var playbackUpdatedAt: Date?
+    var playbackValidUntilAt: Date?
 
     var artworkURL1500String: String?
     var artworkUpdatedAt: Date?

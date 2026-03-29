@@ -68,7 +68,7 @@ final class PlayerViewModel {
     private var artworkVideoTask: Task<Void, Never>?
     private var playbackRecoveryTask: Task<Void, Never>?
     private var playbackRecoveryAttemptedIDs: Set<String> = []
-    private var playbackCandidates: [URL] = []
+    private var playbackCandidates: [PlaybackCandidate] = []
     private var playbackCandidateIndex: Int = 0
     private var playbackCandidatesMediaID: String?
     private var currentItemStatusObservation: NSKeyValueObservation?
@@ -131,9 +131,11 @@ final class PlayerViewModel {
 
     func load(song: YouTubeMusicSong) {
         let tapStartedAt = Date()
+        let displayTitle = normalizedMusicDisplayTitle(song.title, artist: song.artistsDisplay)
+        let displayArtist = normalizedMusicDisplayArtist(song.artistsDisplay, title: song.title)
 
-        currentTitle = song.title
-        currentArtist = song.artistsDisplay
+        currentTitle = displayTitle
+        currentArtist = displayArtist
         currentImageURL = song.thumbnailURL
         isExplicit = song.isExplicit
         currentVideoId = song.videoId
@@ -151,7 +153,7 @@ final class PlayerViewModel {
 #endif
         updateNowPlayingMetadata(force: true)
 #if os(iOS)
-        loadNowPlayingArtwork(for: song.videoId, title: song.title, artist: song.artistsDisplay, fallbackURL: song.thumbnailURL)
+        loadNowPlayingArtwork(for: song.videoId, title: displayTitle, artist: displayArtist, fallbackURL: song.thumbnailURL)
 #endif
 
         currentLoadTask?.cancel()
@@ -167,8 +169,8 @@ final class PlayerViewModel {
                 self.playCurrentPlaybackCandidate()
                 self.startArtworkVideoProcessingIfNeeded(
                     for: song.videoId,
-                    title: song.title,
-                    artist: song.artistsDisplay
+                    title: displayTitle,
+                    artist: displayArtist
                 )
                 self.logPlayback("Started playback for song id=\(song.videoId)")
 
@@ -185,9 +187,11 @@ final class PlayerViewModel {
     func load(video: YouTubeVideo) {
         let tapStartedAt = Date()
         let fallbackURL = URL(string: video.thumbnailURL ?? "")
+        let displayTitle = normalizedMusicDisplayTitle(video.title, artist: video.author)
+        let displayArtist = normalizedMusicDisplayArtist(video.author, title: video.title)
 
-        currentTitle = video.title
-        currentArtist = video.author
+        currentTitle = displayTitle
+        currentArtist = displayArtist
         currentImageURL = fallbackURL
         isExplicit = false
         currentVideoId = video.id
@@ -205,7 +209,7 @@ final class PlayerViewModel {
 #endif
         updateNowPlayingMetadata(force: true)
 #if os(iOS)
-        loadNowPlayingArtwork(for: video.id, title: video.title, artist: video.author, fallbackURL: fallbackURL)
+        loadNowPlayingArtwork(for: video.id, title: displayTitle, artist: displayArtist, fallbackURL: fallbackURL)
 #endif
 
         currentLoadTask?.cancel()
@@ -221,8 +225,8 @@ final class PlayerViewModel {
                 self.playCurrentPlaybackCandidate()
                 self.startArtworkVideoProcessingIfNeeded(
                     for: video.id,
-                    title: video.title,
-                    artist: video.author
+                    title: displayTitle,
+                    artist: displayArtist
                 )
                 self.logPlayback("Started playback for video id=\(video.id)")
 
@@ -311,7 +315,7 @@ final class PlayerViewModel {
         }
     }
 
-    private func resolvePlaybackCandidates(forID id: String) async throws -> [URL] {
+    private func resolvePlaybackCandidates(forID id: String) async throws -> [PlaybackCandidate] {
         if let mediaCacheStore,
            let cachedCandidates = mediaCacheStore.playbackCandidates(
                 for: id,
@@ -323,15 +327,20 @@ final class PlayerViewModel {
         }
 
         let entry = try await resolvePlaybackEntry(forID: id)
-        let candidates = Self.makePlaybackCandidates(
-            from: entry.video,
-            preferredURL: entry.resolvedURL
+        let candidates = PlaybackCandidateBuilder.fromVideo(
+            entry.video,
+            preferredURL: entry.resolvedURL,
+            validUntil: entry.validUntil
         )
+
+        guard !candidates.isEmpty else {
+            throw YouTubeError.decipheringFailed(videoId: id)
+        }
 
         mediaCacheStore?.savePlaybackResolution(
             mediaID: id,
-            preferredURL: entry.resolvedURL,
-            video: entry.video
+            candidates: candidates,
+            validUntil: entry.validUntil
         )
 
         return candidates
@@ -372,13 +381,13 @@ final class PlayerViewModel {
         return AVPlayerItem(asset: asset)
     }
 
-    private func configurePlaybackCandidates(for mediaID: String, candidates: [URL]) {
+    private func configurePlaybackCandidates(for mediaID: String, candidates: [PlaybackCandidate]) {
         playbackCandidatesMediaID = mediaID
         playbackCandidates = candidates
         playbackCandidateIndex = 0
         logPlayback("Prepared \(candidates.count) playback candidate(s) for id=\(mediaID)")
         let hostSummary = candidates
-            .map { $0.host ?? "unknown-host" }
+            .map { "\($0.streamKind.rawValue):\($0.url.host ?? "unknown-host")" }
             .joined(separator: " | ")
         logPlayback("Candidate hosts for id=\(mediaID): \(hostSummary)")
     }
@@ -393,14 +402,16 @@ final class PlayerViewModel {
         guard playbackCandidateIndex < playbackCandidates.count else {
             if let fallback = playbackCandidates.first {
                 logPlayback("Playback candidate index out of range, retrying first candidate for id=\(playbackCandidatesMediaID ?? "unknown")")
-                playFromBeginning(url: fallback)
+                playFromBeginning(url: fallback.url)
             }
             return
         }
 
-        let candidateURL = playbackCandidates[playbackCandidateIndex]
-        logPlayback("Trying playback candidate #\(playbackCandidateIndex + 1) for id=\(playbackCandidatesMediaID ?? "unknown")")
-        playFromBeginning(url: candidateURL)
+        let candidate = playbackCandidates[playbackCandidateIndex]
+        logPlayback(
+            "Trying playback candidate #\(playbackCandidateIndex + 1) kind=\(candidate.streamKind.rawValue) for id=\(playbackCandidatesMediaID ?? "unknown")"
+        )
+        playFromBeginning(url: candidate.url)
     }
 
     private func attemptNextPlaybackCandidateIfAvailable(errorMessage: String) -> Bool {
@@ -411,9 +422,11 @@ final class PlayerViewModel {
         }
 
         playbackCandidateIndex += 1
-        let candidateURL = playbackCandidates[playbackCandidateIndex]
-        logPlayback("Trying fallback playback URL #\(playbackCandidateIndex + 1) for id=\(mediaID) after error=\(errorMessage)")
-        playFromBeginning(url: candidateURL)
+        let candidate = playbackCandidates[playbackCandidateIndex]
+        logPlayback(
+            "Trying fallback playback candidate #\(playbackCandidateIndex + 1) kind=\(candidate.streamKind.rawValue) for id=\(mediaID) after error=\(errorMessage)"
+        )
+        playFromBeginning(url: candidate.url)
         return true
     }
 
@@ -593,48 +606,6 @@ final class PlayerViewModel {
             || normalized.contains("not authorized")
             || normalized.contains("unknown error")
             || normalized.contains("failed")
-    }
-
-    nonisolated private static func makePlaybackCandidates(
-        from video: YouTubeVideo,
-        preferredURL: URL
-    ) -> [URL] {
-        var candidates: [URL] = [preferredURL]
-
-        if let hls = video.hlsURL {
-            candidates.append(hls)
-        }
-
-        if let muxedURLString = video.bestMuxedStream?.url,
-           let muxedURL = URL(string: muxedURLString) {
-            candidates.append(muxedURL)
-        }
-
-        if let audio = video.bestAudioStream,
-           let audioURLString = audio.url,
-           let audioURL = URL(string: audioURLString),
-           isLikelyAVPlayerCompatibleAudioStream(audio.mimeType) {
-            candidates.append(audioURL)
-        }
-
-        var seen: Set<String> = []
-        return candidates.filter { url in
-            let key = url.absoluteString
-            if seen.contains(key) { return false }
-            seen.insert(key)
-            return true
-        }
-    }
-
-    nonisolated private static func isLikelyAVPlayerCompatibleAudioStream(_ mimeType: String) -> Bool {
-        let normalized = mimeType.lowercased()
-        if normalized.contains("webm") {
-            return false
-        }
-        return normalized.contains("mp4")
-            || normalized.contains("mpeg")
-            || normalized.contains("aac")
-            || normalized.contains("mp3")
     }
 
     private func handlePlaybackFailure(_ error: Error) {
@@ -989,8 +960,8 @@ final class PlayerViewModel {
     private func loadNowPlayingArtwork(for mediaID: String, title: String, artist: String, fallbackURL: URL?) {
         artworkLoadTask?.cancel()
 
-        let artworkTitle = title
-        let artworkArtist = artist
+        let artworkTitle = normalizedMusicDisplayTitle(title, artist: artist)
+        let artworkArtist = normalizedMusicDisplayArtist(artist, title: title)
         let fallbackArtworkURL = fallbackURL
 
         artworkLoadTask = Task { [weak self, itunes] in
@@ -1050,7 +1021,9 @@ final class PlayerViewModel {
 
     nonisolated private static func resolveHighQualityArtworkURL(using itunes: iTunesKit, title: String, artist: String) async -> URL? {
         do {
-            let response = try await itunes.search(term: "\(title) \(artist)", country: "us", media: "music", limit: 1)
+            let searchTitle = normalizedMusicDisplayTitle(title, artist: artist)
+            let searchArtist = normalizedMusicDisplayArtist(artist, title: title)
+            let response = try await itunes.search(term: "\(searchTitle) \(searchArtist)", country: "us", media: "music", limit: 1)
             return normalizedITunesArtworkURL(from: response.results.first?.artworkUrl100)
         } catch {
             return nil
@@ -1065,10 +1038,13 @@ final class PlayerViewModel {
             return cachedURL
         }
 
+        let searchTitle = normalizedMusicDisplayTitle(title, artist: artist)
+        let searchArtist = normalizedMusicDisplayArtist(artist, title: title)
+
         guard let resolvedURL = await Self.resolveMotionArtworkURL(
             using: itunes,
-            title: title,
-            artist: artist
+            title: searchTitle,
+            artist: searchArtist
         ) else {
             return nil
         }
