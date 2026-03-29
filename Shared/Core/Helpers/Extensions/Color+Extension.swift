@@ -7,14 +7,34 @@
 
 import SwiftUI
 
+#if os(iOS)
+import UIKit
+#endif
+
 extension Color {
     static var dynamicAccent: Color = .accent
+
+    @MainActor
+    static func updateDynamicAccent(_ color: Color?) {
+        dynamicAccent = color ?? .accent
+    }
+
+    @MainActor
+    static func resetDynamicAccent() {
+        dynamicAccent = .accent
+    }
     
-    static let cisumBg = Color(hex: "FDF6E3")
-    static let cisumSurface = Color(hex: "EEE8D5")
-    static let cisumAccent = Color(hex: "CB4B16")
-    static let cisumYellow = Color(hex: "B58900")
-    static let cisumDark = Color(hex: "2B221B")
+    static let cisumBg = Color(hex: "#FDF6E3")
+    static let cisumSurface = Color(hex: "#EEE8D5")
+    static let cisumAccent = Color(hex: "#CBC2A5")
+    static let cisumYellow = Color(hex: "#B58900")
+    static let cisumDark = Color(hex: "#2B221B")
+
+#if os(iOS)
+    var uiColor: UIColor {
+        UIColor(self)
+    }
+#endif
     
     init(hex: String) {
         let scanner = Scanner(string: hex)

@@ -7,10 +7,17 @@
 
 import SwiftUI
 
+struct VinylSideLabel {
+    let title: String
+    let subtitle: String?
+}
+
 struct Vinyl<Content: View>: View {
     let content: () -> Content
     let previous: (() -> AnyView)?
     let upnext: (() -> AnyView)?
+    let previousLabel: VinylSideLabel?
+    let upnextLabel: VinylSideLabel?
     
     @Environment(PlayerViewModel.self) private var playerViewModel
     
@@ -36,32 +43,22 @@ struct Vinyl<Content: View>: View {
                         HStack {
                             ZStack {
                                 previousVinyl
-                                
-                                VStack(alignment: .leading) {
-                                    Text("Previous Song")
-                                    
-                                    Text("Bruno Mars")
-                                        .font(.caption)
+
+                                if let previousLabel {
+                                    sideLabel(previousLabel, alignment: .leading)
+                                        .offset(x: -35, y: -40)
                                 }
-                                .foregroundStyle(.white)
-                                .fontWeight(.semibold)
-                                .offset(x: -35, y: -40)
                             }
                             
                             Spacer()
                             
                             ZStack {
                                 nextVinyl
-                                
-                                VStack(alignment: .trailing) {
-                                    Text("Next Song")
-                                    
-                                    Text("Drake")
-                                        .font(.caption)
+
+                                if let upnextLabel {
+                                    sideLabel(upnextLabel, alignment: .trailing)
+                                        .offset(x: 45, y: -35)
                                 }
-                                .foregroundStyle(.white)
-                                .fontWeight(.semibold)
-                                .offset(x: 45, y: -35)
                             }
                         }
                         
@@ -72,31 +69,11 @@ struct Vinyl<Content: View>: View {
                     heroVinyl
                         .rotationEffect(.degrees(rotation(at: timeline.date)))
                         .overlay {
-                            LinearGradient(
-                                colors: [
-                                    .black,
-                                    .black,
-                                    .black.opacity(0.8),
-                                    .black.opacity(0.6),
-                                    .clear,
-                                    .clear
-                                ],
-                                startPoint: .bottom,
-                                endPoint: .top
-                            )
+                            vinylShade
                         }
                         .position(
                             x: geo.size.width / 2,
-                            y: {
-                                switch geo.size.height {
-                                case 844, 852:
-                                    return geo.size.height * 0.77
-                                case 874, 932, 956, 912, 926:
-                                    return geo.size.height * 0.75
-                                default:
-                                    return geo.size.height * 0.76
-                                }
-                            }()
+                            y: heroCenterY(for: geo.size.height)
                         )
                 }
             }
@@ -137,6 +114,54 @@ struct Vinyl<Content: View>: View {
             content()
         }
     }
+
+    private var vinylShade: LinearGradient {
+        let accent = playerViewModel.currentAccentColor
+        return LinearGradient(
+            colors: [
+                .black,
+                accent.opacity(0.92),
+                accent.opacity(0.68),
+                accent.opacity(0.42),
+                .clear,
+                .clear
+            ],
+            startPoint: .bottom,
+            endPoint: .top
+        )
+    }
+
+    @ViewBuilder
+    private func sideLabel(_ label: VinylSideLabel, alignment: HorizontalAlignment) -> some View {
+        VStack(alignment: alignment) {
+            Text(label.title)
+
+            if let subtitle = label.subtitle,
+               !subtitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Text(subtitle)
+                    .font(.caption)
+            }
+        }
+        .foregroundStyle(.white)
+        .fontWeight(.semibold)
+    }
+
+    private func heroCenterY(for height: CGFloat) -> CGFloat {
+        let compactAnchor: CGFloat = 850
+        let tallAnchor: CGFloat = 930
+
+        let ratio: CGFloat
+        if height <= compactAnchor {
+            ratio = 0.77
+        } else if height >= tallAnchor {
+            ratio = 0.75
+        } else {
+            let progress = (height - compactAnchor) / (tallAnchor - compactAnchor)
+            ratio = 0.77 - (0.02 * progress)
+        }
+
+        return height * ratio
+    }
     
     private func rotation(at date: Date) -> Double {
         guard let phaseStartDate else {
@@ -145,13 +170,23 @@ struct Vinyl<Content: View>: View {
 
         let elapsed = max(date.timeIntervalSince(phaseStartDate), 0)
         let deltaSpeed = phaseStartSpeed - phaseTargetSpeed
+
+        // Fast path once acceleration settles to steady-state motion.
+        if abs(deltaSpeed) < 0.0001 {
+            return phaseStartAngle + (phaseTargetSpeed * elapsed)
+        }
+
         return phaseStartAngle + (phaseTargetSpeed * elapsed) + (deltaSpeed * phaseTau * (1 - exp(-elapsed / phaseTau)))
     }
 
     private func speed(at date: Date) -> Double {
         guard let phaseStartDate else { return 0 }
         let elapsed = max(date.timeIntervalSince(phaseStartDate), 0)
-        return phaseTargetSpeed + (phaseStartSpeed - phaseTargetSpeed) * exp(-elapsed / phaseTau)
+        let delta = phaseStartSpeed - phaseTargetSpeed
+        if abs(delta) < 0.0001 {
+            return phaseTargetSpeed
+        }
+        return phaseTargetSpeed + delta * exp(-elapsed / phaseTau)
     }
 
     private func syncPlaybackState(at date: Date) {
@@ -221,33 +256,59 @@ extension Vinyl {
         self.content = content
         self.previous = nil
         self.upnext = nil
+        self.previousLabel = nil
+        self.upnextLabel = nil
     }
 
     init<Previous: View>(
         @ViewBuilder content: @escaping () -> Content,
-        @ViewBuilder previous: @escaping () -> Previous
+        @ViewBuilder previous: @escaping () -> Previous,
+        previousTitle: String? = nil,
+        previousSubtitle: String? = nil
     ) {
         self.content = content
         self.previous = { AnyView(previous()) }
         self.upnext = nil
+        self.previousLabel = Self.makeSideLabel(title: previousTitle, subtitle: previousSubtitle)
+        self.upnextLabel = nil
     }
     
     init<Upnext: View>(
         @ViewBuilder content: @escaping () -> Content,
-        @ViewBuilder upnext: @escaping () -> Upnext
+        @ViewBuilder upnext: @escaping () -> Upnext,
+        upnextTitle: String? = nil,
+        upnextSubtitle: String? = nil
     ) {
         self.content = content
         self.previous = nil
         self.upnext = { AnyView(upnext()) }
+        self.previousLabel = nil
+        self.upnextLabel = Self.makeSideLabel(title: upnextTitle, subtitle: upnextSubtitle)
     }
 
     init<Previous: View, Upnext: View>(
         @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder previous: @escaping () -> Previous,
-        @ViewBuilder upnext: @escaping () -> Upnext
+        @ViewBuilder upnext: @escaping () -> Upnext,
+        previousTitle: String? = nil,
+        previousSubtitle: String? = nil,
+        upnextTitle: String? = nil,
+        upnextSubtitle: String? = nil
     ) {
         self.content = content
         self.previous = { AnyView(previous()) }
         self.upnext = { AnyView(upnext()) }
+        self.previousLabel = Self.makeSideLabel(title: previousTitle, subtitle: previousSubtitle)
+        self.upnextLabel = Self.makeSideLabel(title: upnextTitle, subtitle: upnextSubtitle)
+    }
+
+    private static func makeSideLabel(title: String?, subtitle: String?) -> VinylSideLabel? {
+        guard let title else { return nil }
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else { return nil }
+
+        let trimmedSubtitle = subtitle?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedSubtitle = (trimmedSubtitle?.isEmpty == false) ? trimmedSubtitle : nil
+        return VinylSideLabel(title: trimmedTitle, subtitle: normalizedSubtitle)
     }
 }

@@ -22,13 +22,13 @@ extension View {
 
 /// Root View Wrapper
 struct RootView<Content: View>: View {
-    var content: Content
+    private let content: Content
+    @State private var properties = UniversalOverlayProperties()
     
     init(@ViewBuilder content: @escaping () -> Content) {
         self.content = content()
     }
-    
-    var properties = UniversalOverlayProperties()
+
     #if DEBUG
     @ObserveInjection var forceRedraw
     #endif
@@ -37,24 +37,39 @@ struct RootView<Content: View>: View {
         content
             .environment(properties)
             .onAppear {
-                if let windowScene = (UIApplication.shared.connectedScenes.first as? UIWindowScene), properties.window == nil {
-                    let window = PassThroughWindow(windowScene: windowScene)
-                    window.frame = windowScene.coordinateSpace.bounds
-                    window.backgroundColor = .clear
-                    window.windowLevel = .statusBar + 1
-                    window.isHidden = false
-                    window.isUserInteractionEnabled = true
-                    /// Setting up SwiftUI Based RootView Controller
-                    let rootViewController = UIHostingController(rootView: UniversalOverlayViews().environment(properties))
-                    rootViewController.view.backgroundColor = .clear
-                    rootViewController.view.frame = window.bounds
-                    rootViewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-                    window.rootViewController = rootViewController
-                    
-                    properties.window = window
-                }
+                setupOverlayWindowIfNeeded()
+            }
+            .onDisappear {
+                teardownOverlayWindow()
             }
         .enableInjection()
+    }
+
+    private func setupOverlayWindowIfNeeded() {
+        guard properties.window == nil else { return }
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
+
+        let window = PassThroughWindow(windowScene: windowScene)
+        window.frame = windowScene.coordinateSpace.bounds
+        window.backgroundColor = .clear
+        window.windowLevel = .statusBar + 1
+        window.isHidden = false
+        window.isUserInteractionEnabled = true
+
+        // Keep a dedicated SwiftUI tree for overlay rendering.
+        let rootViewController = UIHostingController(rootView: UniversalOverlayViews().environment(properties))
+        rootViewController.view.backgroundColor = .clear
+        rootViewController.view.frame = window.bounds
+        rootViewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        window.rootViewController = rootViewController
+
+        properties.window = window
+    }
+
+    private func teardownOverlayWindow() {
+        properties.views.removeAll(keepingCapacity: false)
+        properties.window?.isHidden = true
+        properties.window = nil
     }
 }
 
@@ -76,7 +91,7 @@ fileprivate struct UniversalOverlayModifier<ViewContent: View>: ViewModifier {
     @ViewBuilder var viewContent: ViewContent
     /// Local View Properties
     @Environment(UniversalOverlayProperties.self) private var properties
-    @State private var viewID: String?
+    @State private var viewID: String = UUID().uuidString
     
     #if DEBUG
     @ObserveInjection var forceRedraw
@@ -85,47 +100,53 @@ fileprivate struct UniversalOverlayModifier<ViewContent: View>: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onAppear {
-                if show {
-                    addView()
-                }
+                syncOverlayVisibility()
+            }
+            .onDisappear {
+                removeView()
             }
             .onChange(of: show) { oldValue, newValue in
-                if newValue {
-                    addView()
-                } else {
-                    removeView()
+                syncOverlayVisibility()
+            }
+            .onChange(of: properties.window != nil) { _, isReady in
+                if isReady {
+                    syncOverlayVisibility()
                 }
             }
         .enableInjection()
     }
+
+    private func syncOverlayVisibility() {
+        if show {
+            addViewIfNeeded()
+        } else {
+            removeView()
+        }
+    }
     
-    private func addView() {
-        if properties.window != nil && viewID == nil {
-            viewID = UUID().uuidString
-            guard let viewID else { return }
-            
-            withAnimation(animation) {
-                properties.views.append(
-                    .init(
-                        id: viewID,
-                        view: .init(
-                            viewContent
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .ignoresSafeArea()
-                        )
+    private func addViewIfNeeded() {
+        guard properties.window != nil else { return }
+        guard !properties.views.contains(where: { $0.id == viewID }) else { return }
+
+        withAnimation(animation) {
+            properties.views.append(
+                .init(
+                    id: viewID,
+                    view: .init(
+                        viewContent
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .ignoresSafeArea()
                     )
                 )
-            }
+            )
         }
     }
     
     private func removeView() {
-        if let viewID {
-            withAnimation(animation) {
-                properties.views.removeAll(where: { $0.id == viewID })
-            }
-            
-            self.viewID = nil
+        guard properties.views.contains(where: { $0.id == viewID }) else { return }
+
+        withAnimation(animation) {
+            properties.views.removeAll(where: { $0.id == viewID })
         }
     }
 }

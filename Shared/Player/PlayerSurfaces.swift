@@ -14,7 +14,7 @@ struct PlayerAmbientBackground: View {
 
     var body: some View {
         ZStack {
-            Color.dynamicAccent
+            playerViewModel.currentAccentColor
                 .scaleEffect(1.1)
                 .blur(radius: 10)
 

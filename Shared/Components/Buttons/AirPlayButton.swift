@@ -11,15 +11,19 @@ import SwiftUI
 import AVKit
 
 struct AirPlayButton: UIViewRepresentable {
+    var activeTintColor: UIColor = Color.dynamicAccent.uiColor
+
     func makeUIView(context: Context) -> AVRoutePickerView {
         let routePickerView = AVRoutePickerView()
         routePickerView.tintColor = .white
-        routePickerView.activeTintColor = .systemBlue
+        routePickerView.activeTintColor = activeTintColor
         routePickerView.prioritizesVideoDevices = false
         return routePickerView
     }
     
-    func updateUIView(_ uiView: AVRoutePickerView, context: Context) {}
+    func updateUIView(_ uiView: AVRoutePickerView, context: Context) {
+        uiView.activeTintColor = activeTintColor
+    }
 }
 
 #endif

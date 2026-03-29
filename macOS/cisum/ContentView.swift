@@ -13,22 +13,7 @@ struct SongRow: View {
     let result: iTunesSearchResult
 
     private var artworkURL: URL? {
-        guard let artworkUrl100 = result.artworkUrl100 else { return nil }
-
-        let decoded = artworkUrl100.removingPercentEncoding ?? artworkUrl100
-        let candidates = [
-            decoded.replacingOccurrences(of: "100x100", with: "1500x1500"),
-            decoded.replacingOccurrences(of: "100bb", with: "1500bb"),
-            decoded.replacingOccurrences(of: "%7Bw%7Dx%7Bh%7Dbb.%7Bf%7D", with: "1500x1500bb.jpg")
-        ]
-
-        for candidate in candidates {
-            if let url = URL(string: candidate) {
-                return url
-            }
-        }
-
-        return URL(string: decoded)
+        normalizedITunesArtworkURL(from: result.artworkUrl100)
     }
     
     var body: some View {
@@ -85,7 +70,7 @@ struct ContentView: View {
                         description: Text("Find your favorite tracks on iTunes.")
                     )
                 } else {
-                    List(results, id: \.self) { result in
+                    List(results, id: \.trackId) { result in
                         Button {
                             fetchVideoAndPlay(for: result)
                         } label: {

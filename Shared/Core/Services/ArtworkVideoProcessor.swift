@@ -1,6 +1,8 @@
 import AVFoundation
 import Foundation
+#if canImport(ffmpegkit)
 import ffmpegkit
+#endif
 
 actor ArtworkVideoProcessor {
     typealias ProgressHandler = @Sendable (Double) -> Void
@@ -70,7 +72,11 @@ actor ArtworkVideoProcessor {
 
     private var inFlight: [String: Task<URL, Error>] = [:]
     private var progressObservers: [String: [UUID: ProgressHandler]] = [:]
+#if canImport(ffmpegkit)
     private var activeSessions: [String: FFmpegSession] = [:]
+#else
+    private var activeSessions: [String: AVAssetExportSession] = [:]
+#endif
 
     init(
         fileManager: FileManager = .default,
@@ -207,6 +213,7 @@ actor ArtworkVideoProcessor {
         estimatedDuration: Double?,
         sourceSize: CGSize?
     ) async throws {
+#if canImport(ffmpegkit)
         let strategies: [EncodingStrategy] = [.hardwareTranscode, .softwareFallback]
         var lastError: ArtworkVideoProcessorError?
 
@@ -236,6 +243,16 @@ actor ArtworkVideoProcessor {
         }
 
         throw lastError ?? .ffmpegFailure(message: "FFmpeg exhausted all artwork video strategies.")
+#else
+        _ = streamMap
+        _ = estimatedDuration
+        _ = sourceSize
+        try await runAVFoundationExport(
+            sourceHLSURL: sourceHLSURL,
+            outputURL: outputURL,
+            mediaID: mediaID
+        )
+#endif
     }
 
     private func awaitResult(
@@ -262,6 +279,7 @@ actor ArtworkVideoProcessor {
         mediaID: String,
         estimatedDuration: Double?
     ) async throws {
+#if canImport(ffmpegkit)
         try Task.checkCancellation()
         let progressScheduler = makeProgressScheduler(for: mediaID)
 
@@ -332,11 +350,69 @@ actor ArtworkVideoProcessor {
         case .failure(let message):
             throw ArtworkVideoProcessorError.ffmpegFailure(message: message)
         }
+#else
+        _ = command
+        _ = mediaID
+        _ = estimatedDuration
+        throw ArtworkVideoProcessorError.ffmpegFailure(message: "FFmpegKit is unavailable on this platform.")
+#endif
     }
 
+    #if !canImport(ffmpegkit)
+    private func runAVFoundationExport(
+        sourceHLSURL: URL,
+        outputURL: URL,
+        mediaID: String
+    ) async throws {
+        try Task.checkCancellation()
+
+        let asset = AVURLAsset(url: sourceHLSURL)
+        guard let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetHighestQuality) else {
+            throw ArtworkVideoProcessorError.ffmpegFailure(message: "Unable to create AVFoundation export session for motion artwork.")
+        }
+
+        guard exportSession.supportedFileTypes.contains(.mp4) else {
+            throw ArtworkVideoProcessorError.ffmpegFailure(message: "AVFoundation export does not support MP4 output for motion artwork.")
+        }
+
+        exportSession.outputURL = outputURL
+        exportSession.outputFileType = .mp4
+        exportSession.shouldOptimizeForNetworkUse = true
+        activeSessions[mediaID] = exportSession
+        notifyProgress(0.05, for: mediaID)
+
+        do {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                exportSession.exportAsynchronously {
+                    switch exportSession.status {
+                    case .completed:
+                        continuation.resume()
+                    case .cancelled:
+                        continuation.resume(throwing: ArtworkVideoProcessorError.cancelled)
+                    case .failed:
+                        let message = exportSession.error?.localizedDescription ?? "AVFoundation export failed for motion artwork."
+                        continuation.resume(throwing: ArtworkVideoProcessorError.ffmpegFailure(message: message))
+                    default:
+                        let message = exportSession.error?.localizedDescription ?? "AVFoundation export ended unexpectedly."
+                        continuation.resume(throwing: ArtworkVideoProcessorError.ffmpegFailure(message: message))
+                    }
+                }
+            }
+        } catch {
+            activeSessions[mediaID] = nil
+            throw error
+        }
+
+        notifyProgress(0.95, for: mediaID)
+        activeSessions[mediaID] = nil
+    }
+    #endif
+
+#if canImport(ffmpegkit)
     private func storeActiveSession(_ session: FFmpegSession?, for mediaID: String) {
         activeSessions[mediaID] = session
     }
+#endif
 
     nonisolated private func makeProgressScheduler(for mediaID: String) -> @Sendable (Double) -> Void {
         { [weak self] progress in
@@ -373,9 +449,13 @@ actor ArtworkVideoProcessor {
         }
 
         inFlight[mediaID]?.cancel()
+#if canImport(ffmpegkit)
         if let session = activeSessions[mediaID] {
             session.cancel()
         }
+#else
+        activeSessions[mediaID]?.cancelExport()
+#endif
     }
 
     private func notifyProgress(_ progress: Double, for mediaID: String) {

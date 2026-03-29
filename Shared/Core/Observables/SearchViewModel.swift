@@ -64,6 +64,10 @@ class SearchViewModel {
     private var videoContinuationBadResponseCount = 0
     private var lastPaginationTriggerAt: Date?
     private var lastPaginationTriggerToken: String?
+    private var inlinePrefetchedVideoIDs: Set<String> = []
+    private var inlinePrefetchPendingIDs: Set<String> = []
+    private var inlinePrefetchDrainTask: Task<Void, Never>?
+    private let inlinePrefetchCoalesceWindow: Duration = .milliseconds(80)
     /// How many items from the end to start prefetching the next page.
     /// Increasing this reduces UI jumps at the cost of earlier network calls.
     private let videoPrefetchThreshold = 10
@@ -94,6 +98,9 @@ class SearchViewModel {
         searchTask?.cancel() // 1. Cancel previous typing
         prefetchTask?.cancel()
         suggestionTask?.cancel()
+        inlinePrefetchDrainTask?.cancel()
+        inlinePrefetchDrainTask = nil
+        inlinePrefetchPendingIDs.removeAll(keepingCapacity: true)
         
         // 2. Clear results if empty
         if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -102,6 +109,7 @@ class SearchViewModel {
             self.suggestions = []
             self.state = .idle
             self.lastHintPrefetchedKey = nil
+            self.inlinePrefetchedVideoIDs.removeAll(keepingCapacity: true)
             resetVideoPagination()
             return
         }
@@ -122,25 +130,33 @@ class SearchViewModel {
     }
     
     private func executeSearch() async {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let scope = searchScope
+        if query.isEmpty {
+            self.musicResults = []
+            self.videoResults = []
+            self.state = .idle
+            return
+        }
+
+        if lastCompletedQuery != query || lastCompletedScope != scope {
+            inlinePrefetchDrainTask?.cancel()
+            inlinePrefetchDrainTask = nil
+            inlinePrefetchPendingIDs.removeAll(keepingCapacity: true)
+            inlinePrefetchedVideoIDs.removeAll(keepingCapacity: true)
+        }
+
+        if case .success = state,
+           lastCompletedQuery == query,
+           lastCompletedScope == scope {
+            return
+        }
+
         self.state = .loading
         
         do {
-            let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let scope = searchScope
-            if query.isEmpty {
-                self.musicResults = []
-                self.videoResults = []
-                self.state = .idle
-                return
-            }
 
             prefetchFromPersistentHintsIfNeeded(for: query)
-
-            if case .success = state,
-               lastCompletedQuery == query,
-               lastCompletedScope == scope {
-                return
-            }
 
             let effectiveQuery = effectiveSearchQuery(for: query, scope: scope)
 
@@ -285,17 +301,45 @@ class SearchViewModel {
     // Public helper to prefetch a single id (used by row onAppear)
     public func prefetchIfNeeded(id: String) {
         guard !id.isEmpty else { return }
+        guard inlinePrefetchedVideoIDs.insert(id).inserted else { return }
+        inlinePrefetchPendingIDs.insert(id)
+        scheduleInlinePrefetchDrainIfNeeded()
+    }
+
+    private func scheduleInlinePrefetchDrainIfNeeded() {
+        guard inlinePrefetchDrainTask == nil else { return }
+
         let youtube = self.youtube
         let mode = effectivePrefetchMode
         let metricsEnabled = settings.metricsEnabled
-        Task(priority: .utility) {
+        let concurrency = max(1, min(2, currentPrefetchConcurrency))
+
+        inlinePrefetchDrainTask = Task(priority: .utility) {
+            try? await Task.sleep(for: inlinePrefetchCoalesceWindow)
+            if Task.isCancelled {
+                inlinePrefetchDrainTask = nil
+                return
+            }
+
+            let ids = Array(inlinePrefetchPendingIDs)
+            inlinePrefetchPendingIDs.removeAll(keepingCapacity: true)
+            guard !ids.isEmpty else {
+                inlinePrefetchDrainTask = nil
+                return
+            }
+
             await self.metadataCache.prefetch(
-                ids: [id],
-                maxConcurrent: 1,
+                ids: ids,
+                maxConcurrent: concurrency,
                 mode: mode,
                 metricsEnabled: metricsEnabled
             ) { key in
                 try await youtube.main.video(id: key)
+            }
+
+            inlinePrefetchDrainTask = nil
+            if !inlinePrefetchPendingIDs.isEmpty {
+                scheduleInlinePrefetchDrainIfNeeded()
             }
         }
     }
@@ -571,8 +615,12 @@ class SearchViewModel {
             case .video(let v):
                 guard shouldKeepVideoResult(v) else { return nil }
                 return .video(v)
-            case .channel(let c): return .channel(c)
-            case .playlist(let p): return .playlist(p)
+            case .channel(let c):
+                guard shouldKeepMusicChannel(c) else { return nil }
+                return .channel(c)
+            case .playlist(let p):
+                guard shouldKeepMusicPlaylist(p) else { return nil }
+                return .playlist(p)
             default: return nil
             }
         }
@@ -588,25 +636,7 @@ class SearchViewModel {
     }
 
     private func shouldKeepVideoResult(_ video: YouTubeVideo) -> Bool {
-        let title = normalizedMusicDisplayTitle(video.title, artist: video.author).lowercased()
-        let author = normalizedMusicDisplayArtist(video.author, title: video.title).lowercased()
-
-        let blockedMarkers = [
-            "#shorts",
-            "/shorts/",
-            "shorts",
-            "reaction",
-            "review",
-            "podcast",
-            "interview",
-            "tutorial",
-            "gameplay",
-            "gaming"
-        ]
-
-        return !blockedMarkers.contains { marker in
-            title.contains(marker) || author.contains(marker)
-        }
+        shouldKeepMusicVideoResult(video)
     }
 
     private func resetVideoPagination() {

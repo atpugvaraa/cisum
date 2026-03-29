@@ -28,9 +28,6 @@ struct NowPlayingView: View {
             } else {
                 playerView
                     .safeAreaPadding(.top)
-                    .safeAreaPadding(.top)
-                    .safeAreaPadding(.top)
-                    .safeAreaPadding(.top)
                     .safeAreaPadding(.bottom)
                     .ignoresSafeArea()
             }
@@ -106,8 +103,7 @@ struct NowPlayingView: View {
                 
                 Text(playerViewModel.currentArtist)
                     .font(.headline)
-                    .foregroundColor(.white)
-                    .blendMode(.overlay)
+                    .foregroundColor(.white.opacity(0.8))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             
@@ -194,7 +190,7 @@ struct NowPlayingView: View {
                     .font(.title2)
             }
             
-            AirPlayButton()
+            AirPlayButton(activeTintColor: playerViewModel.currentAccentColor.uiColor)
                 .frame(width: 48, height: 48)
                 .padding(.top, -13)
             

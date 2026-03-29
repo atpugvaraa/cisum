@@ -53,6 +53,7 @@ final class PlayerViewModel {
     var currentTitle: String = "Not Playing"
     var currentArtist: String = ""
     var currentImageURL: URL?
+    var currentAccentColor: Color = .cisumAccent
     var isExplicit: Bool = false
 
     var isPlaying = false
@@ -100,6 +101,8 @@ final class PlayerViewModel {
     private var currentArtworkResource: CachedNowPlayingArtworkResource?
     private var currentArtworkMediaID: String?
     private var artworkCache: [String: CachedNowPlayingArtworkResource] = [:]
+    private var artworkAccentCache: [String: (artworkURL: URL, color: Color)] = [:]
+    private var accentLoadTask: Task<Void, Never>?
 #endif
 
 #if os(iOS)
@@ -125,6 +128,9 @@ final class PlayerViewModel {
         setupRemoteCommands()
         setupTimeObserver()
         setupAudioLifecycleObservers()
+
+        Color.resetDynamicAccent()
+        currentAccentColor = Color.dynamicAccent
     }
 
     // MARK: - Loaders
@@ -149,6 +155,7 @@ final class PlayerViewModel {
         resetArtworkVideoState()
 #if os(iOS)
         artworkLoadTask?.cancel()
+    accentLoadTask?.cancel()
         applyCachedArtworkIfAvailable(for: song.videoId)
 #endif
         updateNowPlayingMetadata(force: true)
@@ -205,6 +212,7 @@ final class PlayerViewModel {
         resetArtworkVideoState()
 #if os(iOS)
         artworkLoadTask?.cancel()
+    accentLoadTask?.cancel()
         applyCachedArtworkIfAvailable(for: video.id)
 #endif
         updateNowPlayingMetadata(force: true)
@@ -928,10 +936,43 @@ final class PlayerViewModel {
         currentImageURL = artwork.url
         currentArtworkResource = artwork
         currentArtworkMediaID = mediaID
+        updateAccentColor(from: artwork, mediaID: mediaID)
 
         if cacheInMemory {
             artworkCache[mediaID] = artwork
         }
+    }
+
+    private func updateAccentColor(from artwork: CachedNowPlayingArtworkResource, mediaID: String) {
+        if let cachedAccent = artworkAccentCache[mediaID],
+           cachedAccent.artworkURL == artwork.url {
+            applyAccentColor(cachedAccent.color)
+            return
+        }
+
+        accentLoadTask?.cancel()
+        let artworkData = artwork.data
+        let artworkURL = artwork.url
+
+        accentLoadTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            let extractedAccent = await ArtworkDominantColorExtractor.shared.dominantColor(
+                from: artworkData,
+                cacheKey: artworkURL.absoluteString
+            )
+
+            guard !Task.isCancelled else { return }
+            guard self.currentVideoId == mediaID else { return }
+
+            self.artworkAccentCache[mediaID] = (artworkURL: artworkURL, color: extractedAccent)
+            self.applyAccentColor(extractedAccent)
+        }
+    }
+
+    private func applyAccentColor(_ color: Color) {
+        currentAccentColor = color
+        Color.updateDynamicAccent(color)
     }
 
     private func loadPersistentArtworkIfAvailable(for mediaID: String) async -> CachedNowPlayingArtworkResource? {
@@ -1216,6 +1257,13 @@ final class PlayerViewModel {
         return CGSize(width: 512, height: 512)
     }
     #else
+    private func resolveMotionArtworkURL(for mediaID: String, title: String, artist: String) async -> URL? {
+        _ = mediaID
+        _ = title
+        _ = artist
+        return nil
+    }
+
     private func updateNowPlayingMetadata(force: Bool = true) {}
     private func updateNowPlayingPlaybackInfo(force: Bool = false) {}
     private func publishNowPlayingInfo(force: Bool) {}
