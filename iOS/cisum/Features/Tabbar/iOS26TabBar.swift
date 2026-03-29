@@ -11,6 +11,7 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
     let tabs: [TabViewData<SelectionValue>]
     @Binding var activeTab: SelectionValue
     var showsSearchBar: Bool = false
+    @Environment(PlayerViewModel.self) private var playerViewModel
     
     @Binding var searchText: String
     var onSearchTriggered: () -> Void
@@ -261,5 +262,5 @@ struct iOS26TabBar<SelectionValue: Hashable>: View {
         }
     }
     
-    var accentColor: Color { .blue }
+    var accentColor: Color { playerViewModel.currentAccentColor }
 }

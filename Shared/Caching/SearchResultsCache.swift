@@ -66,12 +66,18 @@ final class SearchResultsCache {
     }
 
     private func touchMusic(_ q: String) {
-        musicLRU.removeAll { $0 == q }
+        guard musicLRU.first != q else { return }
+        if let idx = musicLRU.firstIndex(of: q) {
+            musicLRU.remove(at: idx)
+        }
         musicLRU.insert(q, at: 0)
     }
 
     private func touchVideo(_ q: String) {
-        videoLRU.removeAll { $0 == q }
+        guard videoLRU.first != q else { return }
+        if let idx = videoLRU.firstIndex(of: q) {
+            videoLRU.remove(at: idx)
+        }
         videoLRU.insert(q, at: 0)
     }
 

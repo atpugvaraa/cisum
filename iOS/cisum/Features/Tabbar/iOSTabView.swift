@@ -73,12 +73,7 @@ struct iOSTabView<SelectionValue: Hashable>: View {
             } else {
                 iOS26TabView
                     .universalOverlay(show: $showMiniPlayer) {
-//                        let searchTab = tabs.first(where: { $0.role == .search })
-//                        let isSearchExpanded = selection == searchTab?.value
-                        
                         ExpandablePlayer(show: $showMiniPlayer)
-//                            .padding(.bottom, isSearchExpanded ? -5 : 0)
-//                            .animation(.smooth(duration: 0.3), value: isSearchExpanded)
                             .ignoresSafeArea(.keyboard)
                             .environment(playerViewModel)
                     }

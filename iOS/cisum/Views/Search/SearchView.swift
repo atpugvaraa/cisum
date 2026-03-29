@@ -5,7 +5,6 @@
 //  Created by Aarav Gupta on 04/12/25.
 //
 
-import Kingfisher
 import YouTubeSDK
 import SwiftUI
 
@@ -187,15 +186,13 @@ struct SearchView: View {
                             showNonPlayableAlert = true
                         } label: {
                             HStack(spacing: 12) {
-                                if let url = normalizedThumbnailURL(from: playlist.thumbnailURL) {
-                                    KFImage(url)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 50, height: 50)
-                                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                                } else {
-                                    Color.gray.frame(width: 50, height: 50).clipShape(RoundedRectangle(cornerRadius: 6))
+                                AsyncImage(url: normalizedThumbnailURL(from: playlist.thumbnailURL)) { image in
+                                    image.resizable().scaledToFill()
+                                } placeholder: {
+                                    Color.gray.opacity(0.3)
                                 }
+                                .frame(width: 50, height: 50)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
 
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(normalizedMusicDisplayTitle(playlist.title))
@@ -312,7 +309,6 @@ extension View {
         suggestions: [String],
         onSuggestionTap: @escaping (String) -> Void
     ) -> some View {
-        #if os(iOS)
         if #available(iOS 26.0, *) {
             self
                 .searchable(
@@ -335,28 +331,5 @@ extension View {
                 Text("YouTube").tag(SearchViewModel.SearchScope.video)
             }
         }
-        #elseif os(macOS)
-        if #available(macOS 26.0, *) {
-            self
-                .searchable(
-                    text: text,
-                    prompt: Text("Search")
-                )
-                .searchSuggestions {
-                    ForEach(suggestions, id: \.self) { suggestion in
-                        Button(suggestion) {
-                            onSuggestionTap(suggestion)
-                        }
-                    }
-                }
-                .searchPresentationToolbarBehavior(.avoidHidingContent)
-                .searchToolbarBehavior(.automatic)
-        } else {
-            self.searchScopes(scope) {
-                Text("Music").tag(SearchViewModel.SearchScope.music)
-                Text("YouTube").tag(SearchViewModel.SearchScope.video)
-            }
-        }
-        #endif
     }
 }

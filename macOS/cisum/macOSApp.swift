@@ -23,7 +23,7 @@ struct macOSApp: App {
     @State private var searchViewModel: SearchViewModel
     
     init() {
-        let bootstrap = try! AppBootstrap.makeDependencies(youtube: YouTube.shared)
+        let bootstrap = AppBootstrap.makeDependenciesOrFallback(youtube: YouTube.shared)
         self.modelContainer = bootstrap.modelContainer
         self.prefetchSettings = bootstrap.prefetchSettings
         self.networkMonitor = bootstrap.networkMonitor

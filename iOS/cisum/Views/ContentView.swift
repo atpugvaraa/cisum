@@ -24,10 +24,7 @@ struct ContentView: View {
     
     @Namespace private var namespace
     
-    @State private var properties = PlayerProperties.shared
-    
     var body: some View {
-#if os(iOS)
         iOSTabView(
             selection: $activeTab,
             searchText: Bindable(searchViewModel).searchText
@@ -70,9 +67,6 @@ struct ContentView: View {
             router.selectedTab = newValue
             tabBarVisibility = .visible
         }
-#elseif os(macOS)
-        SearchView()
-#endif
     }
 }
 

@@ -42,25 +42,34 @@ final class SearchHistoryStore {
     }
 
     func topCandidates(prefix: String, limit: Int = 20) -> [SearchHistoryEntry] {
+        guard limit > 0 else { return [] }
+
         let normalizedPrefix = normalizedQuery(prefix)
-        let descriptor = FetchDescriptor<SearchHistoryEntry>()
-        let all = (try? context.fetch(descriptor)) ?? []
-        let filtered = all.filter { entry in
+        let batchFetchLimit = max(limit * 5, 50)
+
+        var batchDescriptor = FetchDescriptor<SearchHistoryEntry>(
+            sortBy: rankingSortDescriptors
+        )
+        batchDescriptor.fetchLimit = batchFetchLimit
+
+        let rankedBatch = (try? context.fetch(batchDescriptor)) ?? []
+        let filteredBatch = rankedBatch.filter { entry in
             normalizedPrefix.isEmpty || entry.normalizedQuery.contains(normalizedPrefix)
         }
 
-        return filtered
-            .sorted { lhs, rhs in
-                if lhs.successfulPlayCount != rhs.successfulPlayCount {
-                    return lhs.successfulPlayCount > rhs.successfulPlayCount
-                }
-                if lhs.searchCount != rhs.searchCount {
-                    return lhs.searchCount > rhs.searchCount
-                }
-                return lhs.lastSearchedAt > rhs.lastSearchedAt
-            }
-            .prefix(limit)
-            .map { $0 }
+        // Fast path: top-ranked batch already yielded enough matches.
+        if filteredBatch.count >= limit || rankedBatch.count < batchFetchLimit {
+            return Array(filteredBatch.prefix(limit))
+        }
+
+        // Fallback for rare prefixes that only appear in lower-ranked history.
+        let allDescriptor = FetchDescriptor<SearchHistoryEntry>(sortBy: rankingSortDescriptors)
+        let allEntries = (try? context.fetch(allDescriptor)) ?? []
+        let filteredAll = allEntries.filter { entry in
+            normalizedPrefix.isEmpty || entry.normalizedQuery.contains(normalizedPrefix)
+        }
+
+        return Array(filteredAll.prefix(limit))
     }
 
     private func fetchEntry(for normalized: String) -> SearchHistoryEntry? {
@@ -70,5 +79,13 @@ final class SearchHistoryStore {
 
     private func normalizedQuery(_ query: String) -> String {
         query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private var rankingSortDescriptors: [SortDescriptor<SearchHistoryEntry>] {
+        [
+            SortDescriptor(\SearchHistoryEntry.successfulPlayCount, order: .reverse),
+            SortDescriptor(\SearchHistoryEntry.searchCount, order: .reverse),
+            SortDescriptor(\SearchHistoryEntry.lastSearchedAt, order: .reverse)
+        ]
     }
 }

@@ -23,7 +23,7 @@ struct iOSApp: App {
     @State private var searchViewModel: SearchViewModel
 
     init() {
-        let bootstrap = try! AppBootstrap.makeDependencies(youtube: YouTube.shared)
+        let bootstrap = AppBootstrap.makeDependenciesOrFallback(youtube: YouTube.shared)
         self.modelContainer = bootstrap.modelContainer
         self.prefetchSettings = bootstrap.prefetchSettings
         self.networkMonitor = bootstrap.networkMonitor
@@ -43,6 +43,7 @@ struct iOSApp: App {
                     .environment(searchViewModel)
                     .environment(networkMonitor)
                     .persistentSystemOverlays(.hidden)
+                    .tint(playerViewModel.currentAccentColor)
             } else {
                 RootView {
                     ContentView()
@@ -54,6 +55,7 @@ struct iOSApp: App {
                         .environment(searchViewModel)
                         .environment(networkMonitor)
                         .persistentSystemOverlays(.hidden)
+                        .tint(playerViewModel.currentAccentColor)
                 }
             }
         }
