@@ -13,6 +13,8 @@ struct AppBootstrapDependencies {
     let modelContainer: ModelContainer
     let prefetchSettings: PrefetchSettings
     let networkMonitor: NetworkPathMonitor
+    let playlistLibraryStore: PlaylistLibraryStore
+    let playlistImportJobStore: PlaylistImportJobStore
     let playerViewModel: PlayerViewModel
     let searchViewModel: SearchViewModel
 }
@@ -33,7 +35,12 @@ enum AppBootstrap {
         let modelContainer = try ModelContainer(
             for: SearchHistoryEntry.self,
             MediaCacheEntry.self,
-            SearchCacheHintEntry.self
+            SearchCacheHintEntry.self,
+            Playlist.self,
+            PlaylistItem.self,
+            PlaylistImportJobEntry.self,
+            PlaylistImportTrackEntry.self,
+            PlaylistImportCandidateEntry.self
         )
         let prefetchSettings = PrefetchSettings.shared
         let networkMonitor = NetworkPathMonitor.shared
@@ -41,6 +48,8 @@ enum AppBootstrap {
         let historyStore = SearchHistoryStore(context: modelContext)
         let mediaCacheStore = MediaCacheStore(context: modelContext)
         let searchCacheHintStore = SearchCacheHintStore(context: modelContext)
+        let playlistLibraryStore = PlaylistLibraryStore(context: modelContext)
+        let playlistImportJobStore = PlaylistImportJobStore(context: modelContext)
         let artworkVideoProcessor = ArtworkVideoProcessor.shared
 
         Task { @MainActor in
@@ -54,6 +63,8 @@ enum AppBootstrap {
             modelContainer: modelContainer,
             prefetchSettings: prefetchSettings,
             networkMonitor: networkMonitor,
+            playlistLibraryStore: playlistLibraryStore,
+            playlistImportJobStore: playlistImportJobStore,
             playerViewModel: PlayerViewModel(
                 youtube: youtube,
                 settings: prefetchSettings,
@@ -78,6 +89,11 @@ enum AppBootstrap {
                 for: SearchHistoryEntry.self,
                 MediaCacheEntry.self,
                 SearchCacheHintEntry.self,
+                Playlist.self,
+                PlaylistItem.self,
+                PlaylistImportJobEntry.self,
+                PlaylistImportTrackEntry.self,
+                PlaylistImportCandidateEntry.self,
                 configurations: memoryConfiguration
             )
         } catch {
@@ -93,6 +109,8 @@ enum AppBootstrap {
         let historyStore = SearchHistoryStore(context: modelContext)
         let mediaCacheStore = MediaCacheStore(context: modelContext)
         let searchCacheHintStore = SearchCacheHintStore(context: modelContext)
+        let playlistLibraryStore = PlaylistLibraryStore(context: modelContext)
+        let playlistImportJobStore = PlaylistImportJobStore(context: modelContext)
         let artworkVideoProcessor = ArtworkVideoProcessor.shared
 
         Task { @MainActor in
@@ -106,6 +124,8 @@ enum AppBootstrap {
             modelContainer: modelContainer,
             prefetchSettings: prefetchSettings,
             networkMonitor: networkMonitor,
+            playlistLibraryStore: playlistLibraryStore,
+            playlistImportJobStore: playlistImportJobStore,
             playerViewModel: PlayerViewModel(
                 youtube: youtube,
                 settings: prefetchSettings,

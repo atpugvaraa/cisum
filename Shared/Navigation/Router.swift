@@ -10,6 +10,7 @@ import SwiftUI
 enum Routes: Hashable {
     case profile
     case settings
+    case playlistDetail(String)
 }
 
 @Observable

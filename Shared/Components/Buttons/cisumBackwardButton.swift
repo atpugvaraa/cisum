@@ -14,7 +14,7 @@ struct cisumBackwardButton: View {
     
     var body: some View {
         Button {
-//            playerViewModel.jumpBackward()
+            playerViewModel.skipToPrevious()
             transparency = 0.6
             withAnimation(.easeOut(duration: 0.2)) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -31,5 +31,7 @@ struct cisumBackwardButton: View {
 //                    .animation(.interpolatingSpring(stiffness: 170, damping: 15), value: player.isBackwarded)
             }
         }
+        .disabled(!playerViewModel.canSkipBackward)
+        .opacity(playerViewModel.canSkipBackward ? 1 : 0.5)
     }
 }

@@ -38,6 +38,26 @@ final class PlayerViewModel {
         case failed
     }
 
+    enum PlaybackQueueSource: String {
+        case detached
+        case searchMusic
+        case searchVideo
+    }
+
+    private enum PlaybackQueueEntry {
+        case song(YouTubeMusicSong)
+        case video(YouTubeVideo)
+
+        var mediaID: String {
+            switch self {
+            case .song(let song):
+                song.videoId
+            case .video(let video):
+                video.id
+            }
+        }
+    }
+
     // MARK: - State
     var player: AVPlayer
     private let youtube: YouTube
@@ -56,7 +76,26 @@ final class PlayerViewModel {
     var currentAccentColor: Color = .cisumAccent
     var isExplicit: Bool = false
 
-    var isPlaying = false
+    // Queue
+    var queueSource: PlaybackQueueSource = .detached
+    var queuePosition: Int?
+    var queueCount: Int = 0
+    var canSkipForward: Bool {
+        hasNextTrackInQueue
+    }
+    var canSkipBackward: Bool {
+        guard currentVideoId != nil else { return false }
+        return hasPreviousTrackInQueue || currentTime > 5
+    }
+
+    var isPlaying = false {
+        didSet {
+#if os(iOS)
+            guard oldValue != isPlaying else { return }
+            VolumeButtonSkipController.shared.handlePlaybackStateChanged(isPlaying: isPlaying)
+#endif
+        }
+    }
 
     // Progress
     var duration: Double = 0.0
@@ -72,6 +111,7 @@ final class PlayerViewModel {
     private var playbackCandidates: [PlaybackCandidate] = []
     private var playbackCandidateIndex: Int = 0
     private var playbackCandidatesMediaID: String?
+    private var playbackQueue: [PlaybackQueueEntry] = []
     private var currentItemStatusObservation: NSKeyValueObservation?
     private let remoteCommandCenter = MPRemoteCommandCenter.shared()
     private let metadataCache = VideoMetadataCache.shared
@@ -111,6 +151,16 @@ final class PlayerViewModel {
     private var wasPlayingBeforeInterruption = false
 #endif
 
+    private var hasNextTrackInQueue: Bool {
+        guard let queuePosition else { return false }
+        return queuePosition + 1 < playbackQueue.count
+    }
+
+    private var hasPreviousTrackInQueue: Bool {
+        guard let queuePosition else { return false }
+        return queuePosition > 0
+    }
+
     init(
         youtube: YouTube = .shared,
         settings: PrefetchSettings = .shared,
@@ -129,13 +179,59 @@ final class PlayerViewModel {
         setupTimeObserver()
         setupAudioLifecycleObservers()
 
+    #if os(iOS)
+        VolumeButtonSkipController.shared.configure(playerViewModel: self, volumeController: .shared)
+    #endif
+
         Color.resetDynamicAccent()
         currentAccentColor = Color.dynamicAccent
     }
 
     // MARK: - Loaders
 
-    func load(song: YouTubeMusicSong) {
+    func load(song: YouTubeMusicSong, in queue: [YouTubeMusicSong], source: PlaybackQueueSource = .searchMusic) {
+        let queueEntries = queue.map { PlaybackQueueEntry.song($0) }
+        guard !queueEntries.isEmpty else {
+            load(song: song)
+            return
+        }
+
+        guard let selectedIndex = queueEntries.firstIndex(where: { $0.mediaID == song.videoId }) else {
+            load(song: song)
+            return
+        }
+
+        playbackQueue = queueEntries
+        queuePosition = selectedIndex
+        queueCount = queueEntries.count
+        queueSource = source
+        load(song: song, preserveQueue: true)
+    }
+
+    func load(video: YouTubeVideo, in queue: [YouTubeVideo], source: PlaybackQueueSource = .searchVideo) {
+        let queueEntries = queue.map { PlaybackQueueEntry.video($0) }
+        guard !queueEntries.isEmpty else {
+            load(video: video)
+            return
+        }
+
+        guard let selectedIndex = queueEntries.firstIndex(where: { $0.mediaID == video.id }) else {
+            load(video: video)
+            return
+        }
+
+        playbackQueue = queueEntries
+        queuePosition = selectedIndex
+        queueCount = queueEntries.count
+        queueSource = source
+        load(video: video, preserveQueue: true)
+    }
+
+    func load(song: YouTubeMusicSong, preserveQueue: Bool = false) {
+        if !preserveQueue {
+            clearQueueContext()
+        }
+
         let tapStartedAt = Date()
         let displayTitle = normalizedMusicDisplayTitle(song.title, artist: song.artistsDisplay)
         let displayArtist = normalizedMusicDisplayArtist(song.artistsDisplay, title: song.title)
@@ -191,7 +287,11 @@ final class PlayerViewModel {
         }
     }
 
-    func load(video: YouTubeVideo) {
+    func load(video: YouTubeVideo, preserveQueue: Bool = false) {
+        if !preserveQueue {
+            clearQueueContext()
+        }
+
         let tapStartedAt = Date()
         let fallbackURL = URL(string: video.thumbnailURL ?? "")
         let displayTitle = normalizedMusicDisplayTitle(video.title, artist: video.author)
@@ -258,6 +358,38 @@ final class PlayerViewModel {
         }
     }
 
+    func skipToNext() {
+        guard hasNextTrackInQueue, let queuePosition else {
+            updateRemoteCommandState()
+            return
+        }
+
+        let nextIndex = queuePosition + 1
+        self.queuePosition = nextIndex
+        load(entry: playbackQueue[nextIndex])
+    }
+
+    func skipToPrevious() {
+        guard currentVideoId != nil else {
+            updateRemoteCommandState()
+            return
+        }
+
+        if currentTime > 5 {
+            seek(to: 0)
+            return
+        }
+
+        guard hasPreviousTrackInQueue, let queuePosition else {
+            seek(to: 0)
+            return
+        }
+
+        let previousIndex = queuePosition - 1
+        self.queuePosition = previousIndex
+        load(entry: playbackQueue[previousIndex])
+    }
+
     func seek(to seconds: Double) {
         let time = CMTime(seconds: seconds, preferredTimescale: 600)
         player.seek(to: time) { [weak self] _ in
@@ -294,6 +426,7 @@ final class PlayerViewModel {
 
     #if os(iOS)
     func handleScenePhaseChange(_ phase: ScenePhase) {
+        VolumeButtonSkipController.shared.handleScenePhaseChange(phase)
         guard isPlaying else { return }
         switch phase {
         case .active, .background:
@@ -305,6 +438,23 @@ final class PlayerViewModel {
         }
     }
     #endif
+
+    private func load(entry: PlaybackQueueEntry) {
+        switch entry {
+        case .song(let song):
+            load(song: song, preserveQueue: true)
+        case .video(let video):
+            load(video: video, preserveQueue: true)
+        }
+    }
+
+    private func clearQueueContext() {
+        playbackQueue = []
+        queuePosition = nil
+        queueCount = 0
+        queueSource = .detached
+        updateRemoteCommandState()
+    }
 
     // MARK: - Playback Resolution
 
@@ -685,6 +835,7 @@ final class PlayerViewModel {
 
         switch type {
         case .began:
+            VolumeButtonSkipController.shared.cancelActiveHold()
             wasPlayingBeforeInterruption = isPlaying
             player.pause()
             isPlaying = false
@@ -759,10 +910,16 @@ final class PlayerViewModel {
             guard let self = self else { return }
             Task { @MainActor in
                 let previousDuration = self.duration
+                let previousCanSkipBackward = self.canSkipBackward
                 self.currentTime = max(time.seconds, 0)
                 if let duration = self.player.currentItem?.duration.seconds, !duration.isNaN {
                     self.duration = duration
                 }
+
+                if self.canSkipBackward != previousCanSkipBackward {
+                    self.updateRemoteCommandState()
+                }
+
                 if abs(self.duration - previousDuration) > 0.5 {
                     self.updateNowPlayingPlaybackInfo(force: true)
                 }
@@ -786,6 +943,14 @@ final class PlayerViewModel {
         remoteCommandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
             guard let positionEvent = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
             Task { @MainActor in self?.seek(to: positionEvent.positionTime) }
+            return .success
+        }
+        remoteCommandCenter.nextTrackCommand.addTarget { [weak self] _ in
+            Task { @MainActor in self?.skipToNext() }
+            return .success
+        }
+        remoteCommandCenter.previousTrackCommand.addTarget { [weak self] _ in
+            Task { @MainActor in self?.skipToPrevious() }
             return .success
         }
 
@@ -822,8 +987,8 @@ final class PlayerViewModel {
         remoteCommandCenter.pauseCommand.isEnabled = isPlaying
         remoteCommandCenter.togglePlayPauseCommand.isEnabled = currentVideoId != nil
         remoteCommandCenter.changePlaybackPositionCommand.isEnabled = currentVideoId != nil
-        remoteCommandCenter.nextTrackCommand.isEnabled = false
-        remoteCommandCenter.previousTrackCommand.isEnabled = false
+        remoteCommandCenter.nextTrackCommand.isEnabled = canSkipForward
+        remoteCommandCenter.previousTrackCommand.isEnabled = canSkipBackward
     }
 
     // MARK: - Now Playing Info

@@ -260,13 +260,17 @@ struct SearchView: View {
     // MARK: - Actions
     private func playMusic(_ song: YouTubeMusicSong) {
         searchViewModel.recordSuccessfulPlayFromCurrentQuery()
-        playerViewModel.load(song: song)
+        playerViewModel.load(song: song, in: searchViewModel.musicResults, source: .searchMusic)
         properties.expandPlayer()
     }
     
     private func playVideo(_ video: YouTubeVideo) {
         searchViewModel.recordSuccessfulPlayFromCurrentQuery()
-        playerViewModel.load(video: video)
+        let playableVideoQueue = searchViewModel.videoResults.compactMap { result -> YouTubeVideo? in
+            guard case .video(let item) = result else { return nil }
+            return item
+        }
+        playerViewModel.load(video: video, in: playableVideoQueue, source: .searchVideo)
         properties.expandPlayer()
     }
 

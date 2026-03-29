@@ -60,6 +60,7 @@ struct ContentView: View {
         }
         .tabbarVisibility(tabBarVisibility)
         .animation(.smooth(duration: 0.3), value: tabBarVisibility)
+        .systemVolumeController(SystemVolumeController.shared, showsSystemVolumeHUD: false)
         .onAppear {
             router.selectedTab = activeTab
         }

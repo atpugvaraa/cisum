@@ -17,6 +17,8 @@ struct RouterViewModifier: ViewModifier {
                 ProfileView()
             case .settings:
                 SettingsView()
+            case .playlistDetail(let playlistID):
+                PlaylistDetailView(playlistID: playlistID)
             }
         }
         .environment(\.router, router)

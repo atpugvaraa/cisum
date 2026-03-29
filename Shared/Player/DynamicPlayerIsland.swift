@@ -41,8 +41,16 @@ struct DynamicPlayerIsland: View {
                             Spacer()
 
                             HStack(spacing: 14) {
-                                Image(systemName: "backward.fill")
-                                    .opacity(0.6)
+                                Button {
+                                    playerViewModel.skipToPrevious()
+                                } label: {
+                                    Image(systemName: "backward.fill")
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(!playerViewModel.canSkipBackward)
+                                .opacity(playerViewModel.canSkipBackward ? 1 : 0.35)
+                                .accessibilityLabel("Previous")
+
                                 Button {
                                     playerViewModel.togglePlayPause()
                                 } label: {
@@ -51,8 +59,16 @@ struct DynamicPlayerIsland: View {
                                 .buttonStyle(.plain)
                                 .disabled(playerViewModel.currentVideoId == nil)
                                 .accessibilityLabel(playerViewModel.isPlaying ? "Pause" : "Play")
-                                Image(systemName: "forward.fill")
-                                    .opacity(0.6)
+
+                                Button {
+                                    playerViewModel.skipToNext()
+                                } label: {
+                                    Image(systemName: "forward.fill")
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(!playerViewModel.canSkipForward)
+                                .opacity(playerViewModel.canSkipForward ? 1 : 0.35)
+                                .accessibilityLabel("Next")
                             }
                             .font(.title3)
                             .fontWeight(.bold)

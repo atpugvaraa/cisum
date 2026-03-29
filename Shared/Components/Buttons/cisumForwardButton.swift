@@ -14,7 +14,7 @@ struct cisumForwardButton: View {
     
     var body: some View {
         Button {
-//            playerViewModel.jumpForward()
+            playerViewModel.skipToNext()
             transparency = 0.6
             withAnimation(.easeOut(duration: 0.2)) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -31,5 +31,7 @@ struct cisumForwardButton: View {
 //                    .animation(.interpolatingSpring(stiffness: 170, damping: 15), value: player.isForwarded)
             }
         }
+        .disabled(!playerViewModel.canSkipForward)
+        .opacity(playerViewModel.canSkipForward ? 1 : 0.5)
     }
 }
