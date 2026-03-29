@@ -2,6 +2,243 @@ import Foundation
 import SwiftData
 import YouTubeSDK
 
+struct PlaybackCandidate: Sendable, Equatable {
+    enum StreamKind: String, Sendable {
+        case hls
+        case muxed
+        case audio
+    }
+
+    let url: URL
+    let streamKind: StreamKind
+    let mimeType: String?
+    let itag: Int?
+    let expiresAt: Date?
+    let isCompatible: Bool
+}
+
+enum PlaybackCandidateBuilder {
+    private static let expirySafetyMargin: TimeInterval = 30
+
+    static func fromVideo(
+        _ video: YouTubeVideo,
+        preferredURL: URL?,
+        validUntil: Date?,
+        referenceDate: Date = .now
+    ) -> [PlaybackCandidate] {
+        let expiresAt = validUntil ?? resolveValidUntil(from: video, referenceDate: referenceDate)
+        var candidates: [PlaybackCandidate] = []
+
+        if let hls = video.hlsURL {
+            candidates.append(
+                PlaybackCandidate(
+                    url: hls,
+                    streamKind: .hls,
+                    mimeType: "application/x-mpegURL",
+                    itag: nil,
+                    expiresAt: expiresAt,
+                    isCompatible: true
+                )
+            )
+        }
+
+        if let muxed = video.bestMuxedStream,
+           let urlString = muxed.url,
+           let url = URL(string: urlString) {
+            candidates.append(
+                PlaybackCandidate(
+                    url: url,
+                    streamKind: .muxed,
+                    mimeType: muxed.mimeType,
+                    itag: muxed.itag,
+                    expiresAt: expiresAt,
+                    isCompatible: isLikelyAVPlayerCompatible(mimeType: muxed.mimeType)
+                )
+            )
+        }
+
+        if let audio = video.bestAudioStream,
+           let urlString = audio.url,
+           let url = URL(string: urlString) {
+            candidates.append(
+                PlaybackCandidate(
+                    url: url,
+                    streamKind: .audio,
+                    mimeType: audio.mimeType,
+                    itag: audio.itag,
+                    expiresAt: expiresAt,
+                    isCompatible: isLikelyAVPlayerCompatible(mimeType: audio.mimeType)
+                )
+            )
+        }
+
+        if let preferredURL,
+           !candidates.contains(where: { $0.url.absoluteString == preferredURL.absoluteString }) {
+            candidates.append(
+                PlaybackCandidate(
+                    url: preferredURL,
+                    streamKind: inferKind(for: preferredURL),
+                    mimeType: nil,
+                    itag: nil,
+                    expiresAt: expiresAt,
+                    isCompatible: true
+                )
+            )
+        }
+
+        return deduplicatedCompatibleCandidates(candidates)
+    }
+
+    static func fromPersistedEntry(_ entry: MediaCacheEntry) -> [PlaybackCandidate] {
+        let expiresAt = entry.playbackValidUntilAt
+        var candidates: [PlaybackCandidate] = []
+
+        if let hlsURLString = entry.playbackHLSURLString,
+           let hlsURL = URL(string: hlsURLString) {
+            candidates.append(
+                PlaybackCandidate(
+                    url: hlsURL,
+                    streamKind: .hls,
+                    mimeType: "application/x-mpegURL",
+                    itag: nil,
+                    expiresAt: expiresAt,
+                    isCompatible: true
+                )
+            )
+        }
+
+        if let muxedURLString = entry.playbackMuxedURLString,
+           let muxedURL = URL(string: muxedURLString) {
+            candidates.append(
+                PlaybackCandidate(
+                    url: muxedURL,
+                    streamKind: .muxed,
+                    mimeType: nil,
+                    itag: nil,
+                    expiresAt: expiresAt,
+                    isCompatible: true
+                )
+            )
+        }
+
+        if let audioURLString = entry.playbackAudioURLString,
+           let audioURL = URL(string: audioURLString) {
+            let mimeType = entry.playbackAudioMimeType
+            candidates.append(
+                PlaybackCandidate(
+                    url: audioURL,
+                    streamKind: .audio,
+                    mimeType: mimeType,
+                    itag: nil,
+                    expiresAt: expiresAt,
+                    isCompatible: isLikelyAVPlayerCompatible(mimeType: mimeType)
+                )
+            )
+        }
+
+        if candidates.isEmpty,
+           let preferredURLString = entry.playbackPreferredURLString,
+           let preferredURL = URL(string: preferredURLString) {
+            candidates.append(
+                PlaybackCandidate(
+                    url: preferredURL,
+                    streamKind: inferKind(for: preferredURL),
+                    mimeType: nil,
+                    itag: nil,
+                    expiresAt: expiresAt,
+                    isCompatible: true
+                )
+            )
+        }
+
+        return deduplicatedCompatibleCandidates(candidates)
+    }
+
+    private static func deduplicatedCompatibleCandidates(_ candidates: [PlaybackCandidate]) -> [PlaybackCandidate] {
+        var seen: Set<String> = []
+        var deduplicated: [PlaybackCandidate] = []
+
+        for candidate in candidates {
+            let key = candidate.url.absoluteString
+            guard !seen.contains(key) else { continue }
+            seen.insert(key)
+            deduplicated.append(candidate)
+        }
+
+        return deduplicated.filter(\.isCompatible)
+    }
+
+    private static func isLikelyAVPlayerCompatible(mimeType: String?) -> Bool {
+        guard let mimeType else {
+            return true
+        }
+
+        let normalized = mimeType.lowercased()
+        if normalized.contains("webm") {
+            return false
+        }
+
+        return normalized.contains("mp4")
+            || normalized.contains("mpeg")
+            || normalized.contains("aac")
+            || normalized.contains("mp3")
+            || normalized.contains("x-mpegurl")
+            || normalized.contains("vnd.apple.mpegurl")
+    }
+
+    private static func inferKind(for url: URL) -> PlaybackCandidate.StreamKind {
+        let normalizedPath = url.path.lowercased()
+        if normalizedPath.hasSuffix(".m3u8") {
+            return .hls
+        }
+        return .muxed
+    }
+
+    private static func resolveValidUntil(from video: YouTubeVideo, referenceDate: Date) -> Date? {
+        if let expiresInSeconds = video.streamingData?.expiresInSeconds,
+           let seconds = Double(expiresInSeconds) {
+            let safeSeconds = max(0, seconds - expirySafetyMargin)
+            return referenceDate.addingTimeInterval(safeSeconds)
+        }
+
+        let fallbackURL = video.hlsURL
+            ?? video.bestMuxedStream.flatMap { stream in
+                guard let streamURL = stream.url else { return nil }
+                return URL(string: streamURL)
+            }
+            ?? video.bestAudioStream.flatMap { stream in
+                guard let streamURL = stream.url else { return nil }
+                return URL(string: streamURL)
+            }
+
+        guard let fallbackURL else {
+            return nil
+        }
+
+        return resolveURLExpiration(from: fallbackURL)?.addingTimeInterval(-expirySafetyMargin)
+    }
+
+    private static func resolveURLExpiration(from url: URL) -> Date? {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let queryItems = components.queryItems else {
+            return nil
+        }
+
+        let expiryKeys = ["expire", "expires", "exp", "expiration"]
+        for key in expiryKeys {
+            guard let value = queryItems.first(where: { $0.name.caseInsensitiveCompare(key) == .orderedSame })?.value,
+                  let numericValue = Double(value) else {
+                continue
+            }
+
+            let seconds = numericValue > 1_000_000_000_000 ? numericValue / 1000.0 : numericValue
+            return Date(timeIntervalSince1970: seconds)
+        }
+
+        return nil
+    }
+}
+
 @MainActor
 final class MediaCacheStore {
     struct MaintenancePolicy {
@@ -30,36 +267,44 @@ final class MediaCacheStore {
         self.imageFileStore = imageFileStore
     }
 
-    func playbackCandidates(for mediaID: String, maxAge: TimeInterval) -> [URL]? {
+    func playbackCandidates(for mediaID: String, maxAge: TimeInterval) -> [PlaybackCandidate]? {
         guard let entry = fetchEntry(for: mediaID),
               let updatedAt = entry.playbackUpdatedAt,
               Date().timeIntervalSince(updatedAt) <= maxAge else {
             return nil
         }
 
+        if let validUntil = entry.playbackValidUntilAt,
+           Date() >= validUntil {
+            return nil
+        }
+
         entry.lastAccessedAt = .now
         saveContext()
 
-        let preferred = url(from: entry.playbackPreferredURLString)
-        let hls = url(from: entry.playbackHLSURLString)
-        let muxed = url(from: entry.playbackMuxedURLString)
-        let audio = compatibleAudioURL(
-            from: entry.playbackAudioURLString,
-            mimeType: entry.playbackAudioMimeType
-        )
-
-        let candidates = deduplicatedURLs([preferred, hls, muxed, audio])
+        let candidates = PlaybackCandidateBuilder.fromPersistedEntry(entry)
         return candidates.isEmpty ? nil : candidates
     }
 
-    func savePlaybackResolution(mediaID: String, preferredURL: URL, video: YouTubeVideo) {
+    func savePlaybackResolution(mediaID: String, candidates: [PlaybackCandidate], validUntil: Date?) {
+        guard !candidates.isEmpty else {
+            return
+        }
+
         let entry = entryForWrite(mediaID: mediaID)
-        entry.playbackPreferredURLString = preferredURL.absoluteString
-        entry.playbackHLSURLString = video.hlsURL?.absoluteString
-        entry.playbackMuxedURLString = video.bestMuxedStream?.url
-        entry.playbackAudioURLString = video.bestAudioStream?.url
-        entry.playbackAudioMimeType = video.bestAudioStream?.mimeType
+
+        let preferredCandidate = candidates.first
+        let hlsCandidate = candidates.first(where: { $0.streamKind == .hls })
+        let muxedCandidate = candidates.first(where: { $0.streamKind == .muxed })
+        let audioCandidate = candidates.first(where: { $0.streamKind == .audio })
+
+        entry.playbackPreferredURLString = preferredCandidate?.url.absoluteString
+        entry.playbackHLSURLString = hlsCandidate?.url.absoluteString
+        entry.playbackMuxedURLString = muxedCandidate?.url.absoluteString
+        entry.playbackAudioURLString = audioCandidate?.url.absoluteString
+        entry.playbackAudioMimeType = audioCandidate?.mimeType
         entry.playbackUpdatedAt = .now
+        entry.playbackValidUntilAt = validUntil ?? candidates.compactMap(\.expiresAt).min()
         entry.lastAccessedAt = .now
         saveContext()
     }
@@ -72,6 +317,7 @@ final class MediaCacheStore {
         entry.playbackAudioURLString = nil
         entry.playbackAudioMimeType = nil
         entry.playbackUpdatedAt = nil
+        entry.playbackValidUntilAt = nil
         entry.lastAccessedAt = .now
         saveContext()
     }
@@ -193,45 +439,6 @@ final class MediaCacheStore {
         return URL(string: string)
     }
 
-    private func compatibleAudioURL(from urlString: String?, mimeType: String?) -> URL? {
-        guard let urlString,
-              let url = URL(string: urlString) else {
-            return nil
-        }
-
-        guard let mimeType else {
-            return url
-        }
-
-        let normalized = mimeType.lowercased()
-        if normalized.contains("webm") {
-            return nil
-        }
-
-        if normalized.contains("mp4")
-            || normalized.contains("mpeg")
-            || normalized.contains("aac")
-            || normalized.contains("mp3") {
-            return url
-        }
-
-        return nil
-    }
-
-    private func deduplicatedURLs(_ urls: [URL?]) -> [URL] {
-        var seen: Set<String> = []
-        var result: [URL] = []
-
-        for url in urls.compactMap({ $0 }) {
-            let key = url.absoluteString
-            if seen.contains(key) { continue }
-            seen.insert(key)
-            result.append(url)
-        }
-
-        return result
-    }
-
     private func allEntries() -> [MediaCacheEntry] {
         let descriptor = FetchDescriptor<MediaCacheEntry>()
         return (try? context.fetch(descriptor)) ?? []
@@ -239,13 +446,15 @@ final class MediaCacheStore {
 
     private func pruneExpiredPayloads(in entry: MediaCacheEntry, now: Date, policy: MaintenancePolicy) async {
         if let updatedAt = entry.playbackUpdatedAt,
-           now.timeIntervalSince(updatedAt) > policy.playbackMaxAge {
+           now.timeIntervalSince(updatedAt) > policy.playbackMaxAge ||
+            (entry.playbackValidUntilAt.map { now >= $0 } ?? false) {
             entry.playbackPreferredURLString = nil
             entry.playbackHLSURLString = nil
             entry.playbackMuxedURLString = nil
             entry.playbackAudioURLString = nil
             entry.playbackAudioMimeType = nil
             entry.playbackUpdatedAt = nil
+            entry.playbackValidUntilAt = nil
         }
 
         if let updatedAt = entry.artworkUpdatedAt,

@@ -93,11 +93,11 @@ struct SearchView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                             
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(song.title)
+                                Text(normalizedMusicDisplayTitle(song.title, artist: song.artistsDisplay))
                                     .font(.headline)
                                     .lineLimit(1)
                                 
-                                Text("\(song.artistsDisplay) • \(song.album ?? "Single")")
+                                Text("\(normalizedMusicDisplayArtist(song.artistsDisplay, title: song.title)) • \(song.album ?? "Single")")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
@@ -135,11 +135,11 @@ struct SearchView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 4))
 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(video.title)
+                                    Text(normalizedMusicDisplayTitle(video.title, artist: video.author))
                                         .font(.subheadline)
                                         .lineLimit(2)
 
-                                    Text(video.author)
+                                    Text(normalizedMusicDisplayArtist(video.author, title: video.title))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -153,7 +153,7 @@ struct SearchView: View {
 
                     case .channel(let channel):
                         Button {
-                            nonPlayableMessage = "Channels are not playable yet. Open channel: \(channel.title)"
+                            nonPlayableMessage = "Channels are not playable yet. Open channel: \(normalizedMusicDisplayTitle(channel.title))"
                             showNonPlayableAlert = true
                         } label: {
                             HStack(spacing: 12) {
@@ -166,7 +166,7 @@ struct SearchView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(channel.title)
+                                    Text(normalizedMusicDisplayTitle(channel.title))
                                         .font(.headline)
                                         .lineLimit(1)
 
@@ -183,7 +183,7 @@ struct SearchView: View {
 
                     case .playlist(let playlist):
                         Button {
-                            nonPlayableMessage = "Playlists are not playable yet. Open playlist: \(playlist.title)"
+                            nonPlayableMessage = "Playlists are not playable yet. Open playlist: \(normalizedMusicDisplayTitle(playlist.title))"
                             showNonPlayableAlert = true
                         } label: {
                             HStack(spacing: 12) {
@@ -198,7 +198,7 @@ struct SearchView: View {
                                 }
 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(playlist.title)
+                                    Text(normalizedMusicDisplayTitle(playlist.title))
                                         .font(.headline)
                                         .lineLimit(1)
 

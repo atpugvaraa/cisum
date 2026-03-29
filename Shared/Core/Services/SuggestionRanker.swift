@@ -50,7 +50,7 @@ enum SuggestionRanker {
         let l2 = a2.count
         if l1 == 0 || l2 == 0 { return 0 }
 
-        let matchDistance = max(l1, l2) / 2 - 1
+        let matchDistance = max(0, max(l1, l2) / 2 - 1)
         var a1Matches = Array(repeating: false, count: l1)
         var a2Matches = Array(repeating: false, count: l2)
 
@@ -58,6 +58,7 @@ enum SuggestionRanker {
         for i in 0..<l1 {
             let start = max(0, i - matchDistance)
             let end = min(i + matchDistance + 1, l2)
+            guard start < end else { continue }
             for j in start..<end where !a2Matches[j] && a1[i] == a2[j] {
                 a1Matches[i] = true
                 a2Matches[j] = true
