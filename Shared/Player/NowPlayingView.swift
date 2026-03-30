@@ -115,7 +115,7 @@ struct NowPlayingView: View {
                 }
                 
                 Button {
-                    x
+                    
                 } label: {
                     Image(systemName: "ellipsis")
                 }

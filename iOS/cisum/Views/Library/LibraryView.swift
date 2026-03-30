@@ -11,6 +11,7 @@ import SwiftData
 struct LibraryView: View {
     @Environment(\.router) private var router
     @Query(sort: \Playlist.updatedAt, order: .reverse) private var playlists: [Playlist]
+    @State private var isPresentingImportSheet: Bool = false
 
     #if DEBUG
     @ObserveInjection var forceRedraw
@@ -53,6 +54,11 @@ struct LibraryView: View {
         }
         .contentMargins(.top, 140)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sheet(isPresented: $isPresentingImportSheet) {
+            YouTubePlaylistImportSheet { importedPlaylistID in
+                router.navigate(to: .playlistDetail(importedPlaylistID))
+            }
+        }
         .enableInjection()
     }
 
@@ -63,6 +69,17 @@ struct LibraryView: View {
                     .font(.headline)
 
                 Spacer()
+
+                Button {
+                    isPresentingImportSheet = true
+                } label: {
+                    Label("Add", systemImage: "plus")
+                        .labelStyle(.iconOnly)
+                        .font(.subheadline.weight(.semibold))
+                        .frame(width: 28, height: 28)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Import Playlist")
 
                 Text("\(playlists.count)")
                     .font(.caption.weight(.medium))

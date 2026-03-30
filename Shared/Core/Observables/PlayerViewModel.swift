@@ -58,6 +58,11 @@ final class PlayerViewModel {
         }
     }
 
+    private struct MotionArtworkSourceResolution {
+        let sourceHLSURL: URL
+        let videoCacheID: String
+    }
+
     // MARK: - State
     var player: AVPlayer
     private let youtube: YouTube
@@ -111,6 +116,7 @@ final class PlayerViewModel {
     private var playbackCandidates: [PlaybackCandidate] = []
     private var playbackCandidateIndex: Int = 0
     private var playbackCandidatesMediaID: String?
+    private var currentAlbumNameHint: String?
     private var playbackQueue: [PlaybackQueueEntry] = []
     private var currentItemStatusObservation: NSKeyValueObservation?
     private let remoteCommandCenter = MPRemoteCommandCenter.shared()
@@ -232,12 +238,15 @@ final class PlayerViewModel {
             clearQueueContext()
         }
 
+        let targetMediaID = song.videoId
+
         let tapStartedAt = Date()
         let displayTitle = normalizedMusicDisplayTitle(song.title, artist: song.artistsDisplay)
         let displayArtist = normalizedMusicDisplayArtist(song.artistsDisplay, title: song.title)
 
         currentTitle = displayTitle
         currentArtist = displayArtist
+        currentAlbumNameHint = song.album
         currentImageURL = song.thumbnailURL
         isExplicit = song.isExplicit
         currentVideoId = song.videoId
@@ -267,13 +276,15 @@ final class PlayerViewModel {
                 let candidates = try await self.resolvePlaybackCandidates(forID: song.videoId)
 
                 if Task.isCancelled { return }
+                guard self.currentVideoId == targetMediaID else { return }
 
                 self.configurePlaybackCandidates(for: song.videoId, candidates: candidates)
                 self.playCurrentPlaybackCandidate()
                 self.startArtworkVideoProcessingIfNeeded(
                     for: song.videoId,
                     title: displayTitle,
-                    artist: displayArtist
+                    artist: displayArtist,
+                    albumName: song.album
                 )
                 self.logPlayback("Started playback for song id=\(song.videoId)")
 
@@ -282,6 +293,8 @@ final class PlayerViewModel {
                     await PlaybackMetricsStore.shared.recordTapToPlay(durationMs: elapsed)
                 }
             } catch {
+                if error is CancellationError { return }
+                guard self.currentVideoId == targetMediaID else { return }
                 self.handlePlaybackFailure(error)
             }
         }
@@ -292,6 +305,8 @@ final class PlayerViewModel {
             clearQueueContext()
         }
 
+        let targetMediaID = video.id
+
         let tapStartedAt = Date()
         let fallbackURL = URL(string: video.thumbnailURL ?? "")
         let displayTitle = normalizedMusicDisplayTitle(video.title, artist: video.author)
@@ -299,6 +314,7 @@ final class PlayerViewModel {
 
         currentTitle = displayTitle
         currentArtist = displayArtist
+        currentAlbumNameHint = nil
         currentImageURL = fallbackURL
         isExplicit = false
         currentVideoId = video.id
@@ -328,13 +344,15 @@ final class PlayerViewModel {
                 let candidates = try await self.resolvePlaybackCandidates(forID: video.id)
 
                 if Task.isCancelled { return }
+                guard self.currentVideoId == targetMediaID else { return }
 
                 self.configurePlaybackCandidates(for: video.id, candidates: candidates)
                 self.playCurrentPlaybackCandidate()
                 self.startArtworkVideoProcessingIfNeeded(
                     for: video.id,
                     title: displayTitle,
-                    artist: displayArtist
+                    artist: displayArtist,
+                    albumName: nil
                 )
                 self.logPlayback("Started playback for video id=\(video.id)")
 
@@ -343,6 +361,8 @@ final class PlayerViewModel {
                     await PlaybackMetricsStore.shared.recordTapToPlay(durationMs: elapsed)
                 }
             } catch {
+                if error is CancellationError { return }
+                guard self.currentVideoId == targetMediaID else { return }
                 self.handlePlaybackFailure(error)
             }
         }
@@ -402,6 +422,7 @@ final class PlayerViewModel {
     /// Reload the current video with current playback configuration.
     func reloadCurrentVideo() {
         guard let id = currentVideoId else { return }
+        let targetMediaID = id
         resetPlaybackCandidates(for: id)
         currentLoadTask?.cancel()
         currentLoadTask = Task {
@@ -410,15 +431,19 @@ final class PlayerViewModel {
                 let candidates = try await self.resolvePlaybackCandidates(forID: id)
 
                 if Task.isCancelled { return }
+                guard self.currentVideoId == targetMediaID else { return }
 
                 self.configurePlaybackCandidates(for: id, candidates: candidates)
                 self.playCurrentPlaybackCandidate()
                 self.startArtworkVideoProcessingIfNeeded(
                     for: id,
                     title: currentTitle,
-                    artist: currentArtist
+                    artist: currentArtist,
+                    albumName: currentAlbumNameHint
                 )
             } catch {
+                if error is CancellationError { return }
+                guard self.currentVideoId == targetMediaID else { return }
                 self.playbackError = error.localizedDescription
             }
         }
@@ -464,8 +489,15 @@ final class PlayerViewModel {
                 try await self.youtube.main.video(id: key)
             }
         } catch {
+            if error is CancellationError {
+                throw error
+            }
+
             print("⚠️ PlayerViewModel: First resolve failed for id=\(id): \(error.localizedDescription). Retrying once...")
-            try? await Task.sleep(nanoseconds: 350_000_000)
+
+            try Task.checkCancellation()
+            try await Task.sleep(nanoseconds: 350_000_000)
+            try Task.checkCancellation()
 
             return try await metadataCache.resolve(id: id, metricsEnabled: settings.metricsEnabled) { key in
                 try await self.youtube.main.video(id: key)
@@ -591,7 +623,8 @@ final class PlayerViewModel {
     private func startArtworkVideoProcessingIfNeeded(
         for mediaID: String,
         title: String,
-        artist: String
+        artist: String,
+        albumName: String?
     ) {
         artworkVideoTask?.cancel()
         artworkVideoProgress = nil
@@ -604,16 +637,17 @@ final class PlayerViewModel {
             self.logAnimatedArtwork("Processing started for id=\(mediaID)")
 
             do {
-                guard let sourceHLSURL = await self.resolveMotionArtworkURL(
+                guard let motionArtwork = await self.resolveMotionArtworkSource(
                     for: mediaID,
                     title: title,
-                    artist: artist
+                    artist: artist,
+                    albumName: albumName
                 ) else {
                     self.logAnimatedArtwork("No Animated Artwork found for id=\(mediaID)")
                     return
                 }
 
-                self.logAnimatedArtwork("Animated Artwork source found for id=\(mediaID): \(sourceHLSURL.absoluteString)")
+                self.logAnimatedArtwork("Animated Artwork source found for id=\(mediaID): \(motionArtwork.sourceHLSURL.absoluteString)")
 
                 guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
 
@@ -622,7 +656,8 @@ final class PlayerViewModel {
 
                 let localVideoURL = try await self.artworkVideoProcessor.prepareVideo(
                     for: mediaID,
-                    sourceHLSURL: sourceHLSURL,
+                    cacheID: motionArtwork.videoCacheID,
+                    sourceHLSURL: motionArtwork.sourceHLSURL,
                     progress: { progress in
                         progressBridge.report(progress)
                     }
@@ -1236,18 +1271,56 @@ final class PlayerViewModel {
         }
     }
 
-    private func resolveMotionArtworkURL(for mediaID: String, title: String, artist: String) async -> URL? {
+    private func resolveMotionArtworkSource(
+        for mediaID: String,
+        title: String,
+        artist: String,
+        albumName: String?
+    ) async -> MotionArtworkSourceResolution? {
+        let searchTitle = normalizedMusicDisplayTitle(title, artist: artist)
+        let searchArtist = normalizedMusicDisplayArtist(artist, title: title)
+        let localAlbumArtistCacheKey = normalizedMotionArtworkAlbumCacheKey(
+            albumName: albumName,
+            artistName: searchArtist
+        )
+        let localAlbumOnlyCacheKey = normalizedMotionArtworkAlbumCacheKey(
+            albumName: albumName,
+            artistName: nil
+        )
+        let localAlbumCacheKeys = [localAlbumArtistCacheKey, localAlbumOnlyCacheKey].compactMap { $0 }
+
         if let cachedURL = mediaCacheStore?.cachedMotionArtworkSourceURL(
             for: mediaID,
             maxAge: CachePolicy.motionArtworkSourceTTL
         ) {
-            return cachedURL
+            logAnimatedArtwork("Motion artwork source cache hit (media) for id=\(mediaID)")
+            return MotionArtworkSourceResolution(
+                sourceHLSURL: cachedURL,
+                videoCacheID: motionArtworkVideoCacheID(
+                    mediaID: mediaID,
+                    albumCacheKey: localAlbumArtistCacheKey ?? localAlbumOnlyCacheKey,
+                    sourceURL: cachedURL
+                )
+            )
         }
 
-        let searchTitle = normalizedMusicDisplayTitle(title, artist: artist)
-        let searchArtist = normalizedMusicDisplayArtist(artist, title: title)
+        if let albumHit = mediaCacheStore?.cachedMotionArtworkSourceURL(
+            forAlbumKeys: localAlbumCacheKeys,
+            maxAge: CachePolicy.motionArtworkSourceTTL
+        ) {
+            logAnimatedArtwork("Motion artwork source cache hit (album key=\(albumHit.albumKey)) for id=\(mediaID)")
+            mediaCacheStore?.saveMotionArtworkSourceURL(albumHit.url, for: mediaID)
+            return MotionArtworkSourceResolution(
+                sourceHLSURL: albumHit.url,
+                videoCacheID: motionArtworkVideoCacheID(
+                    mediaID: mediaID,
+                    albumCacheKey: albumHit.albumKey,
+                    sourceURL: albumHit.url
+                )
+            )
+        }
 
-        guard let resolvedURL = await Self.resolveMotionArtworkURL(
+        guard let resolution = await Self.resolveMotionArtwork(
             using: itunes,
             title: searchTitle,
             artist: searchArtist
@@ -1255,48 +1328,49 @@ final class PlayerViewModel {
             return nil
         }
 
-        mediaCacheStore?.saveMotionArtworkSourceURL(resolvedURL, for: mediaID)
-        return resolvedURL
+        mediaCacheStore?.saveMotionArtworkSourceURL(resolution.sourceURL, for: mediaID)
+
+        var albumKeysToPersist = localAlbumCacheKeys
+        let collectionCacheKey = motionArtworkCollectionCacheKey(collectionID: resolution.collectionID)
+        if let collectionCacheKey {
+            albumKeysToPersist.append(collectionCacheKey)
+        }
+        let catalogAlbumCacheKey = motionArtworkCatalogAlbumCacheKey(catalogAlbumID: resolution.catalogAlbumID)
+        if let catalogAlbumCacheKey {
+            albumKeysToPersist.append(catalogAlbumCacheKey)
+        }
+        mediaCacheStore?.saveMotionArtworkSourceURL(resolution.sourceURL, forAlbumKeys: albumKeysToPersist)
+
+        let selectedAlbumKey = catalogAlbumCacheKey
+            ?? collectionCacheKey
+            ?? localAlbumArtistCacheKey
+            ?? localAlbumOnlyCacheKey
+        logAnimatedArtwork(
+            "Motion artwork source fetched from iTunes for id=\(mediaID) collection=\(resolution.collectionID.map(String.init) ?? "none")"
+        )
+        return MotionArtworkSourceResolution(
+            sourceHLSURL: resolution.sourceURL,
+            videoCacheID: motionArtworkVideoCacheID(
+                mediaID: mediaID,
+                albumCacheKey: selectedAlbumKey,
+                sourceURL: resolution.sourceURL
+            )
+        )
     }
 
-    nonisolated private static func resolveMotionArtworkURL(using itunes: iTunesKit, title: String, artist: String) async -> URL? {
+    nonisolated private static func resolveMotionArtwork(
+        using itunes: iTunesKit,
+        title: String,
+        artist: String
+    ) async -> iTunesMotionArtworkResolution? {
         do {
-            let response = try await itunes.search(term: "\(title) \(artist)", country: "us", media: "music", limit: 1)
-            guard let trackId = response.results.first?.trackId else {
-                return nil
-            }
-
-            let webClient = iTunesWebServiceClient()
-            let catalogService = WebCatalogService(client: webClient)
-            let catalogResponse = try await catalogService.fetchSongDetails(songId: String(trackId))
-            return firstMotionArtworkURL(from: catalogResponse)
+            return try await itunes.resolveMotionArtwork(
+                term: "\(title) \(artist)",
+                country: "us"
+            )
         } catch {
             return nil
         }
-    }
-
-    nonisolated private static func firstMotionArtworkURL(from response: iTunesCatalogResponse) -> URL? {
-        for album in response.resources.albums.values {
-            let editorialVideo = album.attributes.editorialVideo
-            if let url = motionArtworkURL(from: editorialVideo.motionDetailTall.video) {
-                return url
-            }
-            if let url = motionArtworkURL(from: editorialVideo.motionTallVideo3X4.video) {
-                return url
-            }
-            if let url = motionArtworkURL(from: editorialVideo.motionDetailSquare.video) {
-                return url
-            }
-            if let url = motionArtworkURL(from: editorialVideo.motionSquareVideo1X1.video) {
-                return url
-            }
-        }
-
-        return nil
-    }
-
-    nonisolated private static func motionArtworkURL(from string: String) -> URL? {
-        URL(string: string)
     }
 
     nonisolated private static func fetchArtworkResource(from url: URL?) async -> CachedNowPlayingArtworkResource? {
@@ -1422,10 +1496,16 @@ final class PlayerViewModel {
         return CGSize(width: 512, height: 512)
     }
     #else
-    private func resolveMotionArtworkURL(for mediaID: String, title: String, artist: String) async -> URL? {
+    private func resolveMotionArtworkSource(
+        for mediaID: String,
+        title: String,
+        artist: String,
+        albumName: String?
+    ) async -> MotionArtworkSourceResolution? {
         _ = mediaID
         _ = title
         _ = artist
+        _ = albumName
         return nil
     }
 

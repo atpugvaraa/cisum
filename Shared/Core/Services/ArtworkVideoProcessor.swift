@@ -49,7 +49,7 @@ actor ArtworkVideoProcessor {
     }
 
     private enum CacheProfile {
-        static let version = "v3-hw-source-aware"
+        static let version = "v4-album-cache-keys"
         static let markerFilename = ".profile"
     }
 
@@ -94,6 +94,7 @@ actor ArtworkVideoProcessor {
 
     func prepareVideo(
         for mediaID: String,
+        cacheID: String? = nil,
         sourceHLSURL: URL,
         progress: @escaping @Sendable (Double) -> Void
     ) async throws -> URL {
@@ -107,33 +108,35 @@ actor ArtworkVideoProcessor {
 
         let cacheDirectory = try artworkVideoCacheDirectory()
         try ensureCurrentCacheProfile(in: cacheDirectory)
-        let outputURL = cacheDirectory.appending(path: "\(mediaID).mp4")
+        let resolvedCacheID = resolvedCacheID(for: mediaID, preferredCacheID: cacheID)
+        let outputURL = cacheDirectory.appending(path: "\(resolvedCacheID).mp4")
         if fileManager.fileExists(atPath: outputURL.path(percentEncoded: false)) {
-            print("🖼️ ArtworkVideoProcessor: Cache hit for id=\(mediaID)")
+            print("🖼️ ArtworkVideoProcessor: Cache hit for media=\(mediaID) cache=\(resolvedCacheID)")
             progress(1)
             return outputURL
         }
 
         let observerID = UUID()
-        addProgressObserver(progress, for: mediaID, id: observerID)
+        addProgressObserver(progress, for: resolvedCacheID, id: observerID)
 
         let task: Task<URL, Error>
-        if let existingTask = inFlight[mediaID] {
+        if let existingTask = inFlight[resolvedCacheID] {
             task = existingTask
         } else {
             task = Task(priority: .utility) {
                 try await self.processVideo(
                     for: mediaID,
+                    cacheID: resolvedCacheID,
                     sourceHLSURL: sourceHLSURL,
                     outputURL: outputURL,
                     cacheDirectory: cacheDirectory
                 )
             }
-            inFlight[mediaID] = task
+            inFlight[resolvedCacheID] = task
         }
 
         return try await awaitResult(
-            for: mediaID,
+            for: resolvedCacheID,
             observerID: observerID,
             task: task
         )
@@ -141,28 +144,29 @@ actor ArtworkVideoProcessor {
 
     private func processVideo(
         for mediaID: String,
+        cacheID: String,
         sourceHLSURL: URL,
         outputURL: URL,
         cacheDirectory: URL
     ) async throws -> URL {
-        let tempURL = try temporaryOutputURL(for: mediaID)
+        let tempURL = try temporaryOutputURL(for: cacheID)
         let sourceMetadata = await loadSourceMetadata(from: sourceHLSURL)
         let estimatedDuration = sourceMetadata.duration
 
         defer {
-            inFlight[mediaID] = nil
-            activeSessions[mediaID] = nil
-            progressObservers[mediaID] = nil
+            inFlight[cacheID] = nil
+            activeSessions[cacheID] = nil
+            progressObservers[cacheID] = nil
         }
 
         do {
             if fileManager.fileExists(atPath: outputURL.path(percentEncoded: false)) {
-                print("🖼️ ArtworkVideoProcessor: Reusing cached artwork video for id=\(mediaID)")
-                notifyProgress(1, for: mediaID)
+                print("🖼️ ArtworkVideoProcessor: Reusing cached artwork video for media=\(mediaID) cache=\(cacheID)")
+                notifyProgress(1, for: cacheID)
                 return outputURL
             }
 
-            print("🖼️ ArtworkVideoProcessor: Probing source for id=\(mediaID)")
+            print("🖼️ ArtworkVideoProcessor: Probing source for media=\(mediaID) cache=\(cacheID)")
             let durationText = sourceMetadata.duration.map { String(format: "%.2f", $0) } ?? "unknown"
             let sizeText: String
             if let videoSize = sourceMetadata.videoSize {
@@ -170,15 +174,15 @@ actor ArtworkVideoProcessor {
             } else {
                 sizeText = "unknown"
             }
-            print("🖼️ ArtworkVideoProcessor: Source probe for id=\(mediaID) duration=\(durationText)s size=\(sizeText)")
+            print("🖼️ ArtworkVideoProcessor: Source probe for media=\(mediaID) cache=\(cacheID) duration=\(durationText)s size=\(sizeText)")
             try cleanupItem(at: tempURL)
 
-            print("🖼️ ArtworkVideoProcessor: Encoding motion artwork for id=\(mediaID) with hardware-first preset")
+            print("🖼️ ArtworkVideoProcessor: Encoding motion artwork for media=\(mediaID) cache=\(cacheID) with hardware-first preset")
             try await runBestEffortFFmpegCommands(
                 sourceHLSURL: sourceHLSURL,
                 streamMap: StreamMapping.primary,
                 outputURL: tempURL,
-                mediaID: mediaID,
+                mediaID: cacheID,
                 estimatedDuration: estimatedDuration,
                 sourceSize: sourceMetadata.videoSize
             )
@@ -187,11 +191,11 @@ actor ArtworkVideoProcessor {
                 throw ArtworkVideoProcessorError.noOutputProduced
             }
 
-            print("🖼️ ArtworkVideoProcessor: Finalizing motion artwork for id=\(mediaID)")
+            print("🖼️ ArtworkVideoProcessor: Finalizing motion artwork for media=\(mediaID) cache=\(cacheID)")
             try commitTemporaryOutput(from: tempURL, to: outputURL)
             try? writeCacheProfileMarker(in: cacheDirectory)
-            notifyProgress(1, for: mediaID)
-            print("🖼️ ArtworkVideoProcessor: Motion artwork ready for id=\(mediaID)")
+            notifyProgress(1, for: cacheID)
+            print("🖼️ ArtworkVideoProcessor: Motion artwork ready for media=\(mediaID) cache=\(cacheID)")
             return outputURL
         } catch is CancellationError {
             try? cleanupItem(at: tempURL)
@@ -485,9 +489,32 @@ actor ArtworkVideoProcessor {
         return cachesURL
     }
 
-    private func temporaryOutputURL(for mediaID: String) throws -> URL {
+    private func temporaryOutputURL(for cacheID: String) throws -> URL {
         let directory = try artworkVideoCacheDirectory()
-        return directory.appending(path: "\(mediaID)-\(UUID().uuidString).tmp.mp4")
+        return directory.appending(path: "\(cacheID)-\(UUID().uuidString).tmp.mp4")
+    }
+
+    private func resolvedCacheID(for mediaID: String, preferredCacheID: String?) -> String {
+        let candidate = preferredCacheID?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let fallback = mediaID.trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawValue = (candidate?.isEmpty == false ? candidate : fallback) ?? fallback
+
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
+        let sanitized = String(rawValue.unicodeScalars.map { scalar in
+            allowed.contains(scalar) ? Character(scalar) : "_"
+        })
+        .replacingOccurrences(of: "_{2,}", with: "_", options: .regularExpression)
+        .trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+
+        if sanitized.isEmpty {
+            return "artwork_video"
+        }
+
+        if sanitized.count > 120 {
+            return String(sanitized.prefix(120))
+        }
+
+        return sanitized
     }
 
     private func cacheProfileURL(in cacheDirectory: URL) -> URL {

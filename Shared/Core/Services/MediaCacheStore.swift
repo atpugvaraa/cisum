@@ -241,6 +241,11 @@ enum PlaybackCandidateBuilder {
 
 @MainActor
 final class MediaCacheStore {
+    struct MotionArtworkAlbumCacheHit {
+        let albumKey: String
+        let url: URL
+    }
+
     struct MaintenancePolicy {
         let playbackMaxAge: TimeInterval
         let artworkURLMaxAge: TimeInterval
@@ -257,6 +262,10 @@ final class MediaCacheStore {
             entryRetentionAge: 60 * 60 * 24 * 30,
             maxEntries: 600
         )
+    }
+
+    private enum MotionArtworkAlbumNamespace {
+        static let mediaIDPrefix = "__motion_album__::"
     }
 
     private let context: ModelContext
@@ -364,6 +373,29 @@ final class MediaCacheStore {
         saveContext()
     }
 
+    func cachedMotionArtworkSourceURL(
+        forAlbumKeys albumKeys: [String],
+        maxAge: TimeInterval
+    ) -> MotionArtworkAlbumCacheHit? {
+        for albumKey in normalizedMotionArtworkAlbumKeys(albumKeys) {
+            let syntheticMediaID = syntheticMotionArtworkMediaID(forAlbumKey: albumKey)
+            guard let url = cachedMotionArtworkSourceURL(for: syntheticMediaID, maxAge: maxAge) else {
+                continue
+            }
+
+            return MotionArtworkAlbumCacheHit(albumKey: albumKey, url: url)
+        }
+
+        return nil
+    }
+
+    func saveMotionArtworkSourceURL(_ url: URL, forAlbumKeys albumKeys: [String]) {
+        for albumKey in normalizedMotionArtworkAlbumKeys(albumKeys) {
+            let syntheticMediaID = syntheticMotionArtworkMediaID(forAlbumKey: albumKey)
+            saveMotionArtworkSourceURL(url, for: syntheticMediaID)
+        }
+    }
+
     func cachedLocalArtworkData(for mediaID: String) async -> (url: URL, data: Data)? {
         guard let entry = fetchEntry(for: mediaID),
               let filename = entry.localArtworkFilename,
@@ -437,6 +469,27 @@ final class MediaCacheStore {
     private func url(from string: String?) -> URL? {
         guard let string else { return nil }
         return URL(string: string)
+    }
+
+    private func normalizedMotionArtworkAlbumKeys(_ albumKeys: [String]) -> [String] {
+        var seen: Set<String> = []
+        var normalized: [String] = []
+
+        for key in albumKeys {
+            let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty, !seen.contains(trimmed) else {
+                continue
+            }
+
+            seen.insert(trimmed)
+            normalized.append(trimmed)
+        }
+
+        return normalized
+    }
+
+    private func syntheticMotionArtworkMediaID(forAlbumKey albumKey: String) -> String {
+        "\(MotionArtworkAlbumNamespace.mediaIDPrefix)\(albumKey)"
     }
 
     private func allEntries() -> [MediaCacheEntry] {

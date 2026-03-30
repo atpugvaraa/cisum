@@ -124,6 +124,17 @@ final class PlaylistLibraryStore {
         return try? context.fetch(descriptor).first
     }
 
+    func playlist(sourceProvider: PlaylistSourceProvider, sourcePlaylistID: String) -> Playlist? {
+        let providerRawValue = sourceProvider.rawValue
+        var descriptor = FetchDescriptor<Playlist>(
+            predicate: #Predicate {
+                $0.sourceProviderRawValue == providerRawValue && $0.sourcePlaylistID == sourcePlaylistID
+            }
+        )
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
     func items(for playlistID: String) -> [PlaylistItem] {
         let descriptor = FetchDescriptor<PlaylistItem>(
             predicate: #Predicate { $0.playlistID == playlistID },
