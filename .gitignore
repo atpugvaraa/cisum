@@ -1,2 +1,7 @@
 /Skills+Documentation
 /.github
+/.next
+/node_modules
+CLAUDE.md
+AGENTS.md
+/.idea
