@@ -8,13 +8,11 @@
 #if os(iOS)
     import Kingfisher
     import SwiftUI
-import Services
     import DesignSystem
     import Utilities
 
     struct PlayerBackground: View {
-    @Environment(ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+        @Environment(PlayerViewModel.self) private var playerViewModel
 
         let isPlayerExpanded: Bool
         let isFullExpanded: Bool
@@ -24,12 +22,10 @@ import Services
             ZStack {
                 Rectangle()
                     .fill(.bar)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 if canBeExpanded {
                     Rectangle()
                         .fill(.ultraThickMaterial)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .overlay {
                             ZStack {
                                 playerViewModel.currentAccentColor
@@ -67,8 +63,8 @@ import Services
                 }
             }
             .clipShape(.rect(cornerRadius: dynamicCornerRadius))
-            .frame(maxWidth: .infinity)
-            .frame(maxHeight: isPlayerExpanded ? .infinity : Utilities.AppConstants.dynamicPlayerIslandHeight)
+            .frame(height: isPlayerExpanded ? nil : Utilities.AppConstants.dynamicPlayerIslandHeight)
+
         }
     }
 

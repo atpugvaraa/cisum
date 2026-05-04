@@ -90,8 +90,7 @@ public struct ExpandablePlayer: View {
                         resetStackedWithAnimation()
                     }
                 }
-                .onPreferenceChange(NowPlayingExpandProgressPreferenceKey.self) {
-                    value in
+                .onPreferenceChange(NowPlayingExpandProgressPreferenceKey.self) { value in
                     if expandProgress != value {
                         expandProgress = value
                     }
@@ -141,10 +140,7 @@ public struct ExpandablePlayer: View {
                                     }
                                 }, including: isPlayerExpanded ? .all : .subviews)
                 }
-                .onReceive(
-                    NotificationCenter.default.publisher(
-                        for: UIApplication.willResignActiveNotification)
-                ) { _ in
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
                     if isPlayerExpanded {
                         resetWindowToIdentity()
                     }
@@ -161,13 +157,10 @@ public struct ExpandablePlayer: View {
         }
         .onAppear {
             DesignSystem.PlayerExpansionState.shared.isExpanded = isPlayerExpanded
-            if let window = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?
-                .keyWindow, mainWindow == nil
-            {
+            if let window = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.keyWindow, mainWindow == nil {
                 mainWindow = window
             }
         }
-
     }
 }
 
@@ -189,9 +182,7 @@ extension ExpandablePlayer {
             /// Corner Radius
             mainWindow.layer.cornerRadius = (progress / 0.1) * 30
             mainWindow.layer.masksToBounds = true
-
-            mainWindow.transform = .identity.scaledBy(x: 1 - progress, y: 1 - progress)
-                .translatedBy(x: 0, y: offsetY)
+            mainWindow.transform = .identity.scaledBy(x: 1 - progress, y: 1 - progress).translatedBy(x: 0, y: offsetY)
         }
     }
 
@@ -220,8 +211,6 @@ extension ExpandablePlayer {
                 isPlayerExpanded: isPlayerExpanded,
                 isFullExpanded: isFullyExpanded
             )
-            .ignoresSafeArea()
-            .background(.red)
 
             DynamicPlayerIsland(
                 isPlayerExpanded: $isPlayerExpanded,
@@ -238,10 +227,7 @@ extension ExpandablePlayer {
 
             ProgressTracker(progress: progressTrackState)
         }
-        .frame(maxWidth: .infinity)
-        .frame(
-            maxHeight: isPlayerExpanded ? .infinity : Utilities.AppConstants.dynamicPlayerIslandHeight, alignment: .top
-        )
+        .frame(height: isPlayerExpanded ? nil : Utilities.AppConstants.dynamicPlayerIslandHeight, alignment: .top)
         .offset(y: offsetY)
         .ignoresSafeArea()
     }
@@ -284,19 +270,6 @@ extension ExpandablePlayer {
             progressTrackState = 0
         }
     }
-
-    fileprivate var insets: EdgeInsets {
-        if isPlayerExpanded {
-            return .init(top: 0, leading: 0, bottom: 0, trailing: 0)
-        }
-
-        return .init(
-            top: 0,
-            leading: collapsedFrame.minX,
-            bottom: UIScreen.size.height - collapsedFrame.maxY,
-            trailing: UIScreen.size.width - collapsedFrame.maxX
-        )
-    }
 }
 
 private struct ProgressTracker: View, @preconcurrency Animatable {
@@ -311,6 +284,5 @@ private struct ProgressTracker: View, @preconcurrency Animatable {
         Color.clear
             .frame(width: 1, height: 1)
             .preference(key: NowPlayingExpandProgressPreferenceKey.self, value: progress)
-
     }
 }
