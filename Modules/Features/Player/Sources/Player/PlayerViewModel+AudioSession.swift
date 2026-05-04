@@ -64,7 +64,7 @@ extension PlayerViewModel {
 			VolumeButtonSkipController.shared.cancelActiveHold()
 			wasPlayingBeforeInterruption = isPlaying
 			player.pause()
-			isPlaying = false
+			playbackEngine.setIsPlaying(false)
 			updateNowPlayingPlaybackInfo(force: true)
 			updateRemoteCommandState()
 			print("⚠️ PlayerViewModel: Audio interruption began")
@@ -76,7 +76,7 @@ extension PlayerViewModel {
 			if shouldResume && wasPlayingBeforeInterruption {
 				reactivateAudioSessionIfNeeded()
 				player.play()
-				isPlaying = true
+				playbackEngine.setIsPlaying(true)
 				print("✅ PlayerViewModel: Resumed after interruption")
 			}
 
@@ -99,7 +99,7 @@ extension PlayerViewModel {
 		case .oldDeviceUnavailable:
 			if isPlaying {
 				player.pause()
-				isPlaying = false
+                playbackEngine.setIsPlaying(false)
 				updateNowPlayingPlaybackInfo(force: true)
 				updateRemoteCommandState()
 				print("⚠️ PlayerViewModel: Paused because audio route became unavailable")

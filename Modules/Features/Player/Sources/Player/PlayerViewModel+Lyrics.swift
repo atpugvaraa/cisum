@@ -1,4 +1,5 @@
 import Foundation
+import Services
 
 #if canImport(LyricsKit)
 import LyricsKit
@@ -45,21 +46,19 @@ extension PlayerViewModel {
         durationHint: Int?
     ) {
         self.lyricsLoadTask?.cancel()
-        self.syncedLyricsLines = []
-        self.plainLyricsText = nil
-        self.lyricsAttribution = nil
+        self.lyricsController.reset()
 
         let normalizedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedArtist = artist.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedAlbum = Self.nonEmptyTrimmed(albumName)
 
         guard !normalizedTitle.isEmpty else {
-            self.lyricsState = .idle
+            self.lyricsController.state = .idle
             return
         }
 
 #if canImport(LyricsKit)
-        self.lyricsState = .loading
+        self.lyricsController.state = .loading
         self.lyricsLoadTask = Task { @MainActor [weak self] in
             guard let self else { return }
 
@@ -73,27 +72,20 @@ extension PlayerViewModel {
 
                 guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
 
-                self.syncedLyricsLines = resolvedLyrics.syncedLines
-                self.plainLyricsText = resolvedLyrics.plainText
-                self.lyricsAttribution = resolvedLyrics.attribution
-
-                if !resolvedLyrics.syncedLines.isEmpty {
-                    self.lyricsState = .synced
-                } else if let plainText = resolvedLyrics.plainText,
-                          !plainText.isEmpty {
-                    self.lyricsState = .plain
-                } else {
-                    self.lyricsState = .unavailable("Lyrics unavailable for this track.")
-                }
+                self.lyricsController.loadLyrics(
+                    synced: resolvedLyrics.syncedLines,
+                    plain: resolvedLyrics.plainText,
+                    attribution: resolvedLyrics.attribution
+                )
             } catch is CancellationError {
                 return
             } catch {
                 guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
-                self.lyricsState = .unavailable(error.localizedDescription)
+                self.lyricsController.state = .unavailable(error.localizedDescription)
             }
         }
 #else
-    self.lyricsState = .unavailable("LyricsKit is not linked to this target.")
+    self.lyricsController.state = .unavailable("LyricsKit is not linked to this target.")
 #endif
     }
 

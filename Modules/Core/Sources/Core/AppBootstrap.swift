@@ -59,6 +59,8 @@ enum AppBootstrap {
     #if os(iOS)
         let artworkColorExtractor = ArtworkDominantColorExtractor.shared
     #endif
+        let playerPresentationController = PlayerPresentationController()
+        let searchOverlayController = SearchOverlayController()
 
         Task { @MainActor in
             await mediaCacheStore.performMaintenance()
@@ -151,7 +153,9 @@ enum AppBootstrap {
         let appDomain = AppDomain(
             youtube: youtube,
             router: router,
-            modelContainer: modelContainer
+            modelContainer: modelContainer,
+            playerPresentationController: playerPresentationController,
+            searchOverlayController: searchOverlayController
         )
 
         return ServicesContainer(

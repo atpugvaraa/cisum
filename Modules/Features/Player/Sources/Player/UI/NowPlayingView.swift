@@ -8,9 +8,11 @@
 #if os(iOS)
     import SwiftUI
     import Utilities
+import Services
 
     public struct NowPlayingView: View {
-        @Environment(PlayerViewModel.self) var playerViewModel
+        @Environment(ServicesContainer.self) private var container
+        private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
 
         public var isPlayerExpanded: Bool
         public var size: CGSize

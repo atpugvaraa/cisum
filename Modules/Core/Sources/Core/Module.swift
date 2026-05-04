@@ -109,7 +109,6 @@ public final class cisumModule {
         DesignSystem.RootView(playerOverlayState: .init()) {
             RootView(module: self)
                 .environment(self.container)
-                .environment(self.userDomain.spotifySessionCoordinator)
         } overlayWrapper: { overlay in
             AnyView(overlay.environment(self.container))
         }
@@ -132,7 +131,7 @@ public final class cisumModule {
         let container = AppBootstrap.makeDependenciesOrFallback(youtube: youtube, router: appRouter)
         self.container = container
         
-        // 1. Store Interfaces (container already holds Interface structs directly)
+        // 1. Store Interfaces
         self.coreDomain = container.core
         self.playbackDomain = container.playback
         self.searchDomain = container.search
@@ -141,11 +140,14 @@ public final class cisumModule {
         self.appDomain = container.app
 
         // 2. Initialize Features
-        self.home = HomeModule(youtube: container.app.youtube)
+        self.home = HomeModule()
         self.discover = DiscoverModule()
         self.library = LibraryModule()
-        // PlayerModule needs the concrete PlayerViewModel for @Environment injection
-        self.player = PlayerModule(viewModel: container.playback.playerViewModel as! PlayerViewModel)
+        
+        self.player = PlayerModule(
+            dependencies: PlayerDependencies(viewModel: container.playback.playerViewModel)
+        )
+        
         self.profile = ProfileModule(
             prefetchSettings: container.core.prefetchSettings,
             networkMonitor: container.core.networkMonitor,
@@ -154,16 +156,19 @@ public final class cisumModule {
         )
         
         self.search = SearchModule(
-            youtube: container.app.youtube,
-            settings: container.core.prefetchSettings,
-            networkMonitor: container.core.networkMonitor,
-            historyStore: container.search.historyStore,
-            searchCacheHintStore: container.search.searchCacheHintStore,
-            streamingProviderSettings: container.playback.streamingProviderSettings,
-            centralMediaStore: container.library.centralMediaStore,
-            metadataCache: container.library.metadataCache,
-            searchCache: container.search.searchCache,
-            spotifySessionCoordinator: container.user.spotifySessionCoordinator
+            dependencies: SearchDependencies(
+                youtube: container.app.youtube,
+                settings: container.core.prefetchSettings,
+                networkMonitor: container.core.networkMonitor,
+                historyStore: container.search.historyStore,
+                searchCacheHintStore: container.search.searchCacheHintStore,
+                streamingProviderSettings: container.playback.streamingProviderSettings,
+                centralMediaStore: container.library.centralMediaStore,
+                metadataCache: container.library.metadataCache,
+                searchCache: container.search.searchCache,
+                spotifySessionCoordinator: container.user.spotifySessionCoordinator,
+                viewModel: container.search.searchViewModel
+            )
         )
     }
 }

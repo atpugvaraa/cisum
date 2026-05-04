@@ -16,6 +16,7 @@ let package = Package(
         .package(name: "YouTubeSDK", path: "../../../Packages/StreamingKit/YouTubeSDK"),
         .package(name: "SpotifySDK", path: "../../../Packages/StreamingKit/SpotifySDK"),
         .package(name: "iTunesKit", path: "../../../Packages/StreamingKit/iTunesKit"),
+        .package(name: "iTunesKit", path: "../../../Packages/StreamingKit/LyricsKit"),
     ],
     targets: [
         .target(

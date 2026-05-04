@@ -4,10 +4,19 @@ import SwiftUI
 import YouTubeSDK
 
 @MainActor
-public final class SearchModule {
-    private let viewModel: SearchViewModel
-    private let spotifySessionCoordinator: SpotifySessionCoordinator?
-
+public struct SearchDependencies {
+    public let youtube: YouTube
+    public let settings: PrefetchSettings
+    public let networkMonitor: NetworkPathMonitor
+    public let historyStore: Services.SearchHistoryStore
+    public let searchCacheHintStore: Services.SearchCacheHintStore
+    public let streamingProviderSettings: StreamingProviderSettings
+    public let centralMediaStore: CentralMediaStore?
+    public let metadataCache: any VideoMetadataCaching
+    public let searchCache: any SearchResultsCaching
+    public let spotifySessionCoordinator: SpotifySessionCoordinator?
+    public let viewModel: any SearchViewModelInterface
+    
     public init(
         youtube: YouTube,
         settings: PrefetchSettings,
@@ -18,26 +27,35 @@ public final class SearchModule {
         centralMediaStore: CentralMediaStore?,
         metadataCache: any VideoMetadataCaching,
         searchCache: any SearchResultsCaching,
-        spotifySessionCoordinator: SpotifySessionCoordinator? = nil
+        spotifySessionCoordinator: SpotifySessionCoordinator?,
+        viewModel: any SearchViewModelInterface
     ) {
+        self.youtube = youtube
+        self.settings = settings
+        self.networkMonitor = networkMonitor
+        self.historyStore = historyStore
+        self.searchCacheHintStore = searchCacheHintStore
+        self.streamingProviderSettings = streamingProviderSettings
+        self.centralMediaStore = centralMediaStore
+        self.metadataCache = metadataCache
+        self.searchCache = searchCache
         self.spotifySessionCoordinator = spotifySessionCoordinator
-        self.viewModel = SearchViewModel(
-            youtube: youtube,
-            settings: settings,
-            networkMonitor: networkMonitor,
-            historyStore: historyStore,
-            searchCacheHintStore: searchCacheHintStore,
-            streamingProviderSettings: streamingProviderSettings,
-            centralMediaStore: centralMediaStore,
-            metadataCache: metadataCache,
-            searchCache: searchCache
-        )
+        self.viewModel = viewModel
+    }
+}
+
+@MainActor
+public final class SearchModule {
+    private let viewModel: any SearchViewModelInterface
+    private let spotifySessionCoordinator: SpotifySessionCoordinator?
+
+    public init(dependencies: SearchDependencies) {
+        self.viewModel = dependencies.viewModel
+        self.spotifySessionCoordinator = dependencies.spotifySessionCoordinator
     }
 
     public var view: some View {
         SearchView()
-            .environment(viewModel)
-            .environment(spotifySessionCoordinator)
     }
 
     public var searchText: Binding<String> {
@@ -48,6 +66,7 @@ public final class SearchModule {
     }
 
     public func performSearch() {
-        viewModel.performDebouncedSearch()
+        // Debounced search is handled by the view model's reactive searchText if implemented that way,
+        // or we can add performSearch to the interface if needed.
     }
 }

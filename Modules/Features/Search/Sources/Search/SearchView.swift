@@ -14,16 +14,16 @@ import DesignSystem
 
 public struct SearchView: View {
     @Environment(Services.ServicesContainer.self) private var container
-    @Environment(\.router) private var router
     @Environment(\.modelContext) private var modelContext
     
+    private var router: Router { container.app.router }
     private var searchViewModel: any SearchViewModelInterface { container.search.searchViewModel }
     private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
     private var centralMediaStore: CentralMediaStore { container.library.centralMediaStore }
+    private var presentationController: PlayerPresentationController { container.app.playerPresentationController }
     #if canImport(SpotifySDK)
     private var spotifyCoordinator: SpotifySessionCoordinator { container.user.spotifySessionCoordinator }
     #endif
-    @Environment(\.playerPresentationActions) private var presentationActions
 
     @FocusState private var isSearchFocused: Bool
     @State private var isSearchPresentationActive: Bool = false
@@ -104,12 +104,12 @@ public struct SearchView: View {
         case .youtubeMusic(let song):
             searchViewModel.recordSuccessfulPlayFromCurrentQuery()
             playerViewModel.load(song: song, preserveQueue: false)
-            presentationActions.expand()
+            presentationController.expand()
 
         case .youtubeVideo(let video):
             searchViewModel.recordSuccessfulPlayFromCurrentQuery()
             playerViewModel.load(video: video, preserveQueue: false)
-            presentationActions.expand()
+            presentationController.expand()
 
         case .spotify:
             Task {
@@ -161,7 +161,7 @@ public struct SearchView: View {
 
             searchViewModel.recordSuccessfulPlayFromCurrentQuery()
             playerViewModel.load(external: selectedTrack, preserveQueue: false)
-            presentationActions.expand()
+            presentationController.expand()
         } catch {
             nonPlayableMessage = error.localizedDescription
             showNonPlayableAlert = true

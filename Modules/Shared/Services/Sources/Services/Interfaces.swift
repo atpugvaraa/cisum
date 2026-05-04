@@ -92,11 +92,21 @@ public struct AppInterface {
     public let youtube: YouTube
     public let router: Router
     public let modelContainer: ModelContainer
+    public let playerPresentationController: PlayerPresentationController
+    public let searchOverlayController: SearchOverlayController
     
-    public init(youtube: YouTube, router: Router, modelContainer: ModelContainer) {
+    public init(
+        youtube: YouTube,
+        router: Router,
+        modelContainer: ModelContainer,
+        playerPresentationController: PlayerPresentationController,
+        searchOverlayController: SearchOverlayController
+    ) {
         self.youtube = youtube
         self.router = router
         self.modelContainer = modelContainer
+        self.playerPresentationController = playerPresentationController
+        self.searchOverlayController = searchOverlayController
     }
 }
 

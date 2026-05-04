@@ -17,9 +17,11 @@ import SpotifySDK
 public struct ProfileView: View {
     public init() {}
 
-    @Environment(\.youtube) private var youtube
-    @Environment(StreamingProviderSettings.self) private var streamingProviderSettings
-    @Environment(SpotifySessionCoordinator.self) private var spotifyCoordinator
+    @Environment(ServicesContainer.self) private var container
+    
+    private var youtube: YouTube { container.app.youtube }
+    private var streamingProviderSettings: StreamingProviderSettings { container.playback.streamingProviderSettings }
+    private var spotifyCoordinator: SpotifySessionCoordinator { container.user.spotifySessionCoordinator }
 
     @State private var showLoginSheet: Bool = false
     @State private var hasStoredSession: Bool = false

@@ -4,6 +4,13 @@ import SwiftUI
 import Models
 import YouTubeSDK
 
+public enum ArtworkVideoProcessingStatus: Equatable, Sendable {
+    case idle
+    case processing
+    case ready
+    case failed
+}
+
 @MainActor
 public protocol PlayerViewModelInterface: AnyObject, Observable {
     // Basic Track Info
@@ -40,8 +47,18 @@ public protocol PlayerViewModelInterface: AnyObject, Observable {
     // Hi-Res Actions
     var isCheckingHiResAvailability: Bool { get }
     var canSwitchToHiResVersion: Bool { get }
+    var hiResAvailabilityMessage: String? { get }
     func checkForHiResVersion() async
     func switchToHiResVersionIfAvailable()
+    
+    // Artwork Video
+    var artworkVideoStatus: ArtworkVideoProcessingStatus { get }
+    var animatedArtworkVideoURL: URL? { get }
+    var artworkVideoProgress: Double? { get }
+    var artworkVideoError: String? { get }
+    
+    // Additional Info
+    var lyricsAttribution: String? { get }
 }
 
 @MainActor
@@ -68,6 +85,7 @@ public protocol SearchViewModelInterface: AnyObject, Observable {
     // Pagination helpers
     var isVideoPaginationLoading: Bool { get }
     func loadMoreVideosIfNeeded(for item: YouTubeSearchResult)
+    func performDebouncedSearch()
 }
 
 // MARK: - Search Support Types
@@ -88,7 +106,16 @@ public enum SearchState: Equatable, Sendable {
 
 // MARK: - External Track Support
 
-public struct ExternalQueueTrack {
+public struct ExternalQueueTrack: Sendable, Equatable {
+    public static func == (lhs: ExternalQueueTrack, rhs: ExternalQueueTrack) -> Bool {
+        lhs.mediaID == rhs.mediaID &&
+        lhs.title == rhs.title &&
+        lhs.artist == rhs.artist &&
+        lhs.artworkURL == rhs.artworkURL &&
+        lhs.service == rhs.service &&
+        lhs.isExplicit == rhs.isExplicit
+    }
+
     public let mediaID: String
     public let title: String
     public let artist: String
@@ -97,9 +124,9 @@ public struct ExternalQueueTrack {
     public let isExplicit: Bool
     public let qualityLabelHint: String?
     public let codecLabelHint: String?
-    public let resolvePayload: @MainActor () async throws -> ExternalStreamPayload
+    public let resolvePayload: @Sendable @MainActor () async throws -> ExternalStreamPayload
     
-    public init(mediaID: String, title: String, artist: String, artworkURL: URL?, service: FederatedService, isExplicit: Bool, qualityLabelHint: String?, codecLabelHint: String?, resolvePayload: @escaping @MainActor () async throws -> ExternalStreamPayload) {
+    public init(mediaID: String, title: String, artist: String, artworkURL: URL?, service: FederatedService, isExplicit: Bool, qualityLabelHint: String?, codecLabelHint: String?, resolvePayload: @escaping @Sendable @MainActor () async throws -> ExternalStreamPayload) {
         self.mediaID = mediaID
         self.title = title
         self.artist = artist

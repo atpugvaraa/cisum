@@ -8,15 +8,15 @@
 import SwiftUI
 import YouTubeSDK
 import DesignSystem
+import Services
 
 public struct HomeView: View {
+    @Environment(ServicesContainer.self) private var container
     @State private var viewModel: HomeViewModel
     private let onAction: (ProfileMenuAction) -> Void
-    private let youtube: YouTube
 
-    public init(youtube: YouTube, onAction: @escaping (ProfileMenuAction) -> Void = { _ in }) {
+    public init(onAction: @escaping (ProfileMenuAction) -> Void = { _ in }) {
         _viewModel = State(initialValue: HomeViewModel())
-        self.youtube = youtube
         self.onAction = onAction
     }
 
@@ -98,7 +98,7 @@ public struct HomeView: View {
             .padding(.top, 200)
         }
         .task {
-            viewModel.configure(youtube: youtube)
+            viewModel.configure(youtube: container.app.youtube)
             await viewModel.loadIfNeeded()
         }
         .refreshable {

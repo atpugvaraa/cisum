@@ -1,6 +1,7 @@
 import SwiftUI
 import DesignSystem
 import Utilities
+import Services
 
 public struct RootView: View {
     public let cisum: cisumModule
@@ -8,15 +9,16 @@ public struct RootView: View {
     @Environment(\.modelContext) private var modelContext
     @ObservedObject private var navigationState: NavigationState
 
+    @Environment(ServicesContainer.self) private var container
+
 #if os(iOS)
     @State private var isScrollingDown = false
     @State private var storedOffset: CGFloat = 0
     @State var scrollPhase: ScrollPhases = .idle
     @State var tabBarVisibility: Visibility = .visible
-    @State private var expandMiniPlayer: Bool = false
     @Namespace private var playerAnimationNamespace
 #else
-    @Environment(SearchOverlayController.self) private var searchOverlay
+    private var searchOverlay: SearchOverlayController { container.app.searchOverlayController }
     @Environment(\.isDynamicPlayerExpanded) private var isDynamicPlayerExpanded
 #endif
 
@@ -27,14 +29,16 @@ public struct RootView: View {
 
     public var body: some View {
 #if os(iOS)
+        @Bindable var presentation = container.app.playerPresentationController
+        
         iOSTabView(
             selection: selectedTabBinding,
-            expandMiniPlayer: $expandMiniPlayer,
+            expandMiniPlayer: $presentation.isExpanded,
             playerAnimationNamespace: playerAnimationNamespace,
             searchText: cisum.searchText,
             playerContent: cisum.expandablePlayer(
                 show: .constant(true),
-                isExpanded: $expandMiniPlayer,
+                isExpanded: $presentation.isExpanded,
                 collapsedFrame: .zero
             ),
             accentColor: cisum.playerAccentColor
@@ -67,15 +71,13 @@ public struct RootView: View {
         }
         .tabbarBottomViewAccessory {
             cisum.miniPlayer(
-                isExpanded: $expandMiniPlayer,
+                isExpanded: $presentation.isExpanded,
                 namespace: playerAnimationNamespace
             )
         }
         .tabbarVisibility(tabBarVisibility)
         .animation(.smooth(duration: 0.3), value: tabBarVisibility)
-        .environment(\.playerPresentationActions, playerPresentationActions)
         .systemVolumeController(cisum.systemVolumeController, showsSystemVolumeHUD: false)
-        .environment(\.router, cisum.router)
         .onChange(of: navigationState.selectedTab) { _, _ in
             if tabBarVisibility != .visible {
                 tabBarVisibility = .visible
@@ -120,40 +122,16 @@ public struct RootView: View {
         )
     }
 
-    private var playerPresentationActions: PlayerPresentationActions {
-        PlayerPresentationActions(
-            expand: {
-                expandPlayer()
-            },
-            collapse: {
-                collapsePlayer()
-            },
-            toggle: {
-                togglePlayerExpansion()
-            }
-        )
-    }
-
     private func expandPlayer() {
-        guard !expandMiniPlayer else { return }
-        withAnimation(.playerExpandAnimation) {
-            expandMiniPlayer = true
-        }
+        container.app.playerPresentationController.expand()
     }
 
     private func collapsePlayer() {
-        guard expandMiniPlayer else { return }
-        withAnimation(.playerExpandAnimation) {
-            expandMiniPlayer = false
-        }
+        container.app.playerPresentationController.collapse()
     }
 
     private func togglePlayerExpansion() {
-        if expandMiniPlayer {
-            collapsePlayer()
-        } else {
-            expandPlayer()
-        }
+        container.app.playerPresentationController.toggle()
     }
 
     @ViewBuilder

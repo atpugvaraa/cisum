@@ -10,9 +10,11 @@
     import SwiftUI
     import DesignSystem
     import Utilities
+import Services
 
     struct PlayerBackground: View {
-        @Environment(PlayerViewModel.self) private var playerViewModel
+        @Environment(ServicesContainer.self) private var container
+        private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
 
         let isPlayerExpanded: Bool
         let isFullExpanded: Bool

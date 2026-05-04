@@ -15,7 +15,8 @@ public struct YouTubePlaylistImportSheet: View {
     }
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.youtube) private var youtube
+    @Environment(ServicesContainer.self) private var container
+    private var youtube: YouTube { container.app.youtube }
     @Environment(\.modelContext) private var modelContext
 
     public let onImported: (String) -> Void

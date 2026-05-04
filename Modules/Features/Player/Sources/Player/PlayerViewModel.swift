@@ -57,12 +57,6 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         static let minSeedTracksBeforePlaylistHydration = 16
     }
 
-    public enum ArtworkVideoProcessingStatus: Equatable {
-        case idle
-        case processing
-        case ready
-        case failed
-    }
 
     public enum PlaybackQueueSource: String {
         case detached
@@ -128,7 +122,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 
 
     // MARK: - State
-    var player: AVPlayer
+    public var player: AVPlayer { playbackEngine.player }
     private let youtube: YouTube
     private let artworkVideoProcessor: ArtworkVideoProcessor
     public var currentVideoId: String?
@@ -152,11 +146,26 @@ public final class PlayerViewModel: PlayerViewModelInterface {
     public var canSwitchToHiResVersion: Bool {
         pendingHiResPayload != nil
     }
-    public var isLyricsVisible: Bool = false
-    public var lyricsState: LyricsState = .idle
-    public var syncedLyricsLines: [TimedLyricLine] = []
-    public var plainLyricsText: String?
-    public var lyricsAttribution: String?
+    // MARK: - Controllers
+    public let playbackEngine = PlaybackEngine()
+    public let lyricsController = LyricsController()
+    public let artworkController = ArtworkController()
+    public let queueManager = QueueManager()
+
+    // MARK: - Delegated Properties
+    public var isPlaying: Bool { playbackEngine.isPlaying }
+    public var currentTime: Double { playbackEngine.currentTime }
+    public var duration: Double { playbackEngine.duration }
+    public var isLyricsVisible: Bool {
+        get { lyricsController.isVisible }
+        set { lyricsController.isVisible = newValue }
+    }
+    public var lyricsState: LyricsState {
+        lyricsController.state
+    }
+    public var syncedLyricsLines: [TimedLyricLine] { lyricsController.syncedLines }
+    public var plainLyricsText: String? { lyricsController.plainText }
+    public var lyricsAttribution: String? { lyricsController.attribution }
     public var progressState = PlaybackProgressState()
 
     // Queue
@@ -194,25 +203,6 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         }
 
         return queuePreviewItems[queuePosition + 1]
-    }
-
-    public var duration: Double {
-        get { progressState.duration }
-        set { progressState.duration = newValue }
-    }
-
-    public var currentTime: Double {
-        get { progressState.currentTime }
-        set { progressState.currentTime = newValue }
-    }
-
-    public var isPlaying = false {
-        didSet {
-#if os(iOS)
-            guard oldValue != isPlaying else { return }
-            VolumeButtonSkipController.shared.handlePlaybackStateChanged(isPlaying: isPlaying)
-#endif
-        }
     }
 
     // Private
@@ -351,7 +341,6 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         self.streamingProviderSettings = streamingProviderSettings
         self.radioSessionStore = radioSessionStore
         self.artworkColorExtractor = artworkColorExtractor
-        self.player = AVPlayer()
 
         finishInitialization()
     }
@@ -374,7 +363,6 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         self.playbackMetricsStore = playbackMetricsStore
         self.streamingProviderSettings = streamingProviderSettings
         self.radioSessionStore = radioSessionStore
-        self.player = AVPlayer()
 
         finishInitialization()
     }
@@ -384,7 +372,12 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         configureAudioSession()
         configurePlayerForBackgroundPlayback()
         setupRemoteCommands()
-        setupTimeObserver()
+        
+        playbackEngine.onProgressUpdate = { [weak self] in
+            guard let self else { return }
+            self.handleProgressUpdate()
+        }
+        
         setupAudioLifecycleObservers()
 
     #if os(iOS)
@@ -393,6 +386,14 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 
         Color.resetDynamicAccent()
         currentAccentColor = Color.dynamicAccent
+    }
+
+    private func handleProgressUpdate() {
+        let previousCanSkipBackward = self.canSkipBackward
+        
+        if self.canSkipBackward != previousCanSkipBackward {
+            self.updateRemoteCommandState()
+        }
     }
 
     // MARK: - Playback Session State
@@ -423,8 +424,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 
     private func resetPlaybackRuntimeState(for mediaID: String) {
         playbackError = nil
-        currentTime = 0
-        duration = 0
+        playbackEngine.resetProgress()
         resetPlaybackCandidates(for: mediaID)
         resetPlaybackRecoveryState(for: mediaID)
         playbackRecoveryTask?.cancel()
@@ -683,7 +683,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 
     private func advanceToNextQueueEntry(triggeredByPlaybackEnd: Bool) {
         guard hasNextTrackInQueue, let queuePosition else {
-            isPlaying = false
+            playbackEngine.setIsPlaying(false)
             updateNowPlayingPlaybackInfo(force: true)
             updateRemoteCommandState()
             return
@@ -724,9 +724,8 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         player.pause()
         player.replaceCurrentItem(with: nil)
         removeCurrentItemEndObserver()
-        isPlaying = false
-        currentTime = 0
-        duration = 0
+        playbackEngine.setIsPlaying(false)
+        playbackEngine.resetProgress()
         updateNowPlayingPlaybackInfo(force: true)
         updateRemoteCommandState()
     }
@@ -1493,8 +1492,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 #endif
 
         player.seek(to: .zero)
-        isPlaying = true
-        player.play()
+        playbackEngine.play()
 
         startArtworkVideoProcessingIfNeeded(
             for: prepared.mediaID,
@@ -1703,10 +1701,8 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         #endif
 
         seek(to: .zero)
-        currentTime = 0
-        duration = 0
-        isPlaying = true
-        player.play()
+        playbackEngine.resetProgress()
+        playbackEngine.play()
 
         updateNowPlayingMetadata()
         updateRemoteCommandState()
@@ -1978,7 +1974,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
                         return
                     }
 
-                    self.isPlaying = false
+                    self.playbackEngine.setIsPlaying(false)
                     self.playbackError = item.error?.localizedDescription ?? "Failed to load media"
                     self.updateNowPlayingPlaybackInfo(force: true)
                     self.updateRemoteCommandState()
@@ -2068,7 +2064,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
                 )
             } catch {
                 guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
-                self.isPlaying = false
+                self.playbackEngine.setIsPlaying(false)
                 self.playbackError = error.localizedDescription
                 self.updateNowPlayingPlaybackInfo(force: true)
                 self.updateRemoteCommandState()
@@ -2138,8 +2134,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
     }
 
     private func handlePlaybackFailure(_ error: Error) {
-        player.pause()
-        isPlaying = false
+        playbackEngine.pause()
         playbackError = error.localizedDescription
         updateNowPlayingPlaybackInfo(force: true)
         updateRemoteCommandState()
@@ -2153,37 +2148,6 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 
     // MARK: - Internal Setup
 
-    private func setupTimeObserver() {
-        let interval = CMTime(seconds: 0.1, preferredTimescale: 600)
-        timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-            guard let self = self else { return }
-
-            MainActor.assumeIsolated {
-                let previousDuration = self.duration
-                let previousCanSkipBackward = self.canSkipBackward
-
-                let nextCurrentTime = max(time.seconds, 0)
-                if abs(self.currentTime - nextCurrentTime) > 0.0001 {
-                    self.currentTime = nextCurrentTime
-                }
-
-                if let duration = self.player.currentItem?.duration.seconds,
-                   duration.isFinite,
-                   !duration.isNaN,
-                   abs(self.duration - duration) > 0.0001 {
-                    self.duration = duration
-                }
-
-                if self.canSkipBackward != previousCanSkipBackward {
-                    self.updateRemoteCommandState()
-                }
-
-                if abs(self.duration - previousDuration) > 0.5 {
-                    self.updateNowPlayingPlaybackInfo(force: true)
-                }
-            }
-        }
-    }
 
     private func setupRemoteCommands() {
         remoteCommandCenter.playCommand.addTarget { [weak self] _ in
@@ -2222,8 +2186,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         }
 
         reactivateAudioSessionIfNeeded()
-        player.play()
-        isPlaying = true
+        playbackEngine.play()
         updateNowPlayingPlaybackInfo(force: true)
         updateRemoteCommandState()
     }
@@ -2234,8 +2197,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
             return
         }
 
-        player.pause()
-        isPlaying = false
+        playbackEngine.pause()
         updateNowPlayingPlaybackInfo(force: true)
         updateRemoteCommandState()
     }
