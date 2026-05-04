@@ -2,13 +2,15 @@
 <Workspace
    version = "1.0">
    <FileRef
+      location = "group:iOS/iOS.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:macOS/macOS.xcodeproj">
    </FileRef>
-   <FileSystemSynchronizedGroup
-      location = "group:Shared"
-      name = "Shared">
-   </FileSystemSynchronizedGroup>
    <FileRef
-      location = "group:iOS/iOS.xcodeproj">
+      location = "group:Modules">
+   </FileRef>
+   <FileRef
+      location = "group:Packages">
    </FileRef>
 </Workspace>

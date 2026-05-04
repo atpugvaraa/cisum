@@ -1,2 +1,21 @@
-/Skills+Documentation
-/.github
+# Swift Package Manager
+.build-benchmark/
+.build/
+.swiftpm/
+
+.github/
+
+# Xcode
+build/
+DerivedData/
+
+# Build artifacts
+*.o
+*.a
+*.dSYM
+
+# macOS junk
+.DS_Store
+
+# Optional: logs
+*.log

@@ -12,7 +12,9 @@ import SwiftUI
 struct LyricsBundle: WidgetBundle {
     var body: some Widget {
         Lyrics()
-        LyricsControl()
+        if #available(iOS 18.0, *) {
+            LyricsControl()
+        }
         LyricsLiveActivity()
     }
 }

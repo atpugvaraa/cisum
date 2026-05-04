@@ -7,11 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7720397C2F6AAB1D00E85D4A /* YouTubeSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 7720397B2F6AAB1D00E85D4A /* YouTubeSDK */; };
-		772039822F6AAB3900E85D4A /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 772039812F6AAB3900E85D4A /* Kingfisher */; };
-		772039882F6AAB5900E85D4A /* InjectionNext in Frameworks */ = {isa = PBXBuildFile; productRef = 772039872F6AAB5900E85D4A /* InjectionNext */; };
-		7736DD052F6ECE800077B88B /* iTunesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7736DD042F6ECE800077B88B /* iTunesKit */; };
-		77D703442F781FA500358D03 /* iTunesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 77D703432F781FA500358D03 /* iTunesKit */; };
+		777B92BA2FA48CE000ECAF15 /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = 777B92B92FA48CE000ECAF15 /* Core */; };
+		777B92D62FA4AA2400ECAF15 /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = 777B92D52FA4AA2400ECAF15 /* Core */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,12 +34,6 @@
 			path = cisum;
 			sourceTree = "<group>";
 		};
-		77AB98782F6AB58F00D31B8E /* Shared */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			name = Shared;
-			path = ../Shared;
-			sourceTree = SOURCE_ROOT;
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -50,11 +41,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				772039822F6AAB3900E85D4A /* Kingfisher in Frameworks */,
-				77D703442F781FA500358D03 /* iTunesKit in Frameworks */,
-				7736DD052F6ECE800077B88B /* iTunesKit in Frameworks */,
-				7720397C2F6AAB1D00E85D4A /* YouTubeSDK in Frameworks */,
-				772039882F6AAB5900E85D4A /* InjectionNext in Frameworks */,
+				777B92BA2FA48CE000ECAF15 /* Core in Frameworks */,
+				777B92D62FA4AA2400ECAF15 /* Core in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -64,7 +52,6 @@
 		772039602F6AAAD500E85D4A = {
 			isa = PBXGroup;
 			children = (
-				77AB98782F6AB58F00D31B8E /* Shared */,
 				7720396B2F6AAAD500E85D4A /* cisum */,
 				7720396A2F6AAAD500E85D4A /* Products */,
 			);
@@ -95,15 +82,11 @@
 			);
 			fileSystemSynchronizedGroups = (
 				7720396B2F6AAAD500E85D4A /* cisum */,
-				77AB98782F6AB58F00D31B8E /* Shared */,
 			);
 			name = cisum;
 			packageProductDependencies = (
-				7720397B2F6AAB1D00E85D4A /* YouTubeSDK */,
-				772039812F6AAB3900E85D4A /* Kingfisher */,
-				772039872F6AAB5900E85D4A /* InjectionNext */,
-				7736DD042F6ECE800077B88B /* iTunesKit */,
-				77D703432F781FA500358D03 /* iTunesKit */,
+				777B92B92FA48CE000ECAF15 /* Core */,
+				777B92D52FA4AA2400ECAF15 /* Core */,
 			);
 			productName = macOS;
 			productReference = 772039692F6AAAD500E85D4A /* cisum.app */;
@@ -134,10 +117,7 @@
 			mainGroup = 772039602F6AAAD500E85D4A;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				7720397A2F6AAB1D00E85D4A /* XCRemoteSwiftPackageReference "YouTubeSDK" */,
-				772039802F6AAB3900E85D4A /* XCRemoteSwiftPackageReference "Kingfisher" */,
-				772039862F6AAB5900E85D4A /* XCRemoteSwiftPackageReference "InjectionNext" */,
-				77D703422F781FA500358D03 /* XCRemoteSwiftPackageReference "ituneskit" */,
+				777B92D42FA4AA2400ECAF15 /* XCLocalSwiftPackageReference "../Modules/Core" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7720396A2F6AAAD500E85D4A /* Products */;
@@ -429,65 +409,21 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		7720397A2F6AAB1D00E85D4A /* XCRemoteSwiftPackageReference "YouTubeSDK" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/atpugvaraa/YouTubeSDK.git";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		777B92D42FA4AA2400ECAF15 /* XCLocalSwiftPackageReference "../Modules/Core" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Modules/Core;
 		};
-		772039802F6AAB3900E85D4A /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 8.8.0;
-			};
-		};
-		772039862F6AAB5900E85D4A /* XCRemoteSwiftPackageReference "InjectionNext" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/johnno1962/InjectionNext.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.5.3;
-			};
-		};
-		77D703422F781FA500358D03 /* XCRemoteSwiftPackageReference "ituneskit" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://gitlab.com/atpugvaraa/ituneskit.git";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		7720397B2F6AAB1D00E85D4A /* YouTubeSDK */ = {
+		777B92B92FA48CE000ECAF15 /* Core */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 7720397A2F6AAB1D00E85D4A /* XCRemoteSwiftPackageReference "YouTubeSDK" */;
-			productName = YouTubeSDK;
+			productName = Core;
 		};
-		772039812F6AAB3900E85D4A /* Kingfisher */ = {
+		777B92D52FA4AA2400ECAF15 /* Core */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 772039802F6AAB3900E85D4A /* XCRemoteSwiftPackageReference "Kingfisher" */;
-			productName = Kingfisher;
-		};
-		772039872F6AAB5900E85D4A /* InjectionNext */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 772039862F6AAB5900E85D4A /* XCRemoteSwiftPackageReference "InjectionNext" */;
-			productName = InjectionNext;
-		};
-		7736DD042F6ECE800077B88B /* iTunesKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = iTunesKit;
-		};
-		77D703432F781FA500358D03 /* iTunesKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 77D703422F781FA500358D03 /* XCRemoteSwiftPackageReference "ituneskit" */;
-			productName = iTunesKit;
+			productName = Core;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

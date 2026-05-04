@@ -9,6 +9,7 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
+@available(iOS 18.0, *)
 struct LyricsControl: ControlWidget {
     static let kind: String = "aaravgupta.cisum.Lyrics"
 
@@ -30,6 +31,7 @@ struct LyricsControl: ControlWidget {
     }
 }
 
+@available(iOS 18.0, *)
 extension LyricsControl {
     struct Value {
         var isRunning: Bool
@@ -48,6 +50,7 @@ extension LyricsControl {
     }
 }
 
+@available(iOS 18.0, *)
 struct TimerConfiguration: ControlConfigurationIntent {
     static let title: LocalizedStringResource = "Timer Name Configuration"
 
@@ -55,6 +58,7 @@ struct TimerConfiguration: ControlConfigurationIntent {
     var timerName: String
 }
 
+@available(iOS 18.0, *)
 struct StartTimerIntent: SetValueIntent {
     static let title: LocalizedStringResource = "Start a timer"
 
