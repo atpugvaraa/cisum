@@ -7,14 +7,12 @@
 
 import Core
 import SwiftUI
-import YouTubeSDK
 import SwiftData
 
 @main
 struct iOSApp: App {
     @Environment(\.scenePhase) private var scenePhase
     
-    private let youtube = YouTube.shared
     private let cisum = cisumModule()
 
     var body: some Scene {

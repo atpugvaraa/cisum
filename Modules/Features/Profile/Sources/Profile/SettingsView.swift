@@ -9,6 +9,7 @@ public struct SettingsView: View {
     @Environment(NetworkPathMonitor.self) private var networkMonitor
     @Environment(PlaybackControlSettings.self) private var playbackControlSettings
     @Environment(StreamingProviderSettings.self) private var streamingProviderSettings
+    @Environment(PlaybackServices.self) private var playbackServices
 
     @State private var snapshot = PlaybackMetricsStore.Snapshot(
         cacheHitRate: 0,
@@ -149,7 +150,7 @@ public struct SettingsView: View {
                 }
                 Button("Reset Metrics", role: .destructive) {
                     Task {
-                        await PlaybackMetricsStore.shared.reset()
+                        await playbackServices.playbackMetricsStore.reset()
                         await refreshMetrics()
                     }
                 }
@@ -164,7 +165,7 @@ public struct SettingsView: View {
     }
 
     private func refreshMetrics() async {
-        snapshot = await PlaybackMetricsStore.shared.snapshot()
+        snapshot = await playbackServices.playbackMetricsStore.snapshot()
     }
 }
 

@@ -27,9 +27,6 @@ let package = Package(
                 .product(name: "YouTubeSDK", package: "YouTubeSDK"),
                 "Utilities",
                 "Services"
-            ],
-            resources: [
-                .process("Assets")
             ]
         )
     ],

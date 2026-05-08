@@ -16,8 +16,8 @@ import YouTubeSDK
 struct NowPlayingArtwork: View {
     let size: CGSize
     let artworkURL: URL?
-    @Environment(Services.ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+    @Environment(PlaybackServices.self) private var playbackServices
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
 
     var body: some View {
         GeometryReader { geometry in
@@ -41,8 +41,8 @@ struct NowPlayingArtwork: View {
 // MARK: - Song Info Section
 
 struct NowPlayingSongInfo: View {
-    @Environment(Services.ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+    @Environment(PlaybackServices.self) private var playbackServices
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
 
     var body: some View {
         HStack {
@@ -116,8 +116,8 @@ struct NowPlayingSongInfo: View {
 // MARK: - Progress Section (Fast updates isolated)
 
 struct NowPlayingProgressSection: View {
-    @Environment(Services.ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+    @Environment(PlaybackServices.self) private var playbackServices
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
 
     var body: some View {
         MusicProgressScrubber(
@@ -136,8 +136,8 @@ struct NowPlayingProgressSection: View {
 // MARK: - Controls Section
 
 struct NowPlayingControls: View {
-    @Environment(Services.ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+    @Environment(PlaybackServices.self) private var playbackServices
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
     let size: CGSize
     let safeArea: EdgeInsets
 
@@ -176,8 +176,8 @@ struct NowPlayingControls: View {
 // MARK: - Footer Section
 
 struct NowPlayingFooter: View {
-    @Environment(Services.ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+    @Environment(PlaybackServices.self) private var playbackServices
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
     let size: CGSize
     let safeArea: EdgeInsets
 
@@ -233,8 +233,8 @@ struct NowPlayingInfoBadge: View {
 // MARK: - Lyrics Section
 
 struct LyricsView: View {
-    @Environment(Services.ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+    @Environment(PlaybackServices.self) private var playbackServices
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
 
     var body: some View {
         ZStack {
@@ -269,8 +269,8 @@ struct LyricsView: View {
 }
 
 struct SyncedLyricsView: View {
-    @Environment(Services.ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+    @Environment(PlaybackServices.self) private var playbackServices
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -319,8 +319,8 @@ struct SyncedLyricsView: View {
 struct LyricLineView: View {
     let line: Services.TimedLyricLine
     let isActive: Bool
-    @Environment(Services.ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+    @Environment(PlaybackServices.self) private var playbackServices
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
 
     var body: some View {
         Text(line.text)
@@ -340,8 +340,8 @@ struct LyricLineView: View {
 }
 
 struct PlainLyricsView: View {
-    @Environment(ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+    @Environment(PlaybackServices.self) private var playbackServices
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {

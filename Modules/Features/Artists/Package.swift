@@ -14,6 +14,10 @@ let package = Package(
         ),
     ],
     dependencies: [
+        .package(path: "../../Shared/Models"),
+        .package(path: "../../Shared/Utilities"),
+        .package(path: "../../Shared/Services"),
+        .package(path: "../../Shared/DesignSystem"),
         .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "8.8.1")),
     ],
     targets: [
@@ -22,6 +26,10 @@ let package = Package(
         .target(
             name: "Artists",
             dependencies: [
+                .product(name: "Models", package: "Models"),
+                .product(name: "Utilities", package: "Utilities"),
+                .product(name: "Services", package: "Services"),
+                .product(name: "DesignSystem", package: "DesignSystem"),
                 .product(name: "Kingfisher", package: "Kingfisher")
             ],
         ),

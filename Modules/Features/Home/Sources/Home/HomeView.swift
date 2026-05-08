@@ -11,7 +11,7 @@ import DesignSystem
 import Services
 
 public struct HomeView: View {
-    @Environment(ServicesContainer.self) private var container
+    @Environment(ProviderServices.self) private var providerServices
     @State private var viewModel: HomeViewModel
     private let onAction: (ProfileMenuAction) -> Void
 
@@ -98,7 +98,7 @@ public struct HomeView: View {
             .padding(.top, 200)
         }
         .task {
-            viewModel.configure(youtube: container.app.youtube)
+            viewModel.configure(youtube: providerServices.youtube)
             await viewModel.loadIfNeeded()
         }
         .refreshable {

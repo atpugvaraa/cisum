@@ -11,8 +11,8 @@
 import Services
 
     public struct NowPlayingView: View {
-        @Environment(ServicesContainer.self) private var container
-        private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+        @Environment(PlaybackServices.self) private var playbackServices
+        private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
 
         public var isPlayerExpanded: Bool
         public var size: CGSize

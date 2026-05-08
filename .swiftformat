@@ -1,0 +1,15 @@
+--indent 4
+--linebreaks lf
+--wraparguments beforefirst
+--wrapparameters beforefirst
+--self init-only
+--ifdef no-indent
+--enum namespaces
+--swiftversion 6.0
+--exclude .build
+--exclude DerivedData
+--exclude build
+--exclude iOS/build
+--exclude macOS/build
+--exclude Modules/**/.build
+--exclude Packages/**/.build

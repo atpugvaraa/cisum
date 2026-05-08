@@ -13,8 +13,8 @@ import Utilities
 import DesignSystem
 
 public struct DiscoverView: View {
-    @Environment(Services.ServicesContainer.self) private var container
-    private var youtube: YouTube { container.app.youtube }
+    @Environment(ProviderServices.self) private var providerServices
+    private var youtube: YouTube { providerServices.youtube }
 
     public init() {}
 

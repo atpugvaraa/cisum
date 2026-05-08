@@ -109,8 +109,25 @@ public final class cisumModule {
         DesignSystem.RootView(playerOverlayState: .init()) {
             RootView(module: self)
                 .environment(self.container)
+                .environment(self.container.coreServices)
+                .environment(self.container.playbackServices)
+                .environment(self.container.searchServices)
+                .environment(self.container.libraryServices)
+                .environment(self.container.userServices)
+                .environment(self.container.providerServices)
+                .environment(self.container.appServices)
         } overlayWrapper: { overlay in
-            AnyView(overlay.environment(self.container))
+            AnyView(
+                overlay
+                    .environment(self.container)
+                    .environment(self.container.coreServices)
+                    .environment(self.container.playbackServices)
+                    .environment(self.container.searchServices)
+                    .environment(self.container.libraryServices)
+                    .environment(self.container.userServices)
+                    .environment(self.container.providerServices)
+                    .environment(self.container.appServices)
+            )
         }
     }
 

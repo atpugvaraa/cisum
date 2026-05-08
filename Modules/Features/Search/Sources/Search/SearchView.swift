@@ -5,7 +5,6 @@ import SwiftData
 import SwiftUI
 import Utilities
 import YouTubeSDK
-import Player
 import DesignSystem
 
 #if canImport(SpotifySDK)
@@ -13,16 +12,20 @@ import DesignSystem
 #endif
 
 public struct SearchView: View {
-    @Environment(Services.ServicesContainer.self) private var container
+    @Environment(AppServices.self) private var appServices
+    @Environment(SearchServices.self) private var searchServices
+    @Environment(PlaybackServices.self) private var playbackServices
+    @Environment(LibraryServices.self) private var libraryServices
+    @Environment(UserServices.self) private var userServices
     @Environment(\.modelContext) private var modelContext
     
-    private var router: Router { container.app.router }
-    private var searchViewModel: any SearchViewModelInterface { container.search.searchViewModel }
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
-    private var centralMediaStore: CentralMediaStore { container.library.centralMediaStore }
-    private var presentationController: PlayerPresentationController { container.app.playerPresentationController }
+    private var router: Router { appServices.router }
+    private var searchViewModel: any SearchViewModelInterface { searchServices.searchViewModel }
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
+    private var centralMediaStore: CentralMediaStore { libraryServices.centralMediaStore }
+    private var presentationController: PlayerPresentationController { appServices.playerPresentationController }
     #if canImport(SpotifySDK)
-    private var spotifyCoordinator: SpotifySessionCoordinator { container.user.spotifySessionCoordinator }
+    private var spotifyCoordinator: SpotifySessionCoordinator { userServices.spotifySessionCoordinator }
     #endif
 
     @FocusState private var isSearchFocused: Bool

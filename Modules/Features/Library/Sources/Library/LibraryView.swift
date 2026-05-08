@@ -13,11 +13,11 @@ import YouTubeSDK
 public struct LibraryView: View {
     public init() {}
 
-    @Environment(ServicesContainer.self) private var container
+    @Environment(UserServices.self) private var userServices
     @Environment(\.router) private var envRouter
     @Environment(\.modelContext) private var modelContext
     
-    private var spotifyCoordinator: SpotifySessionCoordinator { container.user.spotifySessionCoordinator }
+    private var spotifyCoordinator: SpotifySessionCoordinator { userServices.spotifySessionCoordinator }
     @Query(sort: \Playlist.updatedAt, order: .reverse) private var playlists: [Playlist]
 
     enum ImportProvider: String, CaseIterable, Identifiable {

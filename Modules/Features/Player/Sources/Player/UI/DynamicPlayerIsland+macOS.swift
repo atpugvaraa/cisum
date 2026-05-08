@@ -12,8 +12,8 @@ import DesignSystem
 
 #if os(macOS)
 public struct DynamicPlayerIsland: View {
-@Environment(ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+@Environment(PlaybackServices.self) private var playbackServices
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
     @Environment(\.isDynamicPlayerExpanded) private var isDynamicPlayerExpanded
     
     public init() {}

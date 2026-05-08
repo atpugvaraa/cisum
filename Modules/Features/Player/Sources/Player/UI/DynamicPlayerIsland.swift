@@ -12,8 +12,8 @@ import Utilities
 
 #if os(iOS)
 public struct DynamicPlayerIsland: View {
-@Environment(ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+@Environment(PlaybackServices.self) private var playbackServices
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
 
     @Binding var isPlayerExpanded: Bool
     var namespace: Namespace.ID

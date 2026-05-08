@@ -13,8 +13,8 @@
 import Services
 
     struct PlayerBackground: View {
-        @Environment(ServicesContainer.self) private var container
-        private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+        @Environment(PlaybackServices.self) private var playbackServices
+        private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
 
         let isPlayerExpanded: Bool
         let isFullExpanded: Bool

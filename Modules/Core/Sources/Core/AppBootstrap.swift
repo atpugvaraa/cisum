@@ -61,6 +61,14 @@ enum AppBootstrap {
     #endif
         let playerPresentationController = PlayerPresentationController()
         let searchOverlayController = SearchOverlayController()
+        let coreServices = CoreServices(
+            prefetchSettings: prefetchSettings,
+            networkMonitor: networkMonitor
+        )
+        let providerServices = ProviderServices(
+            youtube: youtube,
+            streamingProviderSettings: streamingProviderSettings
+        )
 
         Task { @MainActor in
             await mediaCacheStore.performMaintenance()
@@ -158,13 +166,52 @@ enum AppBootstrap {
             searchOverlayController: searchOverlayController
         )
 
+        let playbackServices = PlaybackServices(
+            playbackControlSettings: playbackControlSettings,
+            playbackMetricsStore: playbackMetricsStore,
+            streamingProviderSettings: streamingProviderSettings,
+            radioSessionStore: radioSessionStore,
+            artworkVideoProcessor: artworkVideoProcessor,
+            playerViewModel: playerViewModel
+        )
+
+        let searchServices = SearchServices(
+            historyStore: historyStore,
+            searchCacheHintStore: searchCacheHintStore,
+            searchCache: searchCache,
+            suggestionRanker: SuggestionRanker.self,
+            networkMonitor: networkMonitor,
+            prefetchSettings: prefetchSettings,
+            searchViewModel: searchDomain.searchViewModel
+        )
+
+        let libraryServices = LibraryServices(
+            playlistLibraryStore: playlistLibraryStore,
+            playlistImportJobStore: playlistImportJobStore,
+            centralMediaStore: centralMediaStore,
+            mediaCacheStore: mediaCacheStore,
+            metadataCache: metadataCache
+        )
+
+        let userServices = UserServices(
+            spotifySessionCoordinator: spotifySessionCoordinator
+        )
+
+        let appServices = AppServices(
+            router: router,
+            modelContainer: modelContainer,
+            playerPresentationController: playerPresentationController,
+            searchOverlayController: searchOverlayController
+        )
+
         return ServicesContainer(
-            core: coreDomain.interface,
-            playback: playbackDomain.interface(streamingProviderSettings: streamingProviderSettings),
-            search: searchDomain.interface(networkMonitor: networkMonitor, prefetchSettings: prefetchSettings),
-            library: libraryDomain.interface,
-            user: userDomain.interface,
-            app: appDomain.interface
+            coreServices: coreServices,
+            playbackServices: playbackServices,
+            searchServices: searchServices,
+            libraryServices: libraryServices,
+            userServices: userServices,
+            providerServices: providerServices,
+            appServices: appServices
         )
     }
 

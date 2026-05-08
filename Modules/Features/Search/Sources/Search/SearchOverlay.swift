@@ -4,11 +4,12 @@ import Services
 
 
 public struct SearchOverlayBar: View {
-    @Environment(ServicesContainer.self) private var container
+    @Environment(AppServices.self) private var appServices
+    @Environment(SearchServices.self) private var searchServices
     
-    private var searchOverlay: SearchOverlayController { container.app.searchOverlayController }
-    private var searchViewModel: any SearchViewModelInterface { container.search.searchViewModel }
-    private var envRouter: Router { container.app.router }
+    private var searchOverlay: SearchOverlayController { appServices.searchOverlayController }
+    private var searchViewModel: any SearchViewModelInterface { searchServices.searchViewModel }
+    private var envRouter: Router { appServices.router }
 
     public init() {}
 

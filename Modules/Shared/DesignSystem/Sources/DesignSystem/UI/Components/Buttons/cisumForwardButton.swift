@@ -9,8 +9,8 @@ import SwiftUI
 import Services
 
 struct ForwardButton: View {
-@Environment(ServicesContainer.self) private var container
-    private var playerViewModel: any PlayerViewModelInterface { container.playback.playerViewModel }
+@Environment(PlaybackServices.self) private var playbackServices
+    private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
     @State private var transparency: Double = 0.0
 
     var body: some View {

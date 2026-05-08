@@ -16,11 +16,23 @@ let package = Package(
             targets: ["Playlists"]
         ),
     ],
+    dependencies: [
+        .package(path: "../../Shared/Models"),
+        .package(path: "../../Shared/Utilities"),
+        .package(path: "../../Shared/Services"),
+        .package(path: "../../Shared/DesignSystem"),
+    ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "Playlists"
+            name: "Playlists",
+            dependencies: [
+                .product(name: "Models", package: "Models"),
+                .product(name: "Utilities", package: "Utilities"),
+                .product(name: "Services", package: "Services"),
+                .product(name: "DesignSystem", package: "DesignSystem"),
+            ]
         ),
 
     ],
