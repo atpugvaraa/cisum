@@ -45,8 +45,8 @@ struct SidebarView: View {
     }
 }
 
-extension View {
-    func allowWindowDrag() -> some View {
+public extension View {
+    public func allowWindowDrag() -> some View {
         self.modifier(SidebarDragModifier())
     }
 }

@@ -5,7 +5,7 @@
 //  Created by Aarav Gupta on 16/03/26.
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 import SwiftUI
 
 extension View {

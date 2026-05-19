@@ -8,6 +8,7 @@
 import SwiftUI
 import Services
 
+#if os(iOS)
 public struct PanGesture: UIGestureRecognizerRepresentable {
     var onChange: (Value) -> Void
     var onEnd: (Value) -> Void
@@ -51,3 +52,4 @@ extension CGPoint {
         CGSize(width: x, height: y)
     }
 }
+#endif

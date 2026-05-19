@@ -31,8 +31,12 @@ public extension Color {
     public static let cisumDark = Color(hex: "#2B221B")
 
 #if os(iOS)
-    var uiColor: UIColor {
+    public var uiColor: UIColor {
         UIColor(self)
+    }
+#elseif os(macOS)
+    public var uiColor: NSColor {
+        NSColor(self)
     }
 #endif
     

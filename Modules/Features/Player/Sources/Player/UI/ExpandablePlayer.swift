@@ -10,6 +10,7 @@ import SwiftUI
 import Services
 import Utilities
 
+#if os(iOS)
 public struct ExpandablePlayer: View {
     @Environment(\.tabBarVisibility) private var tabBarVisibility
     @Environment(\.isSearchExpanded) private var isSearchExpanded
@@ -286,3 +287,4 @@ private struct ProgressTracker: View, @preconcurrency Animatable {
             .preference(key: NowPlayingExpandProgressPreferenceKey.self, value: progress)
     }
 }
+#endif

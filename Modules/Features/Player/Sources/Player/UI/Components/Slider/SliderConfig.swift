@@ -5,9 +5,15 @@
 //  Created by Aarav Gupta (github.com/atpugvaraa) on 09/05/25.
 //
 
-#if os(iOS)
+#if os(iOS) || os(macOS)
 import SwiftUI
 import Services
+
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 struct cisumSliderConfig {
     enum LabelLocation {
@@ -40,9 +46,9 @@ struct cisumSliderConfig {
         maxStretch: CGFloat = 9,
         pushStretchRatio: CGFloat = 0.2,
         pullStretchRatio: CGFloat = 0.5,
-        minimumTrackActiveColor: Color = .init(UIColor.tintColor),
-        minimumTrackInactiveColor: Color = .init(UIColor.systemGray3),
-        maximumTrackColor: Color = .init(UIColor.systemGray6),
+        minimumTrackActiveColor: Color = .blue,
+        minimumTrackInactiveColor: Color = .gray,
+        maximumTrackColor: Color = .gray.opacity(0.3),
         blendMode: BlendMode = .normal,
         syncLabelsStyle: Bool = false,
         defaultSensoryFeedback: Bool = true

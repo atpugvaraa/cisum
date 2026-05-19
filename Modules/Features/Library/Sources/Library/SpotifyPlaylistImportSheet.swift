@@ -62,7 +62,9 @@ import Utilities
                     }
                 }
                 .navigationTitle("Add Spotify Playlist")
+#if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
+#endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Close") { dismiss() }
@@ -219,7 +221,9 @@ import Utilities
                     text: $playlistLink,
                     axis: .vertical
                 )
+#if os(iOS)
                 .textInputAutocapitalization(.never)
+#endif
                 .autocorrectionDisabled()
                 .padding(14)
                 .background(

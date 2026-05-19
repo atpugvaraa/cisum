@@ -9,14 +9,14 @@ import Core
 import SwiftUI
 import YouTubeSDK
 import SwiftData
+import Services
+import Utilities
 
 @main
 struct macOSApp: App {
     @Environment(\.scenePhase) private var scenePhase
     
     private let youtube = YouTube.shared
-    private let router = Router.shared
-    private let modelContainer: ModelContainer
     private let cisum = cisumModule()
     @State private var searchOverlay = SearchOverlayController()
     
@@ -30,6 +30,7 @@ struct macOSApp: App {
                 }
                 .clipShape(.rect(cornerRadius: 26, style: .continuous))
                 .removeWindowDecorations()
+                .modelContainer(cisum.modelContainer)
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             cisum.handleScenePhaseChange(newPhase)

@@ -29,7 +29,7 @@ public struct DynamicPlayerIsland: View {
 
     
 
-    var body: some View {
+    public var body: some View {
         surface
             .aspectRatio(isLyricsExpanded ? (1 / 2.5) : isHovering ? 5 / 3 : 5, contentMode: .fit)
             .frame(maxHeight: panelHeight)

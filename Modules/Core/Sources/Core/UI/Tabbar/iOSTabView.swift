@@ -8,6 +8,7 @@
 import DesignSystem
 import SwiftUI
 
+#if os(iOS)
 struct iOSTabView<SelectionValue: Hashable>: View {
     @Environment(\.tabBarVisibility) private var tabBarVisibility
     @Environment(\.tabBarBottomAccessory) private var tabBarBottomAccessory
@@ -155,3 +156,4 @@ struct iOSTabView<SelectionValue: Hashable>: View {
         .animation(.smooth(duration: 0.3), value: tabBarVisibility)
     }
 }
+#endif

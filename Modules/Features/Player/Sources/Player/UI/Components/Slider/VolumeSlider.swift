@@ -153,4 +153,67 @@ public struct VolumeSlider: View {
         
     }
 }
+#elseif os(macOS)
+    import SwiftUI
+    import Services
+    import DesignSystem
+
+    public struct VolumeSlider: View {
+        @State private var volumeController: SystemVolumeController = .shared
+        
+        @State private var minVolumeAnimationTrigger: Bool = false
+        @State private var maxVolumeAnimationTrigger: Bool = false
+        
+        let range: ClosedRange<Double>
+        let onEditingChanged: (Bool) -> Void
+        
+        public init(
+            volume: Binding<Double> = .constant(0),
+            in range: ClosedRange<Double> = 0.0...1.0,
+            onEditingChanged: @escaping (Bool) -> Void = { _ in }
+        ) {
+            self.range = range
+            self.onEditingChanged = onEditingChanged
+        }
+        
+        public var body: some View {
+            ZStack {
+                StretchySlider(
+                    value: $volumeController.volume,
+                    in: range,
+                    leadingLabel: {
+                        Image(systemName: "speaker.fill")
+                            .padding(.trailing, 20)
+                            .symbolEffect(.bounce, value: minVolumeAnimationTrigger)
+                    },
+                    trailingLabel: {
+                        Image(systemName: "speaker.wave.3.fill")
+                            .padding(.leading, 20)
+                            .symbolEffect(.bounce, value: maxVolumeAnimationTrigger)
+                    },
+                    onEditingChanged: { editing in
+                        volumeController.isUserDragging = editing
+                        volumeController.applyVolumeToSystem()
+                        onEditingChanged(editing)
+                    }
+                )
+                .sliderStyle(.volume)
+                .font(.system(size: 14))
+            }
+            .onChange(of: volumeController.volume) {
+                if volumeController.isUserDragging {
+                    volumeController.applyVolumeToSystem()
+                }
+                
+                if volumeController.volume <= range.lowerBound {
+                    minVolumeAnimationTrigger.toggle()
+                }
+                if volumeController.volume >= range.upperBound {
+                    maxVolumeAnimationTrigger.toggle()
+                }
+            }
+            .frame(height: 50)
+        }
+    }
 #endif
+

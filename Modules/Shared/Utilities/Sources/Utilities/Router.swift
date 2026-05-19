@@ -23,3 +23,10 @@ public extension EnvironmentValues {
         set { self[RouterKey.self] = newValue }
     }
 }
+
+public extension View {
+    @MainActor
+    func usingRouter(_ router: Router = EmptyRouter()) -> some View {
+        environment(\.router, router)
+    }
+}

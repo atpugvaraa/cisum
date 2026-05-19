@@ -1,5 +1,6 @@
 import Services
 import SwiftUI
+import YouTubeSDK
 
 public final class ProfileModule {
     private let prefetchSettings: PrefetchSettings
@@ -17,6 +18,14 @@ public final class ProfileModule {
         self.networkMonitor = networkMonitor
         self.playbackControlSettings = playbackControlSettings
         self.streamingProviderSettings = streamingProviderSettings
+    }
+
+    public var profileView: some View {
+        ProfileView()
+            .environment(prefetchSettings)
+            .environment(networkMonitor)
+            .environment(playbackControlSettings)
+            .environment(streamingProviderSettings)
     }
 
     public var settingsView: some View {

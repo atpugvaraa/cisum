@@ -61,7 +61,9 @@ public struct YouTubePlaylistImportSheet: View {
                 }
             }
             .navigationTitle("Add Playlist")
+#if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+#endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") {
@@ -85,7 +87,9 @@ public struct YouTubePlaylistImportSheet: View {
         Section("Search YouTube Playlists") {
             HStack(spacing: 10) {
                 TextField("Playlist name", text: $searchQuery)
+#if os(iOS)
                     .textInputAutocapitalization(.never)
+#endif
                     .autocorrectionDisabled()
                     .submitLabel(.search)
                     .onSubmit {
@@ -139,7 +143,9 @@ public struct YouTubePlaylistImportSheet: View {
                 text: $playlistLink,
                 axis: .vertical
             )
+#if os(iOS)
             .textInputAutocapitalization(.never)
+#endif
             .autocorrectionDisabled()
 
             Button {

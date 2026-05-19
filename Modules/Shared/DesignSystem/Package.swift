@@ -12,21 +12,21 @@ let package = Package(
         .library(name: "DesignSystem", targets: ["DesignSystem"])
     ],
     dependencies: [
-        .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
-        .package(path: "../../../Packages/StreamingKit/SpotifySDK"),
-        .package(path: "../../../Packages/StreamingKit/YouTubeSDK"),
         .package(path: "../Utilities"),
         .package(path: "../Services"),
+        .package(path: "../../../Packages/StreamingKit/SpotifySDK"),
+        .package(path: "../../../Packages/StreamingKit/YouTubeSDK"),
+        .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
     ],
     targets: [
         .target(
             name: "DesignSystem",
             dependencies: [
+                "Utilities",
+                "Services",
                 .product(name: "Kingfisher", package: "Kingfisher"),
                 .product(name: "SpotifySDK", package: "SpotifySDK"),
                 .product(name: "YouTubeSDK", package: "YouTubeSDK"),
-                "Utilities",
-                "Services"
             ]
         )
     ],

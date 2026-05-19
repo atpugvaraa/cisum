@@ -13,7 +13,7 @@ public final class PlaybackDomain {
     internal let radioSessionStore: RadioSessionStore
     internal let artworkVideoProcessor: ArtworkVideoProcessor
     #if os(iOS)
-    internal let artworkColorExtractor: ArtworkDominantColorExtractor
+    internal let artworkColorExtractor: ImageColorExtractor
     #endif
 
     #if os(iOS)
@@ -25,7 +25,7 @@ public final class PlaybackDomain {
         volumeButtonSkipController: VolumeButtonSkipController,
         radioSessionStore: RadioSessionStore,
         artworkVideoProcessor: ArtworkVideoProcessor,
-        artworkColorExtractor: ArtworkDominantColorExtractor
+        artworkColorExtractor: ImageColorExtractor
     ) {
         self.playerViewModel = playerViewModel
         self.playbackControlSettings = playbackControlSettings

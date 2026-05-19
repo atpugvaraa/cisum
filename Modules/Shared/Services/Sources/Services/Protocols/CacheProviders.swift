@@ -43,5 +43,5 @@ extension VideoMetadataCache: VideoMetadataCaching {}
 extension SearchResultsCache: SearchResultsCaching {}
 extension PlaybackMetricsStore: PlaybackMetricsRecording {}
 #if os(iOS)
-extension ArtworkDominantColorExtractor: ArtworkColorExtracting {}
+extension ImageColorExtractor: ArtworkColorExtracting {}
 #endif

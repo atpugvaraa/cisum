@@ -9,15 +9,15 @@ import SwiftUI
 import YouTubeSDK
 import DesignSystem
 import Services
+import Utilities
 
 public struct HomeView: View {
     @Environment(ProviderServices.self) private var providerServices
+    @Environment(\.router) private var router
     @State private var viewModel: HomeViewModel
-    private let onAction: (ProfileMenuAction) -> Void
 
-    public init(onAction: @escaping (ProfileMenuAction) -> Void = { _ in }) {
+    public init() {
         _viewModel = State(initialValue: HomeViewModel())
-        self.onAction = onAction
     }
 
     public var body: some View {
@@ -93,7 +93,7 @@ public struct HomeView: View {
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-                ProfileButton(onAction: onAction)
+                ProfileButton(onAction: handleProfileAction)
             }
             .padding(.top, 200)
         }
@@ -105,6 +105,21 @@ public struct HomeView: View {
             await viewModel.refresh()
         }
 
+    }
+
+    private func handleProfileAction(_ action: ProfileMenuAction) {
+        switch action {
+        case .profile:
+            router.navigate(to: "profile")
+        case .settings:
+            router.navigate(to: "settings")
+        case .home:
+            router.navigate(to: "tab:home")
+        case .library:
+            router.navigate(to: "tab:library")
+        case .recents:
+            router.navigate(to: "tab:library")
+        }
     }
 }
 

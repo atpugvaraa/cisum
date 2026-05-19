@@ -67,8 +67,8 @@ public struct SearchOverlayBar: View {
         .padding(.vertical, 11)
         .frame(width: 260)
         .background {
-            #if os(macOS) || os(visionOS)
-            if #available(macOS 14.0, visionOS 1.0, *) {
+            #if os(macOS)
+            if #available(macOS 26.0, *) {
                 RoundedRectangle(cornerRadius: 50, style: .continuous)
                     .fill(.clear)
                     .glassEffect(.regular, in: .rect(cornerRadius: 50))
@@ -134,8 +134,8 @@ public struct SearchOverlayBar: View {
         .padding(8)
         .frame(width: 560, alignment: .leading)
         .background {
-            #if os(macOS) || os(visionOS)
-            if #available(macOS 14.0, visionOS 1.0, *) {
+            #if os(macOS)
+            if #available(macOS 26.0, *) {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(.clear)
                     .glassEffect(.regular, in: .rect(cornerRadius: 16))
@@ -180,8 +180,8 @@ public struct SearchOverlayBar: View {
         .padding(8)
         .frame(width: 560)
         .background {
-            #if os(macOS) || os(visionOS)
-            if #available(macOS 14.0, visionOS 1.0, *) {
+            #if os(macOS)
+            if #available(macOS 26.0, *) {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(.clear)
                     .glassEffect(.regular, in: .rect(cornerRadius: 16))

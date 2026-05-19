@@ -73,6 +73,10 @@ public final class cisumModule {
         AnyView(profile.settingsView)
     }
 
+    public var profileView: AnyView {
+        AnyView(profile.profileView)
+    }
+
     public var searchText: Binding<String> {
         search.searchText
     }
@@ -97,7 +101,7 @@ public final class cisumModule {
         AnyView(player.expandablePlayer(show: show, isExpanded: isExpanded, collapsedFrame: collapsedFrame))
     }
 
-    #if os(iOS)
+    #if os(iOS) || os(macOS)
     public var systemVolumeController: SystemVolumeController {
         SystemVolumeController.shared
     }

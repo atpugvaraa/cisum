@@ -19,11 +19,19 @@ public final class PlayerModule {
     }
 
     public func miniPlayer(isExpanded: Binding<Bool>, namespace: Namespace.ID) -> some View {
+        #if os(iOS)
         DynamicPlayerIsland(isPlayerExpanded: isExpanded, namespace: namespace)
+        #elseif os(macOS)
+        DynamicPlayerIsland()
+        #endif
     }
 
     public func expandablePlayer(show: Binding<Bool>, isExpanded: Binding<Bool>, collapsedFrame: CGRect) -> some View {
+#if os(iOS)
         ExpandablePlayer(show: show, isPlayerExpanded: isExpanded, collapsedFrame: collapsedFrame)
+#else
+        EmptyView()
+#endif
     }
 
     public var accentColor: Color {

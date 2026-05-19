@@ -57,7 +57,7 @@ enum AppBootstrap {
         let playbackMetricsStore = PlaybackMetricsStore.shared
         let spotifySessionCoordinator = SpotifySessionCoordinator.shared
     #if os(iOS)
-        let artworkColorExtractor = ArtworkDominantColorExtractor.shared
+        let artworkColorExtractor = ImageColorExtractor.shared
     #endif
         let playerPresentationController = PlayerPresentationController()
         let searchOverlayController = SearchOverlayController()

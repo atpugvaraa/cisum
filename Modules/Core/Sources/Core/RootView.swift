@@ -1,4 +1,7 @@
 import SwiftUI
+import Search
+import Player
+import Combine
 import DesignSystem
 import Utilities
 import Services
@@ -17,6 +20,8 @@ public struct RootView: View {
     @State var scrollPhase: ScrollPhases = .idle
     @State var tabBarVisibility: Visibility = .visible
     @Namespace private var playerAnimationNamespace
+    @State private var showProfile = false
+    @State private var showSettings = false
 #else
     private var searchOverlay: SearchOverlayController { container.app.searchOverlayController }
     @Environment(\.isDynamicPlayerExpanded) private var isDynamicPlayerExpanded
@@ -83,6 +88,26 @@ public struct RootView: View {
                 tabBarVisibility = .visible
             }
         }
+        .usingRouter(cisum.router)
+        .overlay(alignment: .bottom) {
+            if let appRouter = cisum.router as? AppRouter {
+                Group {
+                    if appRouter.path.contains(.profile) {
+                        cisum.profileView
+                            .interactiveDismissDisabled(false)
+                            .onDisappear {
+                                cisum.router.pop()
+                            }
+                    } else if appRouter.path.contains(.settings) {
+                        cisum.settingsView
+                            .interactiveDismissDisabled(false)
+                            .onDisappear {
+                                cisum.router.pop()
+                            }
+                    }
+                }
+            }
+        }
 #else
         tabSurface
             .onPreferenceChange(SearchOverlayContextPreferenceKey.self) { newContext in
@@ -98,7 +123,7 @@ public struct RootView: View {
                     .padding(8)
             }
             .overlay(alignment: .topLeading) {
-                ProfileButton()
+                ProfileButton(onAction: handleProfileAction)
                     .padding(8)
             }
             .overlay(alignment: .topTrailing) {
@@ -110,8 +135,23 @@ public struct RootView: View {
             }
             .environment(\.isDynamicPlayerExpanded, isDynamicPlayerExpanded)
             .ignoresSafeArea()
-            .usingRouter()
+            .usingRouter(cisum.router)
 #endif
+    }
+
+    private func handleProfileAction(_ action: ProfileMenuAction) {
+        switch action {
+        case .profile:
+            cisum.router.navigate(to: AppRoute.profile)
+        case .settings:
+            cisum.router.navigate(to: AppRoute.settings)
+        case .home:
+            cisum.router.navigate(to: AppRoute.home)
+        case .library:
+            cisum.router.navigate(to: AppRoute.library)
+        case .recents:
+            cisum.router.navigate(to: AppRoute.recents)
+        }
     }
 
 #if os(iOS)
@@ -199,13 +239,13 @@ public struct RootView: View {
     private var selectedTabContent: some View {
         switch navigationState.selectedTab {
         case .home:
-            module.homeView
+            cisum.homeView
         case .discover:
-            module.discoverView
+            cisum.discoverView
         case .library:
-            module.libraryView
+            cisum.libraryView
         case .search:
-            module.searchView
+            cisum.searchView
         }
     }
 

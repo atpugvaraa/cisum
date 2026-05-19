@@ -7,13 +7,13 @@
 
 import SwiftUI
 
-extension EnvironmentValues {
+public extension EnvironmentValues {
     var isDynamicPlayerExpanded: Binding<Bool> {
         get { self[DynamicPlayerExpandedKey.self] }
         set { self[DynamicPlayerExpandedKey.self] = newValue }
     }
 }
 
-private struct DynamicPlayerExpandedKey: EnvironmentKey {
-    static let defaultValue: Binding<Bool> = .constant(false)
+public struct DynamicPlayerExpandedKey: EnvironmentKey {
+    public static let defaultValue: Binding<Bool> = .constant(false)
 }

@@ -25,8 +25,8 @@ public struct ProfileView: View {
     private var streamingProviderSettings: StreamingProviderSettings { playbackServices.streamingProviderSettings }
     private var spotifyCoordinator: SpotifySessionCoordinator { userServices.spotifySessionCoordinator }
 
-    @State private var showLoginSheet: Bool = false
-    @State private var hasStoredSession: Bool = false
+    @State private var showOAuthSheet: Bool = false
+    @State private var hasOAuthSession: Bool = false
     @State private var isSigningOutSpotify: Bool = false
 
     public var body: some View {
@@ -39,10 +39,10 @@ public struct ProfileView: View {
                 profileStatusCard
 
                 Button {
-                    showLoginSheet = true
+                    showOAuthSheet = true
                 } label: {
                     Label(
-                        hasStoredSession ? "Reconnect Google Account" : "Login with Google",
+                        hasOAuthSession ? "Reconnect Google Account" : "Login with Google",
                         systemImage: "person.badge.key"
                     )
                     .frame(maxWidth: .infinity)
@@ -50,11 +50,10 @@ public struct ProfileView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
 
-                if hasStoredSession {
+                if hasOAuthSession {
                     Button(role: .destructive) {
                         Task {
                             await YouTubeOAuthClient.logout()
-                            youtube.cookies = nil
                             refreshSessionState()
                         }
                     } label: {
@@ -74,14 +73,15 @@ public struct ProfileView: View {
             .padding()
         }
         .safeAreaPadding(.top)
-        .sheet(isPresented: $showLoginSheet) {
-            GoogleLoginView { cookies in
+        .sheet(isPresented: $showOAuthSheet) {
+            YouTubeOAuthDeviceFlowView { _ in
                 Task { @MainActor in
-                    await YouTubeOAuthClient.saveCookies(cookies)
-                    youtube.cookies = cookies
+                    _ = await youtube.ensureAccessToken()
                     refreshSessionState()
-                    showLoginSheet = false
+                    showOAuthSheet = false
                 }
+            } onCancel: {
+                showOAuthSheet = false
             }
         }
         #if os(iOS) && canImport(SpotifySDK)
@@ -108,18 +108,18 @@ public struct ProfileView: View {
     private var profileStatusCard: some View {
         HStack(spacing: 12) {
             Image(
-                systemName: hasStoredSession
+                systemName: hasOAuthSession
                     ? "checkmark.seal.fill" : "person.crop.circle.badge.exclamationmark"
             )
             .font(.title2)
-            .foregroundStyle(hasStoredSession ? .green : .orange)
+            .foregroundStyle(hasOAuthSession ? .green : .orange)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(hasStoredSession ? "Signed In" : "Not Signed In")
+                Text(hasOAuthSession ? "Signed In" : "Not Signed In")
                     .font(.headline)
                 Text(
-                    hasStoredSession
-                        ? "Active cookie session detected." : "Sign in to improve search relevance."
+                    hasOAuthSession
+                        ? "OAuth session active." : "Sign in to improve search relevance."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -136,9 +136,9 @@ public struct ProfileView: View {
 
     private func refreshSessionState() {
         Task {
-            let cookies = await YouTubeOAuthClient.loadCookies()
+            let hasToken = await YouTubeOAuthClient().hasValidToken()
             await MainActor.run {
-                hasStoredSession = !(cookies?.isEmpty ?? true)
+                hasOAuthSession = hasToken
             }
         }
     }
