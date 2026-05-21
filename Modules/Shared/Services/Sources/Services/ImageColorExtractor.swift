@@ -462,7 +462,6 @@ public extension UIColor {
     /// Best legible text colour (black or white) per W3C YIQ brightness.
     var w3cTextColor: UIColor { perceivedBrightness > 125 ? .black : .white }
 }
-#endif
 
 public extension Color {
     func safeTextColor(over background: Color) -> Color {
@@ -471,3 +470,4 @@ public extension Color {
         return uiSelf.meetsW3CContrast(against: uiBg) ? self : Color(uiColor: uiBg.w3cTextColor)
     }
 }
+#endif

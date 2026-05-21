@@ -1,0 +1,3 @@
+[submodule "Packages/StreamingKit"]
+	path = Packages/StreamingKit
+	url = git@github.com:cisumapp/StreamingKit.git
