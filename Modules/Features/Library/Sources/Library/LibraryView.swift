@@ -70,14 +70,14 @@ public struct LibraryView: View {
         // YouTube import sheet
         .sheet(isPresented: $isPresentingYouTubeImport) {
             YouTubePlaylistImportSheet { importedPlaylistID in
-                envRouter.navigate(to: "playlistDetail:\(importedPlaylistID)")
+                envRouter.navigate(to: .playlist(id: importedPlaylistID))
             }
         }
         // Spotify import sheet
         #if canImport(SpotifySDK)
             .sheet(isPresented: $isPresentingSpotifyImport) {
                 SpotifyPlaylistImportSheet { importedPlaylistID in
-                    envRouter.navigate(to: "playlistDetail:\(importedPlaylistID)")
+                    envRouter.navigate(to: .playlist(id: importedPlaylistID))
                 }
                 .environment(spotifyCoordinator)
             }
@@ -152,7 +152,7 @@ public struct LibraryView: View {
                 }
 
                 headerControlButton(icon: "magnifyingglass") {
-                    envRouter.navigate(to: "tab:search")
+                    envRouter.navigate(to: .search)
                 }
             }
             .padding(.horizontal, 12)
@@ -369,7 +369,7 @@ public struct LibraryView: View {
         detailText: String? = nil
     ) -> some View {
         Button {
-            envRouter.navigate(to: "playlistDetail:\(playlist.playlistID)")
+            envRouter.navigate(to: .playlist(id: playlist.playlistID))
         } label: {
             LibraryCoverTile(
                 title: playlist.title,
@@ -427,7 +427,7 @@ public struct LibraryView: View {
 
             do {
                 let playlist = try await service.importLikedSongs()
-                envRouter.navigate(to: "playlistDetail:\(playlist.playlistID)")
+                envRouter.navigate(to: .playlist(id: playlist.playlistID))
             } catch {
                 libraryActionErrorMessage = error.localizedDescription
             }
@@ -583,7 +583,7 @@ public struct LibraryView: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 172), spacing: 14)], spacing: 14) {
                     ForEach(playlists) { playlist in
                         Button {
-                            envRouter.navigate(to: "playlistDetail:\(playlist.playlistID)")
+                            envRouter.navigate(to: .playlist(id: playlist.playlistID))
                         } label: {
                             PlaylistCard(playlist: playlist)
                         }

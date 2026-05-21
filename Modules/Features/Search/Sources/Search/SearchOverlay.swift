@@ -6,10 +6,10 @@ import Services
 public struct SearchOverlayBar: View {
     @Environment(AppServices.self) private var appServices
     @Environment(SearchServices.self) private var searchServices
+    @Environment(\.router) private var router
     
     private var searchOverlay: SearchOverlayController { appServices.searchOverlayController }
     private var searchViewModel: any SearchViewModelInterface { searchServices.searchViewModel }
-    private var envRouter: Router { appServices.router }
 
     public init() {}
 
@@ -220,7 +220,7 @@ public struct SearchOverlayBar: View {
 
         switch searchOverlay.selectedScope {
         case .global:
-            envRouter.navigate(to: "tab:search")
+            router.navigate(to: .search)
 
             if searchViewModel.searchText != trimmedQuery {
                 searchViewModel.searchText = trimmedQuery

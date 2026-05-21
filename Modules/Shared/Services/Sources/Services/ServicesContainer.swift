@@ -73,7 +73,10 @@ public final class ServicesContainer {
 
     public var user: UserInterface {
         UserInterface(
-            spotifySessionCoordinator: userServices.spotifySessionCoordinator
+            spotifySessionCoordinator: userServices.spotifySessionCoordinator,
+            authService: userServices.authService,
+            supabaseService: userServices.supabaseService,
+            analyticsService: userServices.analyticsService
         )
     }
 

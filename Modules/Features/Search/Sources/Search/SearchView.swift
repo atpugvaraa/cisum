@@ -18,8 +18,8 @@ public struct SearchView: View {
     @Environment(LibraryServices.self) private var libraryServices
     @Environment(UserServices.self) private var userServices
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.router) private var router
     
-    private var router: Router { appServices.router }
     private var searchViewModel: any SearchViewModelInterface { searchServices.searchViewModel }
     private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
     private var centralMediaStore: CentralMediaStore { libraryServices.centralMediaStore }
@@ -176,7 +176,7 @@ public struct SearchView: View {
             if let existing = playlistLibraryStore.playlist(
                 sourceProvider: .spotify, sourcePlaylistID: playlist.id)
             {
-                router.navigate(to: "playlistDetail:\(existing.playlistID)")
+                router.navigate(to: .playlist(id: existing.playlistID))
                 return
             }
 
@@ -191,7 +191,7 @@ public struct SearchView: View {
 
             do {
                 let imported = try await importService.importPlaylist(id: playlist.id)
-                router.navigate(to: "playlistDetail:\(imported.playlistID)")
+                router.navigate(to: .playlist(id: imported.playlistID))
             } catch {
                 actionAlertMessage = error.localizedDescription
                 showActionAlert = true

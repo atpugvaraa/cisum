@@ -10,7 +10,7 @@ import Utilities
 @MainActor
 public final class PlaybackEngine {
     // MARK: - Core
-    public let player: AVPlayer = AVPlayer()
+    public private(set) var player: AVPlayer = AVPlayer()
     public private(set) var isPlaying: Bool = false
     public private(set) var currentTime: Double = 0
     public private(set) var duration: Double = 0
@@ -20,6 +20,7 @@ public final class PlaybackEngine {
     }
     
     public var onProgressUpdate: (@MainActor () -> Void)?
+    private var timeObserver: Any?
     
     // MARK: - Initializer
     public init() {
@@ -39,7 +40,11 @@ public final class PlaybackEngine {
     }
     
     private func setupPeriodicTimeObserver() {
-        player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.2, preferredTimescale: 600), queue: .main) { [weak self] time in
+        if let timeObserver {
+            player.removeTimeObserver(timeObserver)
+        }
+        
+        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.2, preferredTimescale: 600), queue: .main) { [weak self] time in
             guard let self else { return }
             let nextTime = max(time.seconds, 0)
             if abs(self.currentTime - nextTime) > 0.001 {
@@ -83,6 +88,21 @@ public final class PlaybackEngine {
     public func resetProgress() {
         self.currentTime = 0
         self.duration = 0
+    }
+    
+    public func fullReset() {
+        print("🔁 PlaybackEngine: Performing full AVPlayer reset")
+        player.pause()
+        player.replaceCurrentItem(with: nil)
+        
+        if let timeObserver {
+            player.removeTimeObserver(timeObserver)
+            self.timeObserver = nil
+        }
+        
+        self.player = AVPlayer()
+        setupPeriodicTimeObserver()
+        reactivateSession()
     }
     
     public func seek(to time: Double) {

@@ -19,8 +19,8 @@ let package = Package(
         .package(path: "../Artists"),
         .package(path: "../Albums"),
         .package(path: "../Playlists"),
-        .package(name: "SpotifySDK", path: "../../../Packages/StreamingKit/SpotifySDK"),
-        .package(name: "YouTubeSDK", path: "../../../Packages/StreamingKit/YouTubeSDK"),
+        .package(path: "../../../Packages/StreamingKit/SpotifySDK"),
+        .package(path: "../../../Packages/StreamingKit/YouTubeSDK"),
         .package(url: "https://github.com/onevcat/Kingfisher.git", .upToNextMajor(from: "8.8.1"))
     ],
     targets: [

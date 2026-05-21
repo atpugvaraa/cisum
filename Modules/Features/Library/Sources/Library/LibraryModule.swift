@@ -6,4 +6,8 @@ public final class LibraryModule {
     public var view: some View {
         LibraryView()
     }
+
+    public func playlistDetailView(for id: String) -> some View {
+        PlaylistDetailView(playlistID: id)
+    }
 }

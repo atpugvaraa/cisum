@@ -7,17 +7,20 @@ let package = Package(
     name: "Authentication",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "Authentication",
             targets: ["Authentication"]
         ),
     ],
+    dependencies: [
+        .package(path: "../../Shared/Services"),
+    ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "Authentication"
+            name: "Authentication",
+            dependencies: [
+                .product(name: "Services", package: "Services"),
+            ]
         ),
 
     ],

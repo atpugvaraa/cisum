@@ -6,6 +6,7 @@ import UIKit
 
 public struct CardOpenTransition<Hero: View, Content: View>: View {
     var config: TransitionConfig = .init()
+    var backgroundColor: Color?
     @ViewBuilder public var hero: (_ isCardExpanded: Bool, _ dismiss: (() -> ())?) -> Hero
     @ViewBuilder public var content: (_ safeArea: EdgeInsets, _ dismiss: @escaping () -> ()) -> Content
     @State private var showFullScreenCover: Bool = false
@@ -13,9 +14,11 @@ public struct CardOpenTransition<Hero: View, Content: View>: View {
     @State private var buttonScale: CGFloat = 1
     
     public init(
+        backgroundColor: Color? = nil,
         @ViewBuilder hero: @escaping (_ isCardExpanded: Bool, _ dismiss: (() -> ())?) -> Hero,
         @ViewBuilder content: @escaping (_ safeArea: EdgeInsets, _ dismiss: @escaping () -> ()) -> Content
     ) {
+        self.backgroundColor = backgroundColor
         self.hero = hero
         self.content = content
     }
@@ -49,6 +52,7 @@ public struct CardOpenTransition<Hero: View, Content: View>: View {
         .fullScreenCover(isPresented: $showFullScreenCover) {
             TransitionFullScreenCover(
                 config: config,
+                backgroundColor: backgroundColor,
                 buttonScale: $buttonScale,
                 showFullScreenCover: $showFullScreenCover,
                 sourceRect: $sourceRect,
@@ -62,6 +66,7 @@ public struct CardOpenTransition<Hero: View, Content: View>: View {
 
 fileprivate struct TransitionFullScreenCover<Hero: View, Content: View>: View {
     var config: TransitionConfig
+    var backgroundColor: Color?
     @Binding var buttonScale: CGFloat
     @Binding var showFullScreenCover: Bool
     @Binding var sourceRect: CGRect
@@ -79,7 +84,7 @@ fileprivate struct TransitionFullScreenCover<Hero: View, Content: View>: View {
     var body: some View {
         let cornerRadius = animateContents ? config.detailCornerRadius : config.cardCornerRadius
 
-        ScrollView(.vertical) {
+        ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
                 Rectangle()
                     .foregroundStyle(.clear)
@@ -106,7 +111,13 @@ fileprivate struct TransitionFullScreenCover<Hero: View, Content: View>: View {
                 content(safeArea, dismiss)
             }
         }
-        .background(.background)
+        .background {
+            if let backgroundColor {
+                backgroundColor
+            } else {
+                Color.clear.background(.background)
+            }
+        }
         .mask(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: cornerRadius - 1, style: .circular)
                 .frame(

@@ -60,31 +60,33 @@ public enum PlaybackCandidateBuilder {
         }
 
         if let muxed = video.bestMuxedStream,
-           let urlString = muxed.url,
+           let urlString = muxed.playbackUrl,
            let url = URL(string: urlString) {
+            let mimeType = inferredMimeType(from: url, fallback: muxed.mimeType)
             candidates.append(
                 PlaybackCandidate(
                     url: url,
                     streamKind: .muxed,
-                    mimeType: muxed.mimeType,
+                    mimeType: mimeType,
                     itag: muxed.itag,
                     expiresAt: expiresAt,
-                    isCompatible: isLikelyAVPlayerCompatible(mimeType: muxed.mimeType)
+                    isCompatible: isLikelyAVPlayerCompatible(mimeType: mimeType)
                 )
             )
         }
 
         if let audio = video.bestAudioStream,
-           let urlString = audio.url,
+           let urlString = audio.playbackUrl,
            let url = URL(string: urlString) {
+            let mimeType = inferredMimeType(from: url, fallback: audio.mimeType)
             candidates.append(
                 PlaybackCandidate(
                     url: url,
                     streamKind: .audio,
-                    mimeType: audio.mimeType,
+                    mimeType: mimeType,
                     itag: audio.itag,
                     expiresAt: expiresAt,
-                    isCompatible: isLikelyAVPlayerCompatible(mimeType: audio.mimeType)
+                    isCompatible: isLikelyAVPlayerCompatible(mimeType: mimeType)
                 )
             )
         }
@@ -126,21 +128,22 @@ public enum PlaybackCandidateBuilder {
 
         if let muxedURLString = entry.playbackMuxedURLString,
            let muxedURL = URL(string: muxedURLString) {
+            let mimeType = inferredMimeType(from: muxedURL, fallback: nil)
             candidates.append(
                 PlaybackCandidate(
                     url: muxedURL,
                     streamKind: .muxed,
-                    mimeType: nil,
+                    mimeType: mimeType,
                     itag: nil,
                     expiresAt: expiresAt,
-                    isCompatible: true
+                    isCompatible: isLikelyAVPlayerCompatible(mimeType: mimeType)
                 )
             )
         }
 
         if let audioURLString = entry.playbackAudioURLString,
            let audioURL = URL(string: audioURLString) {
-            let mimeType = entry.playbackAudioMimeType
+            let mimeType = inferredMimeType(from: audioURL, fallback: entry.playbackAudioMimeType)
             candidates.append(
                 PlaybackCandidate(
                     url: audioURL,
@@ -156,14 +159,15 @@ public enum PlaybackCandidateBuilder {
         if candidates.isEmpty,
            let preferredURLString = entry.playbackPreferredURLString,
            let preferredURL = URL(string: preferredURLString) {
+            let mimeType = inferredMimeType(from: preferredURL, fallback: nil)
             candidates.append(
                 PlaybackCandidate(
                     url: preferredURL,
                     streamKind: inferKind(for: preferredURL),
-                    mimeType: nil,
+                    mimeType: mimeType,
                     itag: nil,
                     expiresAt: expiresAt,
-                    isCompatible: true
+                    isCompatible: isLikelyAVPlayerCompatible(mimeType: mimeType)
                 )
             )
         }
@@ -187,10 +191,14 @@ public enum PlaybackCandidateBuilder {
 
     private static func isLikelyAVPlayerCompatible(mimeType: String?) -> Bool {
         guard let mimeType else {
-            return true
+            return false
         }
 
         let normalized = mimeType.lowercased()
+        if normalized.starts(with: "video/") && normalized.contains("webm") {
+            return false
+        }
+
         if normalized.contains("webm") {
             return false
         }
@@ -201,6 +209,18 @@ public enum PlaybackCandidateBuilder {
             || normalized.contains("mp3")
             || normalized.contains("x-mpegurl")
             || normalized.contains("vnd.apple.mpegurl")
+    }
+
+    private static func inferredMimeType(from url: URL, fallback: String?) -> String? {
+        if let queryMime = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?
+            .first(where: { $0.name.caseInsensitiveCompare("mime") == .orderedSame })?
+            .value,
+           !queryMime.isEmpty {
+            return queryMime
+        }
+
+        return fallback
     }
 
     private static func inferKind(for url: URL) -> PlaybackCandidate.StreamKind {

@@ -13,10 +13,10 @@ let package = Package(
         .package(path: "../../Shared/DesignSystem"),
         .package(path: "../../Shared/Services"),
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
-        .package(name: "YouTubeSDK", path: "../../../Packages/StreamingKit/YouTubeSDK"),
-        .package(name: "SpotifySDK", path: "../../../Packages/StreamingKit/SpotifySDK"),
-        .package(name: "iTunesKit", path: "../../../Packages/StreamingKit/iTunesKit"),
-        .package(name: "LyricsKit", path: "../../../Packages/StreamingKit/LyricsKit"),
+        .package(path: "../../../Packages/StreamingKit/YouTubeSDK"),
+        .package(path: "../../../Packages/StreamingKit/SpotifySDK"),
+        .package(path: "../../../Packages/StreamingKit/iTunesKit"),
+        .package(path: "../../../Packages/StreamingKit/LyricsKit"),
     ],
     targets: [
         .target(

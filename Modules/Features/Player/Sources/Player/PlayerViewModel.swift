@@ -212,6 +212,10 @@ public final class PlayerViewModel: PlayerViewModelInterface {
     private var artworkVideoTask: Task<Void, Never>?
     var lyricsLoadTask: Task<Void, Never>?
     private var playbackRecoveryTask: Task<Void, Never>?
+    private var exhaustiveRetryTask: Task<Void, Never>?
+    /// Tracks which mediaIDs have already had exhaustiveRetry attempted.
+    /// Prevents the infinite loop: fail → retry → same URL → fail → retry...
+    private var exhaustiveRetryAttemptedIDs: Set<String> = []
     private var playbackRecoveryAttemptCounts: [String: Int] = [:]
     private var playbackCandidates: [PlaybackCandidate] = []
     private var playbackCandidateIndex: Int = 0
@@ -234,7 +238,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         }
     }
 
-    nonisolated(unsafe) private func mapQueueEntriesToPreview(_ entries: [PlaybackQueueEntry]) async -> [QueuePreviewItem] {
+    nonisolated private func mapQueueEntriesToPreview(_ entries: [PlaybackQueueEntry]) async -> [QueuePreviewItem] {
         return entries.map { entry in
             switch entry {
             case .song(let song):
@@ -278,8 +282,15 @@ public final class PlayerViewModel: PlayerViewModelInterface {
     let mediaCacheStore: MediaCacheStore
     private let settings: PrefetchSettings
     private let playbackMetricsStore: any PlaybackMetricsRecording
+    private let lastFMScrobbler: LastFMScrobbler
+    private let lastFMSettings: LastFMSettings
+    private let listeningHistoryStore: ListeningHistoryStore
     private let streamingProviderSettings: StreamingProviderSettings
     private let radioSessionStore: RadioSessionStore
+    private var currentListeningHistoryEntry: ListeningHistoryEntry?
+    private var activeScrobbleSessionMediaID: String?
+    private var hasSubmittedScrobbleForActiveSession = false
+    private var lastFMScrobbleTask: Task<Void, Never>?
 #if os(iOS)
     let artworkColorExtractor: any ArtworkColorExtracting
 #endif
@@ -328,6 +339,9 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         metadataCache: any VideoMetadataCaching,
         mediaCacheStore: MediaCacheStore,
         playbackMetricsStore: any PlaybackMetricsRecording,
+        lastFMScrobbler: LastFMScrobbler,
+        lastFMSettings: LastFMSettings,
+        listeningHistoryStore: ListeningHistoryStore,
         streamingProviderSettings: StreamingProviderSettings,
         radioSessionStore: RadioSessionStore,
         artworkColorExtractor: any ArtworkColorExtracting
@@ -338,6 +352,9 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         self.metadataCache = metadataCache
         self.mediaCacheStore = mediaCacheStore
         self.playbackMetricsStore = playbackMetricsStore
+        self.lastFMScrobbler = lastFMScrobbler
+        self.lastFMSettings = lastFMSettings
+        self.listeningHistoryStore = listeningHistoryStore
         self.streamingProviderSettings = streamingProviderSettings
         self.radioSessionStore = radioSessionStore
         self.artworkColorExtractor = artworkColorExtractor
@@ -352,6 +369,9 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         metadataCache: any VideoMetadataCaching,
         mediaCacheStore: MediaCacheStore,
         playbackMetricsStore: any PlaybackMetricsRecording,
+        lastFMScrobbler: LastFMScrobbler,
+        lastFMSettings: LastFMSettings,
+        listeningHistoryStore: ListeningHistoryStore,
         streamingProviderSettings: StreamingProviderSettings,
         radioSessionStore: RadioSessionStore
     ) {
@@ -361,6 +381,9 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         self.metadataCache = metadataCache
         self.mediaCacheStore = mediaCacheStore
         self.playbackMetricsStore = playbackMetricsStore
+        self.lastFMScrobbler = lastFMScrobbler
+        self.lastFMSettings = lastFMSettings
+        self.listeningHistoryStore = listeningHistoryStore
         self.streamingProviderSettings = streamingProviderSettings
         self.radioSessionStore = radioSessionStore
 
@@ -394,6 +417,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         if self.canSkipBackward != previousCanSkipBackward {
             self.updateRemoteCommandState()
         }
+        maybeSubmitLastFMScrobble()
     }
 
     // MARK: - Playback Session State
@@ -429,6 +453,11 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         resetPlaybackRecoveryState(for: mediaID)
         playbackRecoveryTask?.cancel()
         playbackRecoveryTask = nil
+        exhaustiveRetryTask?.cancel()
+        exhaustiveRetryTask = nil
+        // Reset the retry guard so the new track gets one exhaustive retry attempt.
+        // We intentionally keep IDs from *other* tracks so we don't re-enter for the previous track.
+        exhaustiveRetryAttemptedIDs.remove(mediaID)
         resetArtworkVideoState()
 #if os(iOS)
         artworkLoadTask?.cancel()
@@ -438,6 +467,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
     }
 
     private func startTrackAncillaryWork(for state: TrackPresentationState) {
+        startListeningSessionIfNeeded(for: state)
         startLyricsResolution(
             mediaID: state.mediaID,
             title: state.title,
@@ -733,7 +763,9 @@ public final class PlayerViewModel: PlayerViewModelInterface {
     public func seek(to seconds: Double) {
         let time = CMTime(seconds: seconds, preferredTimescale: 600)
         player.seek(to: time) { [weak self] _ in
-            self?.updateNowPlayingPlaybackInfo(force: true)
+            Task { @MainActor in
+                self?.updateNowPlayingPlaybackInfo(force: true)
+            }
         }
     }
 
@@ -1520,20 +1552,14 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 
         let title = normalizedMusicDisplayTitle(currentTitle, artist: currentArtist)
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        let artist = normalizedMusicDisplayArtist(currentArtist, title: currentTitle)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty, title != "Not Playing" else {
             return
         }
 
-        let lookupMediaID = currentMediaID
         isCheckingHiResAvailability = true
         pendingHiResPayload = nil
         hiResAvailabilityMessage = nil
-
-        defer {
-            isCheckingHiResAvailability = false
-        }
+        isCheckingHiResAvailability = false
     }
 
     public func switchToHiResVersionIfAvailable() {
@@ -1613,34 +1639,62 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         // so the @Sendable fetcher closure doesn't try to access MainActor
         // isolated properties directly.
         let youtube = self.youtube.main
-        let cookies = self.youtube.cookies
+        let normalizedID = canonicalPlaybackMediaID(id)
 
         // Use a fetcher that will attempt the InnerTube `/player` call first,
         // and if the server responds with `LOGIN_REQUIRED`, fall back to
         // extracting `ytInitialPlayerResponse` from the watch HTML (web client).
-        return try await metadataCache.resolve(id: id, metricsEnabled: settings.metricsEnabled) { key in
+        return try await metadataCache.resolve(id: normalizedID, metricsEnabled: settings.metricsEnabled) { key in
             return try await youtube.video(id: key)
         }
     }
 
     func resolvePlaybackCandidates(forID id: String, forceDecipher: Bool = false) async throws -> [PlaybackCandidate] {
+        let normalizedID = canonicalPlaybackMediaID(id)
+
+        #if targetEnvironment(simulator)
+        if supportsYouTubeCandidateRecovery {
+            do {
+                let youtube = self.youtube.main
+                let androidVideo = try await youtube.videoAndroid(id: normalizedID)
+                let androidCandidates = PlaybackCandidateBuilder.fromVideo(
+                    androidVideo,
+                    preferredURL: nil,
+                    validUntil: Date().addingTimeInterval(3600)
+                )
+
+                if let preferredAndroidCandidate = androidCandidates.first {
+                    logPlayback("Simulator Android fast path selected for id=\(normalizedID) kind=\(preferredAndroidCandidate.streamKind.rawValue)")
+                    mediaCacheStore.savePlaybackResolution(
+                        mediaID: normalizedID,
+                        candidates: androidCandidates,
+                        validUntil: Date().addingTimeInterval(3600)
+                    )
+                    return androidCandidates
+                }
+            } catch {
+                logPlayback("Simulator Android fast path failed for id=\(normalizedID): \(error.localizedDescription)")
+            }
+        }
+        #endif
+
         if !forceDecipher,
            let cachedCandidates = mediaCacheStore.playbackCandidates(
-            for: id,
+            for: normalizedID,
             maxAge: CachePolicy.playbackURLTTL
         ),
         !cachedCandidates.isEmpty {
             // ...
             let hasUnknownExpiryCandidate = cachedCandidates.contains(where: { $0.expiresAt == nil })
             if hasUnknownExpiryCandidate {
-                logPlayback("Cached playback candidates missing expiry for id=\(id); invalidating for refresh")
-                mediaCacheStore.invalidatePlayback(for: id)
+                logPlayback("Cached playback candidates missing expiry for id=\(normalizedID); invalidating for refresh")
+                mediaCacheStore.invalidatePlayback(for: normalizedID)
             } else if let earliestExpiry = cachedCandidates.compactMap(\.expiresAt).min(),
                       earliestExpiry.timeIntervalSinceNow <= CachePolicy.playbackMinimumRemainingLifetime {
-                logPlayback("Cached playback candidates near expiry for id=\(id); invalidating for refresh")
-                mediaCacheStore.invalidatePlayback(for: id)
+                logPlayback("Cached playback candidates near expiry for id=\(normalizedID); invalidating for refresh")
+                mediaCacheStore.invalidatePlayback(for: normalizedID)
             } else {
-                logPlayback("Using cached playback candidates for id=\(id)")
+                logPlayback("Using cached playback candidates for id=\(normalizedID)")
                 return cachedCandidates
             }
         }
@@ -1648,17 +1702,33 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         // Fast path: if a resolver has a cached quick-play URL (warmed by Search prefetch),
         // use it immediately to start playback without waiting for the full video metadata.
         let resolver = await PlaybackURLResolver.sharedInstance()
-        if let quickURL = await resolver.cachedURL(for: id) {
+        if !forceDecipher,
+           let quickURL = await resolver.cachedURL(for: normalizedID) {
             let ext = quickURL.pathExtension.lowercased()
             let streamKind: PlaybackCandidate.StreamKind = ext == "m3u8" ? .hls : .muxed
-            let mimeType: String? = streamKind == .hls ? "application/x-mpegURL" : (ext == "mp4" ? "audio/mp4" : nil)
-            let expiresAt = Date().addingTimeInterval(CachePolicy.playbackURLTTL)
-            let candidate = PlaybackCandidate(url: quickURL, streamKind: streamKind, mimeType: mimeType, itag: nil, expiresAt: expiresAt, isCompatible: true)
-            mediaCacheStore.savePlaybackResolution(mediaID: id, candidates: [candidate], validUntil: Date().addingTimeInterval(CachePolicy.playbackURLTTL))
-            return [candidate]
+            let mimeType: String? = {
+                if streamKind == .hls { return "application/x-mpegURL" }
+                if ext == "mp4" { return "audio/mp4" }
+                if let components = URLComponents(url: quickURL, resolvingAgainstBaseURL: false),
+                   let queryMime = components.queryItems?.first(where: { $0.name.caseInsensitiveCompare("mime") == .orderedSame })?.value,
+                   !queryMime.isEmpty {
+                    return queryMime
+                }
+                return nil
+            }()
+            let isCompatible = mimeType.map { !$0.lowercased().contains("webm") } ?? (streamKind == .hls || ext == "mp4")
+
+            if isCompatible {
+                let expiresAt = Date().addingTimeInterval(CachePolicy.playbackURLTTL)
+                let candidate = PlaybackCandidate(url: quickURL, streamKind: streamKind, mimeType: mimeType, itag: nil, expiresAt: expiresAt, isCompatible: true)
+                mediaCacheStore.savePlaybackResolution(mediaID: normalizedID, candidates: [candidate], validUntil: expiresAt)
+                return [candidate]
+            } else {
+                logPlayback("Skipping cached quick URL for id=\(normalizedID) due to incompatible mime=\(mimeType ?? "unknown") host=\(quickURL.host ?? "unknown")")
+            }
         }
 
-        let entry = try await resolvePlaybackEntry(forID: id, forceDecipher: forceDecipher)
+        let entry = try await resolvePlaybackEntry(forID: normalizedID, forceDecipher: forceDecipher)
         let candidates = PlaybackCandidateBuilder.fromVideo(
             entry.video,
             preferredURL: entry.resolvedURL,
@@ -1666,11 +1736,36 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         )
 
         guard !candidates.isEmpty else {
-            throw YouTubeError.decipheringFailed(videoId: id)
+            throw YouTubeError.decipheringFailed(videoId: normalizedID)
+        }
+
+        if currentStreamingServiceName == StreamingService.youtube.rawValue,
+           !candidates.contains(where: { $0.streamKind == .hls || $0.streamKind == .muxed }) {
+            do {
+                let youtube = self.youtube.main
+                let androidVideo = try await youtube.videoAndroid(id: normalizedID)
+                let androidCandidates = PlaybackCandidateBuilder.fromVideo(
+                    androidVideo,
+                    preferredURL: nil,
+                    validUntil: Date().addingTimeInterval(3600)
+                )
+
+                if !androidCandidates.isEmpty {
+                    logPlayback("No iOS video-safe candidate for id=\(normalizedID); using Android direct-CDN fallback kind=\(androidCandidates[0].streamKind.rawValue)")
+                    mediaCacheStore.savePlaybackResolution(
+                        mediaID: normalizedID,
+                        candidates: androidCandidates,
+                        validUntil: Date().addingTimeInterval(3600)
+                    )
+                    return androidCandidates
+                }
+            } catch {
+                logPlayback("Android fallback after iOS adaptive-only response failed for id=\(normalizedID): \(error.localizedDescription)")
+            }
         }
 
         mediaCacheStore.savePlaybackResolution(
-            mediaID: id,
+            mediaID: normalizedID,
             candidates: candidates,
             validUntil: entry.validUntil
         )
@@ -1689,6 +1784,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 
 
     private func playFromBeginning(url: URL) {
+        logPlayback("Creating playback item url=\(url.absoluteString) host=\(url.host ?? "unknown") service=\(currentStreamingServiceName)")
         let item = makePlayerItem(for: url)
         observeCurrentItemStatus(item)
         observeCurrentItemEnd(item)
@@ -1717,39 +1813,12 @@ public final class PlayerViewModel: PlayerViewModelInterface {
             resolvedService = StreamingService(rawValue: currentStreamingServiceName) ?? .youtubeMusic
         }
 
-        let isYouTubeSource = resolvedService == .youtube || resolvedService == .youtubeMusic
-
-        let asset: AVURLAsset
-        if isYouTubeSource,
-           shouldInjectYouTubeHeaders(for: url) {
-            let headers: [String: String] = [
-                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
-                "Referer": "https://www.youtube.com/",
-                "Origin": "https://www.youtube.com"
-            ]
-
-            asset = AVURLAsset(
-                url: url,
-                options: ["AVURLAssetHTTPHeaderFieldsKey": headers]
-            )
+        if resolvedService == .youtube || resolvedService == .youtubeMusic {
+            logPlayback("Using direct AVPlayerItem load for YouTube host=\(url.host ?? "unknown")")
         } else {
-            asset = AVURLAsset(url: url)
+            logPlayback("Using plain AVPlayerItem load host=\(url.host ?? "unknown")")
         }
-
-        return AVPlayerItem(asset: asset)
-    }
-
-    private func shouldInjectYouTubeHeaders(for url: URL) -> Bool {
-        guard let host = url.host?.lowercased(),
-              !host.isEmpty else {
-            return false
-        }
-
-        return host.contains("googlevideo.com")
-            || host.contains("googleusercontent.com")
-            || host.contains("youtube.com")
-            || host.contains("youtu.be")
-            || host.contains("youtubei.googleapis.com")
+        return AVPlayerItem(url: url)
     }
 
     func mimeTypeForCodecLabel(_ codecLabel: String) -> String? {
@@ -1833,6 +1902,147 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         updateAudioFormatLabels(for: candidate)
         playFromBeginning(url: candidate.url)
         return true
+    }
+
+    /// Re-fetches streaming data from the network (bypassing cache) when all local candidates fail.
+    /// Mirrors SmartTubeIOS's exhaustiveRetry:
+    /// 1. Try iOS client (via resolvePlaybackCandidates — fresh fetch, no cache)
+    /// 2. Try Android client (muxed itag 18/22 — plays when iOS adaptive gets 403)
+    /// 3. Try TV client (authenticated — plays age-restricted/auth-required videos)
+    @MainActor
+    private func exhaustiveRetry(for mediaID: String, originalError: Error?) async {
+        guard !Task.isCancelled else { return }
+        let normalizedMediaID = canonicalPlaybackMediaID(mediaID)
+        print("🔁 PlayerViewModel: exhaustiveRetry starting for id=\(normalizedMediaID)")
+        
+        // 1. Thoroughly stop everything currently happening to avoid races during reset
+        currentLoadTask?.cancel()
+        currentLoadTask = nil
+        
+        // Cancel preloading and background tasks which might be "poisoning" the network/player context
+        nextPlaybackPreloadTask?.cancel()
+        nextPlaybackPreloadTask = nil
+        preloadingNextMediaID = nil
+        preparedNextPlayback = nil
+        
+        artworkVideoTask?.cancel()
+        artworkVideoTask = nil
+        
+        radioAutoplayTask?.cancel()
+        radioAutoplayTask = nil
+        
+        radioContinuationTask?.cancel()
+        radioContinuationTask = nil
+        
+        #if os(iOS)
+        accentLoadTask?.cancel()
+        accentLoadTask = nil
+        #endif
+        
+        lastFMScrobbleTask?.cancel()
+        lastFMScrobbleTask = nil
+        
+        removeCurrentItemEndObserver()
+        
+        // 2. Hard reset the player engine to clear any "stuck" error states (e.g. NSURLErrorDomain code -1)
+        playbackEngine.fullReset()
+
+        // 3. Invalidate cached playback resolution so we get fresh URLs
+        mediaCacheStore.invalidatePlayback(for: normalizedMediaID)
+
+        // --- Attempt 1: iOS client (fresh fetch) ---
+        do {
+            let freshCandidates = try await resolvePlaybackCandidates(forID: normalizedMediaID, forceDecipher: true)
+            guard !Task.isCancelled, currentVideoId == mediaID else { return }
+
+            if !freshCandidates.isEmpty {
+                print("✅ PlayerViewModel: exhaustiveRetry — got \(freshCandidates.count) iOS candidate(s) for id=\(normalizedMediaID)")
+                playbackCandidates = freshCandidates
+                playbackCandidateIndex = 0
+                playbackCandidatesMediaID = normalizedMediaID
+                let candidate = freshCandidates[0]
+                updateAudioFormatLabels(for: candidate)
+                playFromBeginning(url: candidate.url)
+                return
+            }
+            print("⚠️ PlayerViewModel: exhaustiveRetry — iOS returned 0 candidates for id=\(normalizedMediaID)")
+        } catch {
+            guard !Task.isCancelled, currentVideoId == mediaID else { return }
+            print("⚠️ PlayerViewModel: exhaustiveRetry — iOS failed for id=\(normalizedMediaID): \(error)")
+        }
+
+        // --- Attempt 2: Android client (muxed fallback) ---
+        do {
+            print("🔁 PlayerViewModel: exhaustiveRetry — trying Android client for id=\(normalizedMediaID)")
+            let youtube = self.youtube.main
+            let androidVideo = try await youtube.videoAndroid(id: normalizedMediaID)
+
+            guard !Task.isCancelled, currentVideoId == mediaID else { return }
+
+            // Use the standard candidate builder — same as iOS path
+            let androidCandidates = PlaybackCandidateBuilder.fromVideo(
+                androidVideo,
+                preferredURL: nil,
+                validUntil: Date().addingTimeInterval(3600)
+            )
+
+            if !androidCandidates.isEmpty {
+                print("✅ PlayerViewModel: exhaustiveRetry — got \(androidCandidates.count) Android candidate(s) for id=\(normalizedMediaID)")
+                playbackCandidates = androidCandidates
+                playbackCandidateIndex = 0
+                playbackCandidatesMediaID = normalizedMediaID
+                let candidate = androidCandidates[0]
+                updateAudioFormatLabels(for: candidate)
+                playFromBeginning(url: candidate.url)
+                return
+            }
+            print("⚠️ PlayerViewModel: exhaustiveRetry — Android returned no usable streams for id=\(normalizedMediaID)")
+        } catch {
+            guard !Task.isCancelled, currentVideoId == mediaID else { return }
+            print("⚠️ PlayerViewModel: exhaustiveRetry — Android failed for id=\(normalizedMediaID): \(error)")
+        }
+
+        // --- Attempt 3: TV client (authenticated fallback) ---
+        do {
+            print("🔁 PlayerViewModel: exhaustiveRetry — trying TV client for id=\(normalizedMediaID)")
+            let youtube = self.youtube.main
+            let tvVideo = try await youtube.videoTV(id: normalizedMediaID)
+
+            guard !Task.isCancelled, currentVideoId == mediaID else { return }
+
+            let tvCandidates = PlaybackCandidateBuilder.fromVideo(
+                tvVideo,
+                preferredURL: nil,
+                validUntil: Date().addingTimeInterval(3600)
+            )
+
+            if !tvCandidates.isEmpty {
+                print("✅ PlayerViewModel: exhaustiveRetry — got \(tvCandidates.count) TV candidate(s) for id=\(normalizedMediaID)")
+                playbackCandidates = tvCandidates
+                playbackCandidateIndex = 0
+                playbackCandidatesMediaID = normalizedMediaID
+                let candidate = tvCandidates[0]
+                updateAudioFormatLabels(for: candidate)
+                playFromBeginning(url: candidate.url)
+                return
+            }
+            print("❌ PlayerViewModel: exhaustiveRetry — TV returned no usable streams for id=\(normalizedMediaID)")
+        } catch {
+            guard !Task.isCancelled, currentVideoId == mediaID else { return }
+            print("❌ PlayerViewModel: exhaustiveRetry — TV failed for id=\(normalizedMediaID): \(error)")
+        }
+
+        // All attempts exhausted
+        playbackEngine.setIsPlaying(false)
+        playbackError = originalError?.localizedDescription ?? "Unable to play this video"
+    }
+
+    private func canonicalPlaybackMediaID(_ mediaID: String) -> String {
+        let trimmed = mediaID.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasPrefix("youtube-") {
+            return String(trimmed.dropFirst("youtube-".count))
+        }
+        return trimmed
     }
 
     private func startArtworkVideoProcessingIfNeeded(
@@ -1955,12 +2165,32 @@ public final class PlayerViewModel: PlayerViewModelInterface {
                     let statusCode = Self.latestErrorStatusCode(for: item)
                     let errorCode = nsError?.code
                     let errorDomain = nsError?.domain
-                    print("❌ PlayerViewModel: AVPlayerItem failed: \(errorMessage)")
+                    let failureReason = item.errorLog()?.events.last?.errorComment ?? item.errorLog()?.events.last?.serverAddress ?? "n/a"
+                    let logSummary = item.errorLog()?.events.map { event in
+                        "{domain=\(String(describing: event.errorDomain)) code=\(String(describing: event.errorStatusCode)) comment=\(String(describing: event.errorComment))}"
+                    }.joined(separator: ", ") ?? "[]"
+                    print("❌ PlayerViewModel: AVPlayerItem failed: message=\(errorMessage) domain=\(errorDomain ?? "n/a") code=\(errorCode.map(String.init) ?? "n/a") statusCode=\(statusCode.map(String.init) ?? "n/a") reason=\(failureReason)")
+                    print("❌ PlayerViewModel: AVPlayerItem errorLog=\(logSummary)")
 
+                    // Step 1: Try next local candidate (HLS → muxed → audio)
                     if self.attemptNextPlaybackCandidateIfAvailable(errorMessage: errorMessage) {
                         return
                     }
 
+                    // Step 2: One-shot exhaustive retry — fetch fresh URLs from the network.
+                    // We gate on exhaustiveRetryAttemptedIDs so this fires exactly once per
+                    // track. Without the gate the loop is: fail → retry → same URL → fail → ...
+                    if let mediaID = self.currentVideoId,
+                       !self.exhaustiveRetryAttemptedIDs.contains(mediaID) {
+                        self.exhaustiveRetryAttemptedIDs.insert(mediaID)
+                        self.exhaustiveRetryTask?.cancel()
+                        self.exhaustiveRetryTask = Task { [weak self] in
+                            await self?.exhaustiveRetry(for: mediaID, originalError: item.error)
+                        }
+                        return
+                    }
+
+                    // Step 3: Exhaustive retry already attempted — fall through to standard handlers.
                     if self.handlePlaybackPermissionFailureIfNeeded(
                         errorMessage: errorMessage,
                         statusCode: statusCode,
@@ -2021,6 +2251,130 @@ public final class PlayerViewModel: PlayerViewModelInterface {
             NotificationCenter.default.removeObserver(currentItemEndObserver)
             self.currentItemEndObserver = nil
         }
+    }
+
+    // MARK: - Listening / Scrobbling Helpers
+
+    private func startListeningSessionIfNeeded(for state: TrackPresentationState) {
+        guard activeScrobbleSessionMediaID != state.mediaID else { return }
+
+        finalizeCurrentListeningSession()
+        activeScrobbleSessionMediaID = state.mediaID
+        hasSubmittedScrobbleForActiveSession = false
+
+        if lastFMSettings.localHistoryEnabled {
+            currentListeningHistoryEntry = listeningHistoryStore.startSession(
+                mediaID: state.mediaID,
+                title: state.title,
+                artist: state.artist,
+                album: state.albumName,
+                artworkURL: state.artworkURL,
+                streamingService: state.streamingService.rawValue
+            )
+        } else {
+            currentListeningHistoryEntry = nil
+        }
+
+        publishLastFMNowPlaying(for: state)
+    }
+
+    private func finalizeCurrentListeningSession() {
+        lastFMScrobbleTask?.cancel()
+        lastFMScrobbleTask = nil
+
+        guard let entry = currentListeningHistoryEntry else {
+            activeScrobbleSessionMediaID = nil
+            hasSubmittedScrobbleForActiveSession = false
+            return
+        }
+
+        listeningHistoryStore.finishSession(
+            entry,
+            endedAt: .now,
+            listenedSeconds: currentTime,
+            wasScrobbled: entry.wasScrobbled,
+            scrobbledAt: entry.scrobbledAt
+        )
+
+        currentListeningHistoryEntry = nil
+        activeScrobbleSessionMediaID = nil
+        hasSubmittedScrobbleForActiveSession = false
+    }
+
+    private func publishLastFMNowPlaying(for state: TrackPresentationState) {
+        guard lastFMSettings.enabled else { return }
+        let item = makeLastFMPlaybackItem(for: state)
+        Task { [lastFMScrobbler] in
+            try? await lastFMScrobbler.recordNowPlaying(item)
+        }
+    }
+
+    private func maybeSubmitLastFMScrobble() {
+        guard !hasSubmittedScrobbleForActiveSession,
+              lastFMSettings.enabled,
+              let mediaID = activeScrobbleSessionMediaID,
+              mediaID == currentVideoId,
+              isPlaying else { return }
+
+        let threshold = scrobbleThreshold(for: duration)
+        guard threshold > 0, currentTime >= threshold else { return }
+
+        hasSubmittedScrobbleForActiveSession = true
+        let item = makeLastFMPlaybackItem(
+            mediaID: mediaID,
+            title: currentTitle,
+            artist: currentArtist,
+            album: currentAlbumNameHint,
+            artworkURL: currentImageURL,
+            duration: duration
+        )
+
+        lastFMScrobbleTask?.cancel()
+        lastFMScrobbleTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await self.lastFMScrobbler.scrobble(item, playedAt: .now)
+                guard let entry = self.currentListeningHistoryEntry else { return }
+                self.listeningHistoryStore.markScrobbled(entry, scrobbledAt: .now)
+            } catch {
+                self.hasSubmittedScrobbleForActiveSession = false
+            }
+            self.lastFMScrobbleTask = nil
+        }
+    }
+
+    private func scrobbleThreshold(for duration: Double) -> Double {
+        guard duration.isFinite, duration > 0 else { return 240 }
+        return min(duration / 2, 240)
+    }
+
+    private func makeLastFMPlaybackItem(
+        mediaID: String,
+        title: String,
+        artist: String,
+        album: String?,
+        artworkURL: URL?,
+        duration: Double
+    ) -> LastFMPlaybackItem {
+        LastFMPlaybackItem(
+            mediaID: mediaID,
+            title: title,
+            artist: artist,
+            album: album,
+            artworkURL: artworkURL,
+            durationSeconds: duration.isFinite && duration > 0 ? UInt(duration.rounded()) : nil
+        )
+    }
+
+    private func makeLastFMPlaybackItem(for state: TrackPresentationState) -> LastFMPlaybackItem {
+        makeLastFMPlaybackItem(
+            mediaID: state.mediaID,
+            title: state.title,
+            artist: state.artist,
+            album: state.albumName,
+            artworkURL: state.artworkURL,
+            duration: Double(state.durationHint ?? 0)
+        )
     }
 
     private func handlePlaybackPermissionFailureIfNeeded(

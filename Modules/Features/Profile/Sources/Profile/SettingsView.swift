@@ -10,6 +10,12 @@ public struct SettingsView: View {
     @Environment(PlaybackControlSettings.self) private var playbackControlSettings
     @Environment(StreamingProviderSettings.self) private var streamingProviderSettings
     @Environment(PlaybackServices.self) private var playbackServices
+    @Environment(UserServices.self) private var userServices
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openURL) private var openURL
+
+    private var lastFMSettings: LastFMSettings { playbackServices.lastFMSettings }
+    private var lastFMScrobbler: LastFMScrobbler { playbackServices.lastFMScrobbler }
 
     @State private var snapshot = PlaybackMetricsStore.Snapshot(
         cacheHitRate: 0,
@@ -20,6 +26,8 @@ public struct SettingsView: View {
     )
 
     @State private var isSigningOut: Bool = false
+    @State private var isConnectingLastFM: Bool = false
+    @State private var pendingFlowId: String?
 
     public var body: some View {
         Form {
@@ -155,13 +163,105 @@ public struct SettingsView: View {
                     }
                 }
             }
+
+            Section("Last.fm") {
+                Toggle("Enable Scrobbling", isOn: Bindable(lastFMSettings).enabled)
+                Toggle(
+                    "Save Local Listening History",
+                    isOn: Bindable(lastFMSettings).localHistoryEnabled
+                )
+
+                if lastFMSettings.isConnected {
+                    LabeledContent {
+                        Button("Disconnect", role: .destructive) {
+                            Task {
+                                do {
+                                    try await lastFMScrobbler.disconnect()
+                                    lastFMSettings.clearConnection()
+                                } catch {
+                                    // Handle error if needed
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Connected as \(lastFMSettings.lastfmUsername ?? "User")")
+                        }
+                    }
+                } else {
+                    if userServices.authService.isAuthenticated {
+                        Button {
+                            Task {
+                                isConnectingLastFM = true
+                                defer { isConnectingLastFM = false }
+                                do {
+                                    let flow = try await lastFMScrobbler.startConnection()
+                                    pendingFlowId = flow.flowId
+                                    if let url = URL(string: flow.authorizeUrl) {
+                                        openURL(url)
+                                    }
+                                } catch {
+                                    // Handle error
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text("Connect Last.fm")
+                                if isConnectingLastFM {
+                                    Spacer()
+                                    ProgressView().controlSize(.small)
+                                }
+                            }
+                        }
+                        .disabled(isConnectingLastFM)
+                    } else {
+                        Text("Sign in to cisum to connect Last.fm")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Text("Last.fm authorization will be connected through a secure web flow, not by entering your shared secret in the app.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
         .navigationTitle("Settings")
         .contentMargins(.bottom, 140)
         .task {
             await refreshMetrics()
+            await refreshLastFMStatus()
         }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .active {
+                Task {
+                    await refreshLastFMStatus()
+                    
+                    if let flowId = pendingFlowId {
+                        do {
+                            let result = try await lastFMScrobbler.completeConnection(flowId: flowId)
+                            if result.connected {
+                                lastFMSettings.updateConnectionStatus(connected: true, username: result.lastfmUsername)
+                                pendingFlowId = nil
+                            }
+                        } catch {
+                            // Flow may have expired or not been completed yet
+                        }
+                    }
+                }
+            }
+        }
+    }
 
+    private func refreshLastFMStatus() async {
+        do {
+            let status = try await lastFMScrobbler.checkConnectionStatus()
+            lastFMSettings.updateConnectionStatus(connected: status.connected, username: status.lastfmUsername)
+        } catch {
+            // Unauthenticated or network error
+        }
     }
 
     private func refreshMetrics() async {

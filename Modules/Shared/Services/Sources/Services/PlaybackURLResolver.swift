@@ -37,17 +37,24 @@ public actor PlaybackURLResolver {
 
     /// Prewarm playback info for a list of video IDs. This fetches minimal data and caches
     /// the best candidate URL for quick startup (HLS preferred).
+    /// Uses bounded concurrency (max 2) to avoid flooding YouTube with player requests.
     public func prewarm(_ ids: [String]) async {
         guard !ids.isEmpty else { return }
 
-        await withTaskGroup(of: Void.self) { group in
+        await withThrowingTaskGroup(of: Void.self) { group in
+            var submitted = 0
+            let maxConcurrent = 2
             for id in ids {
+                if submitted >= maxConcurrent {
+                    try? await group.next()
+                    submitted -= 1
+                }
                 group.addTask { [weak self] in
                     guard let self = self else { return }
                     _ = try? await self.resolve(videoID: id)
                 }
+                submitted += 1
             }
-            await group.waitForAll()
         }
     }
 

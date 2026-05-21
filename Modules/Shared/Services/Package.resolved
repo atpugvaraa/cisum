@@ -1,5 +1,5 @@
 {
-  "originHash" : "ddcb9bbd48b3fc739997d502092fa7dfb01f25f55a2914ae668baa5b889755d6",
+  "originHash" : "f630218f875a064076716b50a993b8e45c51a845af93a063f01c67e2e205fe76",
   "pins" : [
     {
       "identity" : "clerk-ios",
@@ -8,24 +8,6 @@
       "state" : {
         "revision" : "5f9567a1ef4cd47ac4cfe9b1d4c0d400af62202b",
         "version" : "1.1.3"
-      }
-    },
-    {
-      "identity" : "kingfisher",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/onevcat/Kingfisher.git",
-      "state" : {
-        "revision" : "c152c1915f60c51e4afa0752656993ee5b3c63db",
-        "version" : "8.8.1"
-      }
-    },
-    {
-      "identity" : "lastfm.swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/duhnnie/LastFM.swift",
-      "state" : {
-        "branch" : "main",
-        "revision" : "ab19b1f8c81abdb5760fb06b8095a9e232af1ca1"
       }
     },
     {
@@ -107,15 +89,6 @@
       "state" : {
         "revision" : "45eb0224913ea070ec4fba17291b9e7ecf4749ca",
         "version" : "1.5.1"
-      }
-    },
-    {
-      "identity" : "swiftrestclient",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/duhnnie/SwiftRestClient",
-      "state" : {
-        "revision" : "eb7b2fcf534b0293e11e139866c5117bc56e7695",
-        "version" : "0.7.1"
       }
     },
     {

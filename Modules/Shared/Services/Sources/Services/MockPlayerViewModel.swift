@@ -55,6 +55,9 @@ public extension PlaybackServices {
         PlaybackServices(
             playbackControlSettings: PlaybackControlSettings.shared,
             playbackMetricsStore: PlaybackMetricsStore.shared,
+            lastFMSettings: LastFMSettings.shared,
+            lastFMScrobbler: LastFMScrobbler(authService: AuthService()),
+            listeningHistoryStore: ListeningHistoryStore.preview,
             streamingProviderSettings: StreamingProviderSettings.shared,
             radioSessionStore: RadioSessionStore.shared,
             artworkVideoProcessor: ArtworkVideoProcessor.shared,

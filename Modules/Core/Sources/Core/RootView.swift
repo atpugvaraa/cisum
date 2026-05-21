@@ -89,25 +89,6 @@ public struct RootView: View {
             }
         }
         .usingRouter(cisum.router)
-        .overlay(alignment: .bottom) {
-            if let appRouter = cisum.router as? AppRouter {
-                Group {
-                    if appRouter.path.contains(.profile) {
-                        cisum.profileView
-                            .interactiveDismissDisabled(false)
-                            .onDisappear {
-                                cisum.router.pop()
-                            }
-                    } else if appRouter.path.contains(.settings) {
-                        cisum.settingsView
-                            .interactiveDismissDisabled(false)
-                            .onDisappear {
-                                cisum.router.pop()
-                            }
-                    }
-                }
-            }
-        }
 #else
         tabSurface
             .onPreferenceChange(SearchOverlayContextPreferenceKey.self) { newContext in
@@ -180,6 +161,20 @@ public struct RootView: View {
             content()
                 .ignoresSafeArea()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .navigationDestination(for: AppRoute.self) { route in
+                    switch route {
+                    case .profile:
+                        cisum.profileView
+                    case .settings:
+                        cisum.settingsView
+                    case .playlist(let id):
+                        cisum.playlistDetailView(for: id)
+                    case .login:
+                        cisum.loginView
+                    default:
+                        EmptyView()
+                    }
+                }
                 .onScrollOffsetChange { oldValue, newValue in
                     let scrollingDown = oldValue < newValue
 
@@ -254,6 +249,20 @@ public struct RootView: View {
         NavigationStack(path: navigationState.binding(for: tab)) {
             content()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .navigationDestination(for: AppRoute.self) { route in
+                    switch route {
+                    case .profile:
+                        cisum.profileView
+                    case .settings:
+                        cisum.settingsView
+                    case .playlist(let id):
+                        cisum.playlistDetailView(for: id)
+                    case .login:
+                        cisum.loginView
+                    default:
+                        EmptyView()
+                    }
+                }
         }
     }
 #endif

@@ -23,6 +23,9 @@ public final class CoreServices {
 public final class PlaybackServices {
     public let playbackControlSettings: PlaybackControlSettings
     public let playbackMetricsStore: PlaybackMetricsStore
+    public let lastFMSettings: LastFMSettings
+    public let lastFMScrobbler: LastFMScrobbler
+    public let listeningHistoryStore: ListeningHistoryStore
     public let streamingProviderSettings: StreamingProviderSettings
     public let radioSessionStore: RadioSessionStore
     public let artworkVideoProcessor: ArtworkVideoProcessor
@@ -31,6 +34,9 @@ public final class PlaybackServices {
     public init(
         playbackControlSettings: PlaybackControlSettings,
         playbackMetricsStore: PlaybackMetricsStore,
+        lastFMSettings: LastFMSettings,
+        lastFMScrobbler: LastFMScrobbler,
+        listeningHistoryStore: ListeningHistoryStore,
         streamingProviderSettings: StreamingProviderSettings,
         radioSessionStore: RadioSessionStore,
         artworkVideoProcessor: ArtworkVideoProcessor,
@@ -38,6 +44,9 @@ public final class PlaybackServices {
     ) {
         self.playbackControlSettings = playbackControlSettings
         self.playbackMetricsStore = playbackMetricsStore
+        self.lastFMSettings = lastFMSettings
+        self.lastFMScrobbler = lastFMScrobbler
+        self.listeningHistoryStore = listeningHistoryStore
         self.streamingProviderSettings = streamingProviderSettings
         self.radioSessionStore = radioSessionStore
         self.artworkVideoProcessor = artworkVideoProcessor
@@ -103,9 +112,20 @@ public final class LibraryServices {
 @MainActor
 public final class UserServices {
     public let spotifySessionCoordinator: SpotifySessionCoordinator
+    public let authService: AuthService
+    public let supabaseService: SupabaseService
+    public let analyticsService: AnalyticsService
 
-    public init(spotifySessionCoordinator: SpotifySessionCoordinator) {
+    public init(
+        spotifySessionCoordinator: SpotifySessionCoordinator,
+        authService: AuthService,
+        supabaseService: SupabaseService,
+        analyticsService: AnalyticsService
+    ) {
         self.spotifySessionCoordinator = spotifySessionCoordinator
+        self.authService = authService
+        self.supabaseService = supabaseService
+        self.analyticsService = analyticsService
     }
 }
 

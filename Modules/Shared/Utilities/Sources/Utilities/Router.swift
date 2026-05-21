@@ -1,15 +1,27 @@
 import SwiftUI
 
 @MainActor
+public enum AppRoute: Hashable {
+    case home
+    case profile
+    case settings
+    case search
+    case library
+    case recents
+    case playlist(id: String)
+    case login
+}
+
+@MainActor
 public protocol Router: AnyObject {
-    func navigate(to route: AnyHashable)
+    func navigate(to route: AppRoute)
     func pop()
 }
 
 @MainActor
 public final class EmptyRouter: Router {
     public init() {}
-    public func navigate(to route: AnyHashable) {}
+    public func navigate(to route: AppRoute) {}
     public func pop() {}
 }
 

@@ -82,9 +82,20 @@ public struct LibraryInterface {
 
 public struct UserInterface {
     public let spotifySessionCoordinator: SpotifySessionCoordinator
+    public let authService: AuthService
+    public let supabaseService: SupabaseService
+    public let analyticsService: AnalyticsService
     
-    public init(spotifySessionCoordinator: SpotifySessionCoordinator) {
+    public init(
+        spotifySessionCoordinator: SpotifySessionCoordinator,
+        authService: AuthService,
+        supabaseService: SupabaseService,
+        analyticsService: AnalyticsService
+    ) {
         self.spotifySessionCoordinator = spotifySessionCoordinator
+        self.authService = authService
+        self.supabaseService = supabaseService
+        self.analyticsService = analyticsService
     }
 }
 

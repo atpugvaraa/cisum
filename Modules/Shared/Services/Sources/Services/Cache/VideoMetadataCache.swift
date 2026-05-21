@@ -226,20 +226,31 @@ public actor VideoMetadataCache {
 
 
     private static func resolvePlayableURL(from video: YouTubeVideo) -> URL? {
+        // 1) Audio-only stream (ideal for music)
         if let audio = video.bestAudioStream,
            let urlString = audio.url,
            let url = URL(string: urlString) {
             return url
         }
 
+        // 2) Muxed stream (video + audio in one container)
         if let muxed = video.bestMuxedStream,
            let urlString = muxed.url,
            let url = URL(string: urlString) {
             return url
         }
 
+        // 3) HLS manifest
         if let hls = video.hlsURL {
             return hls
+        }
+
+        // 4) Fallback: use the first adaptive format with a URL
+        //    (covers videos where YouTube returns only video-only streams)
+        if let first = video.streamingData?.adaptiveFormats.first,
+           let urlString = first.url,
+           let url = URL(string: urlString) {
+            return url
         }
 
         return nil

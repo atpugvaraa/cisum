@@ -18,7 +18,7 @@ let package = Package(
     dependencies: [
         .package(path: "../../Shared/DesignSystem"),
         .package(path: "../../Shared/Utilities"),
-        .package(name: "YouTubeSDK", path: "../../../Packages/StreamingKit/YouTubeSDK"),
+        .package(path: "../../../Packages/StreamingKit/YouTubeSDK"),
     ],
     targets: [
         .target(

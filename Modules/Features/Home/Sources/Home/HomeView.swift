@@ -110,15 +110,15 @@ public struct HomeView: View {
     private func handleProfileAction(_ action: ProfileMenuAction) {
         switch action {
         case .profile:
-            router.navigate(to: "profile")
+            router.navigate(to: .profile)
         case .settings:
-            router.navigate(to: "settings")
+            router.navigate(to: .settings)
         case .home:
-            router.navigate(to: "tab:home")
+            router.navigate(to: .home)
         case .library:
-            router.navigate(to: "tab:library")
+            router.navigate(to: .library)
         case .recents:
-            router.navigate(to: "tab:library")
+            router.navigate(to: .library)
         }
     }
 }

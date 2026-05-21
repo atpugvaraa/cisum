@@ -348,7 +348,7 @@ public class SearchViewModel: SearchViewModelInterface {
         let codec = ext == "m3u8" ? "hls" : "mp4"
         let quality = codec == "hls" ? "Adaptive" : "Standard"
         return ExternalStreamPayload(
-            mediaID: "youtube-\(videoID)",
+            mediaID: videoID,
             streamURL: url,
             title: title,
             artist: artist,
@@ -369,8 +369,10 @@ public class SearchViewModel: SearchViewModelInterface {
         // Try local visible results next (fast path)
         let hiddenItems = SpotifyFallbackResolutionPolicy.order.flatMap { items(for: $0) }
         
-        let bestLocal = await Task.detached {
-            self.findBestSpotifyFallbackMatch(
+        // Use a structured task (not detached) so actor isolation is preserved
+        let bestLocal: SpotifyFallbackMatch? = await Task { [weak self] in
+            guard let self else { return nil }
+            return self.findBestSpotifyFallbackMatch(
                 for: spotifyTitle,
                 artist: spotifyArtist,
                 durationSeconds: spotifyDuration,
@@ -445,7 +447,7 @@ public class SearchViewModel: SearchViewModelInterface {
         return await withTaskGroup(of: ExternalStreamPayload?.self) { group in
             // 1. YouTube Music Task
             group.addTask {
-                try? Task.checkCancellation()
+                guard !Task.isCancelled else { return nil }
                 let result = await self.fetchYouTubeMusicSectionItems(query: query, updateUI: false)
                 if case .success(let items) = result {
                     if let best = await self.performFallbackMatch(title: titleValue, artist: artistValue, duration: durationSeconds, candidates: items) {
@@ -457,7 +459,7 @@ public class SearchViewModel: SearchViewModelInterface {
 
             // 2. YouTube Video Task
             group.addTask {
-                try? Task.checkCancellation()
+                guard !Task.isCancelled else { return nil }
                 let videoQuery = self.effectiveSearchQuery(for: query, scope: .video)
                 let result = await self.fetchYouTubeSectionItems(query: videoQuery, updateUI: false)
                 if case .success(let items) = result {
@@ -1193,7 +1195,57 @@ public class SearchViewModel: SearchViewModelInterface {
 
             return .success(Array(items))
         } catch {
-            return .failure(error)
+            let fallbackQuery = rawVideoSearchQuery(from: query)
+            guard fallbackQuery != query else {
+                return .failure(error)
+            }
+
+            Utilities.Logger.log("SearchViewModel: video search retrying with raw query '\(fallbackQuery)' after rewritten query '\(query)' failed")
+
+            do {
+                let continuation = try await youtube.main.search(fallbackQuery)
+
+                let topVideos: [YouTubeVideo]
+                if updateUI {
+                    let videoResults = await MainActor.run {
+                        self.resetVideoPagination()
+                        self.updateVideoResults(with: continuation, appending: false)
+                        let results = self.videoResults
+                        self.searchCache.setVideoResults(results, for: fallbackQuery)
+                        self.searchCacheHintStore.recordVideoResults(query: fallbackQuery, results: results)
+                        return results
+                    }
+
+                    topVideos = Array(videoResults.compactMap { item -> YouTubeVideo? in
+                        if case .video(let video) = item { return video }
+                        return nil
+                    }.prefix(5))
+                } else {
+                    topVideos = Array(continuation.items.compactMap { item -> YouTubeVideo? in
+                        if case .video(let video) = item { return video }
+                        return nil
+                    }.prefix(5))
+                }
+
+                let items = topVideos.map { video in
+                    FederatedSearchItem(
+                        id: "yt-\(video.id)",
+                        title: normalizedMusicDisplayTitle(video.title, artist: video.author),
+                        subtitle: normalizedMusicDisplayArtist(video.author, title: video.title),
+                        artworkURL: normalizedArtworkURL(from: video.thumbnailURL),
+                        durationSeconds: self.parseVideoDurationSeconds(video.lengthInSeconds),
+                        isPlayable: true,
+                        isExplicit: false,
+                        audioQualityLabel: nil,
+                        audioCodecLabel: nil,
+                        payload: .youtubeVideo(video)
+                    )
+                }
+
+                return .success(Array(items))
+            } catch {
+                return .failure(error)
+            }
         }
     }
 
@@ -1689,6 +1741,10 @@ public class SearchViewModel: SearchViewModelInterface {
         case .video:
             return musicVideoSearchQuery(query)
         }
+    }
+
+    nonisolated private func rawVideoSearchQuery(from query: String) -> String {
+        query.replacingOccurrences(of: " (Official Music Video)", with: "")
     }
 
     private func shouldKeepVideoResult(_ video: YouTubeVideo) -> Bool {

@@ -10,6 +10,7 @@ import Profile
 import SwiftData
 import Models
 import YouTubeSDK
+import Authentication
 
 @MainActor
 public final class cisumModule {
@@ -77,6 +78,14 @@ public final class cisumModule {
         AnyView(profile.profileView)
     }
 
+    public var loginView: AnyView {
+        AnyView(LoginView().environment(container.userServices))
+    }
+
+    public func playlistDetailView(for id: String) -> AnyView {
+        AnyView(library.playlistDetailView(for: id))
+    }
+
     public var searchText: Binding<String> {
         search.searchText
     }
@@ -109,20 +118,12 @@ public final class cisumModule {
 
     // MARK: - Root View
 
+    @ViewBuilder
     public var rootView: some View {
-        DesignSystem.RootView(playerOverlayState: .init()) {
-            RootView(module: self)
-                .environment(self.container)
-                .environment(self.container.coreServices)
-                .environment(self.container.playbackServices)
-                .environment(self.container.searchServices)
-                .environment(self.container.libraryServices)
-                .environment(self.container.userServices)
-                .environment(self.container.providerServices)
-                .environment(self.container.appServices)
-        } overlayWrapper: { overlay in
-            AnyView(
-                overlay
+        let authService = container.userServices.authService
+        if authService.isAuthenticated || authService.isGuestMode {
+            DesignSystem.RootView(playerOverlayState: .init()) {
+                RootView(module: self)
                     .environment(self.container)
                     .environment(self.container.coreServices)
                     .environment(self.container.playbackServices)
@@ -131,7 +132,21 @@ public final class cisumModule {
                     .environment(self.container.userServices)
                     .environment(self.container.providerServices)
                     .environment(self.container.appServices)
-            )
+            } overlayWrapper: { overlay in
+                AnyView(
+                    overlay
+                        .environment(self.container)
+                        .environment(self.container.coreServices)
+                        .environment(self.container.playbackServices)
+                        .environment(self.container.searchServices)
+                        .environment(self.container.libraryServices)
+                        .environment(self.container.userServices)
+                        .environment(self.container.providerServices)
+                        .environment(self.container.appServices)
+                )
+            }
+        } else {
+            loginView
         }
     }
 
@@ -143,6 +158,22 @@ public final class cisumModule {
         
         appRouter.onTabSwitch = { [weak navigationState] tab in
             navigationState?.selectedTab = tab
+        }
+        
+        appRouter.onPush = { [weak navigationState] route in
+            guard let state = navigationState else { return }
+            var path = state.tabPaths[state.selectedTab] ?? NavigationPath()
+            path.append(route)
+            state.tabPaths[state.selectedTab] = path
+        }
+        
+        appRouter.onPop = { [weak navigationState] in
+            guard let state = navigationState else { return }
+            var path = state.tabPaths[state.selectedTab] ?? NavigationPath()
+            if !path.isEmpty {
+                path.removeLast()
+                state.tabPaths[state.selectedTab] = path
+            }
         }
         
         self.navigationState = navigationState
@@ -173,7 +204,8 @@ public final class cisumModule {
             prefetchSettings: container.core.prefetchSettings,
             networkMonitor: container.core.networkMonitor,
             playbackControlSettings: container.playback.playbackControlSettings,
-            streamingProviderSettings: container.playback.streamingProviderSettings
+            streamingProviderSettings: container.playback.streamingProviderSettings,
+            lastFMSettings: container.playbackServices.lastFMSettings
         )
         
         self.search = SearchModule(

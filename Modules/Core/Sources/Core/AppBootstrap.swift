@@ -13,13 +13,14 @@ import Search
 import Player
 import Models
 import DesignSystem
+import ClerkKit
 
 @MainActor
 enum AppBootstrap {
     static func makeDependenciesOrFallback(youtube: YouTube, router: Router) -> ServicesContainer {
         // FORCE IN-MEMORY FOR DIAGNOSTICS
         // return makeInMemoryDependencies(youtube: youtube, router: router, underlyingError: NSError(domain: "ManualBypass", code: 0))
-        
+
         do {
             return try makeDependencies(youtube: youtube, router: router)
         } catch {
@@ -39,6 +40,9 @@ enum AppBootstrap {
         router: Router,
         modelContainer: ModelContainer
     ) -> ServicesContainer {
+        // Initialize Clerk with publishable key
+        Clerk.configure(publishableKey: "pk_test_Y2xvc2luZy1iYXQtNjEuY2xlcmsuYWNjb3VudHMuZGV2JA")
+        
         let prefetchSettings = PrefetchSettings.shared
         let networkMonitor = NetworkPathMonitor.shared
         let playbackControlSettings = PlaybackControlSettings.shared
@@ -55,6 +59,12 @@ enum AppBootstrap {
         let searchCache = SearchResultsCache.shared
         let radioSessionStore = RadioSessionStore.shared
         let playbackMetricsStore = PlaybackMetricsStore.shared
+        let lastFMSettings = LastFMSettings.shared
+        let authService = AuthService()
+        let supabaseService = SupabaseService()
+        let analyticsService = AnalyticsService()
+        let lastFMScrobbler = LastFMScrobbler(configuration: lastFMSettings.configuration, authService: authService)
+        let listeningHistoryStore = ListeningHistoryStore(context: modelContext)
         let spotifySessionCoordinator = SpotifySessionCoordinator.shared
     #if os(iOS)
         let artworkColorExtractor = ImageColorExtractor.shared
@@ -85,9 +95,12 @@ enum AppBootstrap {
             metadataCache: metadataCache,
             mediaCacheStore: mediaCacheStore,
             playbackMetricsStore: playbackMetricsStore,
-            streamingProviderSettings: streamingProviderSettings,
-            radioSessionStore: radioSessionStore,
-            artworkColorExtractor: artworkColorExtractor
+              lastFMScrobbler: lastFMScrobbler,
+              lastFMSettings: lastFMSettings,
+              listeningHistoryStore: listeningHistoryStore,
+              streamingProviderSettings: streamingProviderSettings,
+              radioSessionStore: radioSessionStore,
+              artworkColorExtractor: artworkColorExtractor
         )
 #else
         let playerViewModel = PlayerViewModel(
@@ -97,6 +110,9 @@ enum AppBootstrap {
             metadataCache: metadataCache,
             mediaCacheStore: mediaCacheStore,
             playbackMetricsStore: playbackMetricsStore,
+            lastFMScrobbler: lastFMScrobbler,
+            lastFMSettings: lastFMSettings,
+            listeningHistoryStore: listeningHistoryStore,
             streamingProviderSettings: streamingProviderSettings,
             radioSessionStore: radioSessionStore
         )
@@ -156,7 +172,12 @@ enum AppBootstrap {
             metadataCache: metadataCache
         )
 
-        let userDomain = UserDomain(spotifySessionCoordinator: spotifySessionCoordinator)
+        let userDomain = UserDomain(
+            spotifySessionCoordinator: spotifySessionCoordinator,
+            authService: authService,
+            supabaseService: supabaseService,
+            analyticsService: analyticsService
+        )
 
         let appDomain = AppDomain(
             youtube: youtube,
@@ -169,6 +190,9 @@ enum AppBootstrap {
         let playbackServices = PlaybackServices(
             playbackControlSettings: playbackControlSettings,
             playbackMetricsStore: playbackMetricsStore,
+            lastFMSettings: lastFMSettings,
+            lastFMScrobbler: lastFMScrobbler,
+            listeningHistoryStore: listeningHistoryStore,
             streamingProviderSettings: streamingProviderSettings,
             radioSessionStore: radioSessionStore,
             artworkVideoProcessor: artworkVideoProcessor,
@@ -193,8 +217,13 @@ enum AppBootstrap {
             metadataCache: metadataCache
         )
 
+
+
         let userServices = UserServices(
-            spotifySessionCoordinator: spotifySessionCoordinator
+            spotifySessionCoordinator: spotifySessionCoordinator,
+            authService: authService,
+            supabaseService: supabaseService,
+            analyticsService: analyticsService
         )
 
         let appServices = AppServices(
@@ -232,6 +261,7 @@ enum AppBootstrap {
     private static func makePersistentModelContainer() throws -> ModelContainer {
         let schema = Schema([
             SearchHistoryEntry.self,
+            ListeningHistoryEntry.self,
             MediaCacheEntry.self,
             SearchCacheHintEntry.self,
             Playlist.self,
@@ -257,6 +287,7 @@ enum AppBootstrap {
     private static func makeModelContainer(configuration: ModelConfiguration? = nil) throws -> ModelContainer {
         let schema = Schema([
             SearchHistoryEntry.self,
+            ListeningHistoryEntry.self,
             MediaCacheEntry.self,
             SearchCacheHintEntry.self,
             Playlist.self,
