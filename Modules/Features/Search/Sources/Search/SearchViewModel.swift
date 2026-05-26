@@ -18,10 +18,11 @@ public class SearchViewModel: SearchViewModelInterface {
     }
 
     private enum UnifiedTopResultsPolicy {
-        nonisolated static let limit: Int = 5
-        // Hidden providers only; Spotify uses dedicated sections
-        nonisolated static let services: [FederatedService] = [.youtubeMusic, .youtube]
+        nonisolated static let limit: Int = 10
+        // Now includes Spotify in unified top results
+        nonisolated static let services: [FederatedService] = [.spotify, .youtubeMusic, .youtube]
         nonisolated static let maxPerService: [FederatedService: Int] = [
+            .spotify: 5,
             .youtubeMusic: 3,
             .youtube: 3
         ]
@@ -140,6 +141,7 @@ public class SearchViewModel: SearchViewModelInterface {
             self.state = .idle
             return
         }
+        
 
         suggestionTask = Task {
             try? await Task.sleep(for: .seconds(0.4))
@@ -186,23 +188,33 @@ public class SearchViewModel: SearchViewModelInterface {
         // 1. Spotify (Primary UI feed)
         Utilities.Logger.log("SearchViewModel: Fetching Spotify results...")
         let spotifyResult = await self.fetchSpotifySectionItems(query: query)
+        try? Task.checkCancellation()
         self.applySpotifySearchResult(spotifyResult)
         self.refreshUnifiedResults(for: query)
 
         // 2. YouTube Music
         Utilities.Logger.log("SearchViewModel: Fetching YouTube Music results...")
         let ytMusicResult = await self.fetchYouTubeMusicSectionItems(query: query, updateUI: true)
+        try? Task.checkCancellation()
         self.applyFederatedSearchResult(ytMusicResult, for: .youtubeMusic)
         self.refreshUnifiedResults(for: query)
 
         // 3. YouTube (Video)
         Utilities.Logger.log("SearchViewModel: Fetching YouTube Video results...")
         let ytVideoResult = await self.fetchYouTubeSectionItems(query: effectiveVideoQuery, updateUI: true)
+        try? Task.checkCancellation()
         self.applyFederatedSearchResult(ytVideoResult, for: .youtube)
         self.refreshUnifiedResults(for: query)
 
         self.state = .success
         self.lastCompletedQuery = query
+        triggerHapticFeedback()
+    }
+
+    public func triggerHapticFeedback() {
+#if os(iOS)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+#endif
     }
 
     private func refreshUnifiedResults(for query: String) {
@@ -271,8 +283,18 @@ public class SearchViewModel: SearchViewModelInterface {
             spotifyTrackResults = items.tracks
             spotifyArtistResults = items.artists
             spotifyPlaylistResults = items.playlists
+            
+            // Unify Spotify tracks into federatedSections for Unified Ranking
+            if let index = federatedSections.firstIndex(where: { $0.service == .spotify }) {
+                federatedSections[index].items = Array(items.tracks.prefix(5))
+                federatedSections[index].state = .success
+            }
         case .failure:
             clearSpotifySections()
+            if let index = federatedSections.firstIndex(where: { $0.service == .spotify }) {
+                federatedSections[index].items = []
+                federatedSections[index].state = .error("Failed to load Spotify")
+            }
         }
     }
 
@@ -342,7 +364,10 @@ public class SearchViewModel: SearchViewModelInterface {
 
     private func resolveYouTubeExternalStream(for videoID: String, title: String, artist: String, artworkURL: URL?) async throws -> ExternalStreamPayload {
         let resolver = await PlaybackURLResolver.sharedInstance()
-        let url = try await resolver.resolve(videoID: videoID)
+        let candidates = try await resolver.resolve(mediaID: videoID, title: title, artist: artist, forceDecipher: false)
+        guard let url = candidates.first?.url else {
+            throw NSError(domain: "SearchViewModel", code: 404, userInfo: [NSLocalizedDescriptionKey: "No playback stream found"])
+        }
         
         let ext = url.pathExtension.lowercased()
         let codec = ext == "m3u8" ? "hls" : "mp4"
@@ -481,149 +506,7 @@ public class SearchViewModel: SearchViewModelInterface {
         }
     }
 
-    nonisolated private func performFallbackMatch(
-        title: String,
-        artist: String,
-        duration: TimeInterval?,
-        candidates: [FederatedSearchItem]
-    ) async -> SpotifyFallbackMatch? {
-        return findBestSpotifyFallbackMatch(
-            for: title,
-            artist: artist,
-            durationSeconds: duration,
-            in: candidates
-        )
-    }
 
-    private struct SpotifyFallbackMatch {
-        let item: FederatedSearchItem
-        let score: Double
-    }
-
-    nonisolated private func findBestSpotifyFallbackMatch(
-        for title: String,
-        artist: String,
-        durationSeconds: TimeInterval?,
-        in items: [FederatedSearchItem]
-    ) -> SpotifyFallbackMatch? {
-        let rankedMatches = items.compactMap { item -> SpotifyFallbackMatch? in
-            let score = spotifyFallbackScore(
-                sourceTitle: title,
-                sourceArtist: artist,
-                sourceDuration: durationSeconds,
-                candidate: item
-            )
-
-            guard score >= 0.55 else { return nil }
-            return SpotifyFallbackMatch(item: item, score: score)
-        }
-
-        return rankedMatches.max(by: { lhs, rhs in
-            if lhs.score == rhs.score {
-                return providerPriority(for: lhs.item.service) < providerPriority(for: rhs.item.service)
-            }
-
-            return lhs.score < rhs.score
-        })
-    }
-
-    nonisolated private func spotifyFallbackScore(
-        sourceTitle: String,
-        sourceArtist: String,
-        sourceDuration: TimeInterval?,
-        candidate: FederatedSearchItem
-    ) -> Double {
-        let normalizedSourceTitle = normalizedRankingText(sourceTitle)
-        let normalizedSourceArtist = normalizedRankingText(sourceArtist)
-        let normalizedCandidateTitle = normalizedRankingText(candidate.title)
-        let normalizedCandidateArtist = normalizedRankingText(primaryArtistName(from: candidate.subtitle))
-
-        let titleOverlap = tokenOverlapScore(normalizedSourceTitle, normalizedCandidateTitle)
-        let artistOverlap = tokenOverlapScore(normalizedSourceArtist, normalizedCandidateArtist)
-        let titleContainsBonus = normalizedCandidateTitle.contains(normalizedSourceTitle) ? 0.16 : 0
-        let sourceContainsBonus = normalizedSourceTitle.contains(normalizedCandidateTitle) ? 0.08 : 0
-        let exactTitleBonus = normalizedSourceTitle == normalizedCandidateTitle ? 0.36 : 0
-        let exactArtistBonus = normalizedSourceArtist == normalizedCandidateArtist ? 0.18 : 0
-        let durationBonus = spotifyDurationMatchScore(
-            sourceDuration: sourceDuration,
-            candidateDuration: candidate.durationSeconds
-        ) * 0.34
-        let variantPenalty = spotifyVariantPenalty(
-            sourceTitle: normalizedSourceTitle,
-            candidateTitle: normalizedCandidateTitle
-        )
-
-        let providerBonus: Double
-        switch candidate.service {
-        case .youtubeMusic:
-            providerBonus = 0.05
-        case .youtube:
-            providerBonus = 0.03
-        case .spotify:
-            providerBonus = 0
-        }
-
-        return (0.42 * titleOverlap)
-            + (0.26 * artistOverlap)
-            + titleContainsBonus
-            + sourceContainsBonus
-            + exactTitleBonus
-            + exactArtistBonus
-            + durationBonus
-            + providerBonus
-            + variantPenalty
-    }
-
-    nonisolated private func spotifyDurationMatchScore(sourceDuration: TimeInterval?, candidateDuration: TimeInterval?) -> Double {
-        guard let sourceDuration, sourceDuration > 0 else { return 0.12 }
-        guard let candidateDuration, candidateDuration > 0 else { return 0.12 }
-
-        let delta = abs(sourceDuration - candidateDuration)
-        let baseline = max(sourceDuration, candidateDuration, 1)
-        let normalizedDelta = min(delta / baseline, 1)
-
-        return max(0, 1 - (normalizedDelta * 3.5))
-    }
-
-    nonisolated private func spotifyVariantPenalty(sourceTitle: String, candidateTitle: String) -> Double {
-        let sourceHasVariant = spotifyTitleHasVariantMarker(sourceTitle)
-        let candidateHasVariant = spotifyTitleHasVariantMarker(candidateTitle)
-
-        if candidateHasVariant && !sourceHasVariant {
-            return -0.34
-        }
-
-        if sourceHasVariant && !candidateHasVariant {
-            return -0.08
-        }
-
-        return 0
-    }
-
-    nonisolated private func spotifyTitleHasVariantMarker(_ title: String) -> Bool {
-        let markers = [
-            " remix",
-            " live",
-            " acoustic",
-            " cover",
-            " instrumental",
-            " karaoke",
-            " tribute",
-            " mashup",
-            " medley",
-            " rework",
-            " edit",
-            " slowed",
-            " sped up",
-            " nightcore",
-            " 8d",
-            " mono",
-            " remaster",
-            " version"
-        ]
-
-        return markers.contains { title.contains($0) }
-    }
 
     private func resetFederatedSections(state: FederatedSectionState) {
         federatedSections = FederatedSearchSection.defaultSections.map { section in
@@ -963,7 +846,7 @@ public class SearchViewModel: SearchViewModelInterface {
         return "\(title)|\(artist)"
     }
 
-    nonisolated private func primaryArtistName(from subtitle: String) -> String {
+    nonisolated internal func primaryArtistName(from subtitle: String) -> String {
         if let first = subtitle.split(separator: "•").first {
             let artist = String(first).trimmingCharacters(in: .whitespacesAndNewlines)
             if !artist.isEmpty {
@@ -1001,7 +884,7 @@ public class SearchViewModel: SearchViewModelInterface {
         return 0
     }
 
-    nonisolated private func providerPriority(for service: FederatedService) -> Int {
+    nonisolated internal func providerPriority(for service: FederatedService) -> Int {
         switch service {
         case .youtubeMusic:
             return 1
@@ -1391,13 +1274,16 @@ public class SearchViewModel: SearchViewModelInterface {
             await coordinator.restoreSessionIfNeeded()
         }
 
-        if let sdk = coordinator.sdk {
-            return sdk
+        if streamingProviderSettings.spotifyPreferAnonymousFallback {
+            if let fallbackSdk = coordinator.anonymousFallbackSdk {
+                return fallbackSdk
+            }
+            // This is a stateless fallback client for public search if the coordinator doesn't have one ready
+            return SpotifySDK(mode: .anonymous)
         }
 
-        if streamingProviderSettings.spotifyPreferAnonymousFallback {
-            // This is a stateless fallback client for public search
-            return SpotifySDK(mode: .anonymous)
+        if let sdk = coordinator.sdk {
+            return sdk
         }
 
         throw FederatedSearchError.spotifyCredentialsMissing
@@ -1513,8 +1399,10 @@ public class SearchViewModel: SearchViewModelInterface {
             #else
             async let spotifySuggestionsTask: [String] = []
             #endif
-            async let youtubeSuggestionsTask = youtube.main.getSearchSuggestions(query: query)
-            async let musicSuggestionsTask = youtube.music.getSearchSuggestions(query: query)
+            let mainClient = youtube.main
+            let musicClient = youtube.music
+            async let youtubeSuggestionsTask = mainClient.getSearchSuggestions(query: query)
+            async let musicSuggestionsTask = musicClient.getSearchSuggestions(query: query)
 
             let spotifySuggestions = await spotifySuggestionsTask
             let youtubeSuggestions = (try? await youtubeSuggestionsTask) ?? []

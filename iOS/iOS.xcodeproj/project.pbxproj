@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7747D96B2FC2A58000C4246D /* FFmpeg-Kit in Frameworks */ = {isa = PBXBuildFile; productRef = 7799E1672FAB428F008E0E98 /* FFmpeg-Kit */; };
+		7747D9812FC2A67C00C4246D /* FFmpeg-Kit in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 7799E1672FAB428F008E0E98 /* FFmpeg-Kit */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		777B92B72FA48CC200ECAF15 /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = 777B92B62FA48CC200ECAF15 /* Core */; };
 		777B92D02FA4AA0E00ECAF15 /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = 777B92CF2FA4AA0E00ECAF15 /* Core */; };
 		777B92D32FA4AA1B00ECAF15 /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = 777B92D22FA4AA1B00ECAF15 /* Core */; };
-		7799E1682FAB428F008E0E98 /* FFmpeg-Kit in Frameworks */ = {isa = PBXBuildFile; productRef = 7799E1672FAB428F008E0E98 /* FFmpeg-Kit */; };
-		7799E1692FAB4313008E0E98 /* FFmpeg-Kit in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 7799E1672FAB428F008E0E98 /* FFmpeg-Kit */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		77C8BF5A2F6E36D200E7354F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77C8BF592F6E36D200E7354F /* WidgetKit.framework */; };
 		77C8BF5C2F6E36D200E7354F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 77C8BF5B2F6E36D200E7354F /* SwiftUI.framework */; };
 		77C8BF6D2F6E36D200E7354F /* LyricsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 77C8BF572F6E36D200E7354F /* LyricsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -53,7 +53,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				7799E1692FAB4313008E0E98 /* FFmpeg-Kit in Embed Frameworks */,
+				7747D9812FC2A67C00C4246D /* FFmpeg-Kit in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -110,7 +110,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7799E1682FAB428F008E0E98 /* FFmpeg-Kit in Frameworks */,
+				7747D96B2FC2A58000C4246D /* FFmpeg-Kit in Frameworks */,
 				777B92D02FA4AA0E00ECAF15 /* Core in Frameworks */,
 				777B92B72FA48CC200ECAF15 /* Core in Frameworks */,
 				777B92D32FA4AA1B00ECAF15 /* Core in Frameworks */,

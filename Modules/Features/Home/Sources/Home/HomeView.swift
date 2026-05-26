@@ -12,12 +12,11 @@ import Services
 import Utilities
 
 public struct HomeView: View {
-    @Environment(ProviderServices.self) private var providerServices
     @Environment(\.router) private var router
     @State private var viewModel: HomeViewModel
 
-    public init() {
-        _viewModel = State(initialValue: HomeViewModel())
+    init(viewModel: HomeViewModel) {
+        _viewModel = State(initialValue: viewModel)
     }
 
     public var body: some View {
@@ -80,33 +79,35 @@ public struct HomeView: View {
         .ignoresSafeArea()
         .overlay {
             ZStack {
-                VStack(alignment: .leading) {
-                    Text("Welcome back,")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                    Text("Aarav Gupta")
-                        .font(.title)
-                        .fontWeight(.semibold)
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading) {
+                        Text("Welcome back,")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Text("Aarav Gupta")
+                            .font(.title)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    
+                    #if os(iOS)
+                    ProfileButton(onAction: handleProfileAction)
+                    #endif
                 }
                 .padding(.top, 22)
-                .padding(.leading)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-
-                ProfileButton(onAction: handleProfileAction)
+                .padding(.horizontal)
             }
             .padding(.top, 200)
         }
         .task {
-            viewModel.configure(youtube: providerServices.youtube)
             await viewModel.loadIfNeeded()
         }
         .refreshable {
             await viewModel.refresh()
         }
-
     }
-
+    
     private func handleProfileAction(_ action: ProfileMenuAction) {
         switch action {
         case .profile:
@@ -119,6 +120,8 @@ public struct HomeView: View {
             router.navigate(to: .library)
         case .recents:
             router.navigate(to: .library)
+        case .plugins:
+            router.navigate(to: .plugins)
         }
     }
 }
@@ -152,6 +155,5 @@ private struct HomeFeedRow: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(item.title), \(item.subtitle)")
-
     }
 }

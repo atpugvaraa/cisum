@@ -1,8 +1,6 @@
-import SwiftUI
-
 #if os(iOS)
+import SwiftUI
 import UIKit
-#endif
 
 public struct CardOpenTransition<Hero: View, Content: View>: View {
     var config: TransitionConfig = .init()
@@ -239,3 +237,4 @@ fileprivate extension View {
         }
     }
 }
+#endif

@@ -14,12 +14,14 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../../Shared/Services"),
+        .package(path: "../../Shared/DesignSystem"),
     ],
     targets: [
         .target(
             name: "Authentication",
             dependencies: [
                 .product(name: "Services", package: "Services"),
+                .product(name: "DesignSystem", package: "DesignSystem"),
             ]
         ),
 

@@ -8,8 +8,11 @@ import Services
 public final class QueueManager {
     public private(set) var queue: [PlaybackQueueEntry] = []
     public var queuePosition: Int = 0
-    
-    public init() {}
+    private let persistence: QueuePersistenceStore?
+
+    public init(persistence: QueuePersistenceStore? = nil) {
+        self.persistence = persistence
+    }
     
     public var currentEntry: PlaybackQueueEntry? {
         guard queue.indices.contains(queuePosition) else { return nil }
@@ -27,11 +30,13 @@ public final class QueueManager {
     public func setQueue(_ entries: [PlaybackQueueEntry], position: Int = 0) {
         self.queue = entries
         self.queuePosition = position
+        persistCurrentQueueIfNeeded()
     }
     
     public func clear() {
         queue = []
         queuePosition = 0
+        persistCurrentQueueIfNeeded()
     }
     
     public func next() -> PlaybackQueueEntry? {
@@ -50,5 +55,14 @@ public final class QueueManager {
         let existingIDs = Set(queue.map(\.mediaID))
         let newEntries = entries.filter { !existingIDs.contains($0.mediaID) }
         queue.append(contentsOf: newEntries)
+        persistCurrentQueueIfNeeded()
+    }
+
+    private func persistCurrentQueueIfNeeded() {
+        guard let persistence = persistence else { return }
+        let items = queue.map { $0.queueIdentity }
+        if let data = try? JSONEncoder().encode(items), let s = String(data: data, encoding: .utf8) {
+            persistence.saveLastQueue(itemsJSON: s, currentIndex: queuePosition)
+        }
     }
 }

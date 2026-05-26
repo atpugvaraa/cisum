@@ -56,11 +56,45 @@ public struct LibraryView: View {
 
                 ScrollView(showsIndicators: false) {
                     LazyVStack(alignment: .leading, spacing: 18) {
-                        pinsSection
+                        LibraryPinsSectionView(
+                            isExpanded: $isPinsExpanded,
+                            pinnedPlaylist: pinnedPlaylist,
+                            onNavigate: { envRouter.navigate(to: .playlist(id: $0.playlistID)) },
+                            onDelete: deleteImportedPlaylist,
+                            fallbackSymbolProvider: fallbackSymbol,
+                            fallbackGradientProvider: fallbackGradient
+                        )
+                        
                         sectionDivider
-                        playlistsShelfSection
+                        
+                        LibraryPlaylistsShelfSectionView(
+                            isExpanded: $isPlaylistsExpanded,
+                            shelfPlaylists: shelfPlaylists,
+                            isCompactShelfMode: isCompactShelfMode,
+                            isAuthenticated: spotifyCoordinator.isAuthenticated,
+                            isSyncingLikedSongs: isSyncingLikedSongs,
+                            likedSongsTitle: spotifySnapshot.likedSongsSummary?.name ?? spotifySnapshot.likedSongsTitle,
+                            likedSongsCount: spotifySnapshot.likedSongsCount,
+                            onOpenLikedSongs: { Task { await openLikedSongs() } },
+                            onNavigate: { envRouter.navigate(to: .playlist(id: $0.playlistID)) },
+                            onDelete: deleteImportedPlaylist,
+                            fallbackSymbolProvider: fallbackSymbol,
+                            fallbackGradientProvider: fallbackGradient,
+                            songsLabelProvider: songsLabel
+                        )
+                        
                         sectionDivider
-                        recentlyAddedSection
+                        
+                        LibraryRecentlyAddedSectionView(
+                            isExpanded: $isRecentlyAddedExpanded,
+                            recentlyAddedPlaylists: recentlyAddedPlaylists,
+                            isCompactShelfMode: isCompactShelfMode,
+                            onNavigate: { envRouter.navigate(to: .playlist(id: $0.playlistID)) },
+                            onDelete: deleteImportedPlaylist,
+                            fallbackSymbolProvider: fallbackSymbol,
+                            fallbackGradientProvider: fallbackGradient,
+                            songsLabelProvider: songsLabel
+                        )
                     }
                     .contentMargins(.horizontal, 16)
                 }
@@ -75,12 +109,13 @@ public struct LibraryView: View {
         }
         // Spotify import sheet
         #if canImport(SpotifySDK)
-            .sheet(isPresented: $isPresentingSpotifyImport) {
-                SpotifyPlaylistImportSheet { importedPlaylistID in
-                    envRouter.navigate(to: .playlist(id: importedPlaylistID))
-                }
-                .environment(spotifyCoordinator)
+        .sheet(isPresented: $isPresentingSpotifyImport) {
+            SpotifyPlaylistImportSheet { importedPlaylistID in
+                envRouter.navigate(to: .playlist(id: importedPlaylistID))
             }
+            .environment(spotifyCoordinator)
+            .environment(CentralMediaStore(context: modelContext))
+        }
         #endif
         // Provider picker confirmation dialog
         .confirmationDialog(
@@ -168,114 +203,7 @@ public struct LibraryView: View {
         }
     }
 
-    private var pinsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            librarySectionHeader(
-                title: "Pins",
-                showsChevronAfterTitle: false,
-                isExpanded: $isPinsExpanded
-            )
 
-            if isPinsExpanded {
-                if let pinnedPlaylist = pinnedPlaylist {
-                    importedPlaylistButton(pinnedPlaylist, size: 160)
-                } else {
-                    EmptyStateCard(
-                        title: "No pins yet",
-                        subtitle: "Import a playlist to surface it here.",
-                        systemImage: "pin"
-                    )
-                }
-            }
-        }
-        .padding(.horizontal)
-    }
-
-    private var playlistsShelfSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            librarySectionHeader(
-                title: "Playlists",
-                showsChevronAfterTitle: true,
-                isExpanded: $isPlaylistsExpanded
-            )
-
-            if isPlaylistsExpanded {
-                if shelfPlaylists.isEmpty {
-                    EmptyStateCard(
-                        title: "No playlists yet",
-                        subtitle: "Import from Spotify or YouTube to build this shelf.",
-                        systemImage: "music.note.list"
-                    )
-                } else {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        LazyHStack(spacing: shelfCardSpacing) {
-                            if spotifyCoordinator.isAuthenticated {
-                                Button {
-                                    Task {
-                                        await openLikedSongs()
-                                    }
-                                } label: {
-                                    FavoriteSongsTile(
-                                        title: spotifySnapshot.likedSongsSummary?.name
-                                            ?? spotifySnapshot.likedSongsTitle,
-                                        count: spotifySnapshot.likedSongsCount,
-                                        size: shelfCardSize,
-                                        isLoading: isSyncingLikedSongs
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                            }
-
-                            ForEach(shelfPlaylists) { playlist in
-                                importedPlaylistButton(
-                                    playlist,
-                                    size: shelfCardSize,
-                                    detailText: songsLabel(for: playlist.itemCount)
-                                )
-                            }
-                        }
-                        .padding(.top, 2)
-                        .padding(.bottom, 2)
-                    }
-                }
-            }
-        }
-    }
-
-    private var recentlyAddedSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            librarySectionHeader(
-                title: "Recently Added",
-                showsChevronAfterTitle: true,
-                isExpanded: $isRecentlyAddedExpanded
-            )
-
-            if isRecentlyAddedExpanded {
-                if recentlyAddedPlaylists.isEmpty {
-                    EmptyStateCard(
-                        title: "Nothing imported yet",
-                        subtitle: "Your newest playlists will appear here once you add them.",
-                        systemImage: "clock.arrow.circlepath"
-                    )
-                } else {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        LazyHStack(spacing: shelfCardSpacing) {
-                            ForEach(recentlyAddedPlaylists) { playlist in
-                                importedPlaylistButton(
-                                    playlist,
-                                    size: shelfCardSize,
-                                    detailText: playlist.subtitle?.uppercased()
-                                        ?? songsLabel(for: playlist.itemCount)
-                                )
-                            }
-                        }
-                        .padding(.top, 2)
-                        .padding(.bottom, 2)
-                    }
-                }
-            }
-        }
-    }
 
     private var shelfPlaylists: [Playlist] {
         switch shelfSortMode {
@@ -1366,6 +1294,248 @@ private struct FavoriteSongsTile: View {
         }
     }
 #endif
+
+private struct LibrarySectionHeaderView: View {
+    let title: String
+    let showsChevronAfterTitle: Bool
+    @Binding var isExpanded: Bool
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.system(size: 18, weight: .semibold, design: .default))
+                    .foregroundStyle(.white)
+
+                if showsChevronAfterTitle {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.55))
+                }
+            }
+
+            Spacer(minLength: 12)
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color(red: 0.95, green: 0.25, blue: 0.38))
+                    .frame(width: 26, height: 26)
+                    .background(
+                        Circle()
+                            .fill(Color.black.opacity(0.78))
+                            .overlay {
+                                Circle()
+                                    .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+                            }
+                    )
+                    .rotationEffect(.degrees(isExpanded ? 0 : -180))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
+private struct ImportedPlaylistButtonView: View {
+    let playlist: Playlist
+    let size: CGFloat
+    let detailText: String?
+    let fallbackSymbol: String
+    let fallbackGradient: LinearGradient
+    let onNavigate: (Playlist) -> Void
+    let onDelete: (Playlist) -> Void
+
+    var body: some View {
+        Button {
+            onNavigate(playlist)
+        } label: {
+            LibraryCoverTile(
+                title: playlist.title,
+                detailText: detailText ?? playlist.subtitle?.uppercased()
+                    ?? playlist.descriptionText?.uppercased(),
+                artworkURL: playlist.artworkURLString.flatMap(URL.init(string:)),
+                fallbackSymbol: fallbackSymbol,
+                fallbackGradient: fallbackGradient,
+                size: size
+            )
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button(role: .destructive) {
+                onDelete(playlist)
+            } label: {
+                Label("Delete Playlist", systemImage: "trash")
+            }
+        }
+    }
+}
+
+private struct LibraryPinsSectionView: View {
+    @Binding var isExpanded: Bool
+    let pinnedPlaylist: Playlist?
+    let onNavigate: (Playlist) -> Void
+    let onDelete: (Playlist) -> Void
+    let fallbackSymbolProvider: (PlaylistSource) -> String
+    let fallbackGradientProvider: (Playlist) -> LinearGradient
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            LibrarySectionHeaderView(
+                title: "Pins",
+                showsChevronAfterTitle: false,
+                isExpanded: $isExpanded
+            )
+
+            if isExpanded {
+                if let pinnedPlaylist = pinnedPlaylist {
+                    ImportedPlaylistButtonView(
+                        playlist: pinnedPlaylist,
+                        size: 160,
+                        detailText: nil,
+                        fallbackSymbol: fallbackSymbolProvider(pinnedPlaylist.sourceProvider ?? .unknown),
+                        fallbackGradient: fallbackGradientProvider(pinnedPlaylist),
+                        onNavigate: onNavigate,
+                        onDelete: onDelete
+                    )
+                } else {
+                    EmptyStateCard(
+                        title: "No pins yet",
+                        subtitle: "Import a playlist to surface it here.",
+                        systemImage: "pin"
+                    )
+                }
+            }
+        }
+        .padding(.horizontal)
+    }
+}
+
+private struct LibraryPlaylistsShelfSectionView: View {
+    @Binding var isExpanded: Bool
+    let shelfPlaylists: [Playlist]
+    let isCompactShelfMode: Bool
+    let isAuthenticated: Bool
+    let isSyncingLikedSongs: Bool
+    let likedSongsTitle: String
+    let likedSongsCount: Int
+    let onOpenLikedSongs: () -> Void
+    let onNavigate: (Playlist) -> Void
+    let onDelete: (Playlist) -> Void
+    let fallbackSymbolProvider: (PlaylistSource) -> String
+    let fallbackGradientProvider: (Playlist) -> LinearGradient
+    let songsLabelProvider: (Int) -> String
+
+    var body: some View {
+        let shelfCardSize: CGFloat = isCompactShelfMode ? 148 : 160
+        let shelfCardSpacing: CGFloat = isCompactShelfMode ? 12 : 16
+
+        VStack(alignment: .leading, spacing: 12) {
+            LibrarySectionHeaderView(
+                title: "Playlists",
+                showsChevronAfterTitle: true,
+                isExpanded: $isExpanded
+            )
+
+            if isExpanded {
+                if shelfPlaylists.isEmpty {
+                    EmptyStateCard(
+                        title: "No playlists yet",
+                        subtitle: "Import from Spotify or YouTube to build this shelf.",
+                        systemImage: "music.note.list"
+                    )
+                } else {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHStack(spacing: shelfCardSpacing) {
+                            if isAuthenticated {
+                                Button {
+                                    onOpenLikedSongs()
+                                } label: {
+                                    FavoriteSongsTile(
+                                        title: likedSongsTitle,
+                                        count: likedSongsCount,
+                                        size: shelfCardSize,
+                                        isLoading: isSyncingLikedSongs
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            ForEach(shelfPlaylists) { playlist in
+                                ImportedPlaylistButtonView(
+                                    playlist: playlist,
+                                    size: shelfCardSize,
+                                    detailText: songsLabelProvider(playlist.itemCount),
+                                    fallbackSymbol: fallbackSymbolProvider(playlist.sourceProvider ?? .unknown),
+                                    fallbackGradient: fallbackGradientProvider(playlist),
+                                    onNavigate: onNavigate,
+                                    onDelete: onDelete
+                                )
+                            }
+                        }
+                        .padding(.top, 2)
+                        .padding(.bottom, 2)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct LibraryRecentlyAddedSectionView: View {
+    @Binding var isExpanded: Bool
+    let recentlyAddedPlaylists: [Playlist]
+    let isCompactShelfMode: Bool
+    let onNavigate: (Playlist) -> Void
+    let onDelete: (Playlist) -> Void
+    let fallbackSymbolProvider: (PlaylistSource) -> String
+    let fallbackGradientProvider: (Playlist) -> LinearGradient
+    let songsLabelProvider: (Int) -> String
+
+    var body: some View {
+        let shelfCardSize: CGFloat = isCompactShelfMode ? 148 : 160
+        let shelfCardSpacing: CGFloat = isCompactShelfMode ? 12 : 16
+
+        VStack(alignment: .leading, spacing: 12) {
+            LibrarySectionHeaderView(
+                title: "Recently Added",
+                showsChevronAfterTitle: true,
+                isExpanded: $isExpanded
+            )
+
+            if isExpanded {
+                if recentlyAddedPlaylists.isEmpty {
+                    EmptyStateCard(
+                        title: "Nothing imported yet",
+                        subtitle: "Your newest playlists will appear here once you add them.",
+                        systemImage: "clock.arrow.circlepath"
+                    )
+                } else {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHStack(spacing: shelfCardSpacing) {
+                            ForEach(recentlyAddedPlaylists) { playlist in
+                                ImportedPlaylistButtonView(
+                                    playlist: playlist,
+                                    size: shelfCardSize,
+                                    detailText: playlist.subtitle?.uppercased() ?? songsLabelProvider(playlist.itemCount),
+                                    fallbackSymbol: fallbackSymbolProvider(playlist.sourceProvider ?? .unknown),
+                                    fallbackGradient: fallbackGradientProvider(playlist),
+                                    onNavigate: onNavigate,
+                                    onDelete: onDelete
+                                )
+                            }
+                        }
+                        .padding(.top, 2)
+                        .padding(.bottom, 2)
+                    }
+                }
+            }
+        }
+    }
+}
 
 #Preview {
     LibraryView()

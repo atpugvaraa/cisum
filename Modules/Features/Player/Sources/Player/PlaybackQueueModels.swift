@@ -4,6 +4,51 @@ import Services
 import YouTubeSDK
 import AVFoundation
 
+public struct QueueCandidateSnapshot: Sendable, Hashable, Codable {
+    public let streamKind: String
+    public let mimeType: String?
+    public let itag: Int?
+    public let expiresAt: Date?
+    public let isCompatible: Bool
+
+    public init(streamKind: String, mimeType: String?, itag: Int?, expiresAt: Date?, isCompatible: Bool) {
+        self.streamKind = streamKind
+        self.mimeType = mimeType
+        self.itag = itag
+        self.expiresAt = expiresAt
+        self.isCompatible = isCompatible
+    }
+
+    public init(_ candidate: PlaybackCandidate) {
+        self.init(
+            streamKind: candidate.streamKind.rawValue,
+            mimeType: candidate.mimeType,
+            itag: candidate.itag,
+            expiresAt: candidate.expiresAt,
+            isCompatible: candidate.isCompatible
+        )
+    }
+}
+
+public struct QueueIdentitySnapshot: Sendable, Hashable, Codable {
+    public let canonicalID: String
+    public let activeRepresentationKey: String?
+    public let hydrationState: [String]
+    public let candidateSnapshot: [QueueCandidateSnapshot]
+
+    public init(
+        canonicalID: String,
+        activeRepresentationKey: String? = nil,
+        hydrationState: [String] = [],
+        candidateSnapshot: [QueueCandidateSnapshot] = []
+    ) {
+        self.canonicalID = canonicalID
+        self.activeRepresentationKey = activeRepresentationKey
+        self.hydrationState = hydrationState
+        self.candidateSnapshot = candidateSnapshot
+    }
+}
+
 public struct CachedRadioTrack: Identifiable, Sendable, Equatable {
     public var id: String { videoID }
     public let videoID: String
@@ -61,6 +106,15 @@ public struct CachedRadioTrack: Identifiable, Sendable, Equatable {
             albumName: albumName,
             thumbnailURLString: thumbnailURL?.absoluteString,
             isExplicit: isExplicit
+        )
+    }
+
+    public var queueIdentity: QueueIdentitySnapshot {
+        QueueIdentitySnapshot(
+            canonicalID: canonicalQueueID(for: fingerprint, fallback: videoID),
+            activeRepresentationKey: nil,
+            hydrationState: ["metadataResolved"],
+            candidateSnapshot: []
         )
     }
 }
@@ -141,9 +195,39 @@ public enum PlaybackQueueEntry: Equatable, Sendable {
     public var isExplicit: Bool {
         switch self {
         case .song(let song): return song.isExplicit
-        case .video(let video): return false
+        case .video: return false
         case .cachedRadio(let track): return track.isExplicit
         case .external(let track): return track.isExplicit
+        }
+    }
+
+    public var queueIdentity: QueueIdentitySnapshot {
+        switch self {
+        case .song(let song):
+            return QueueIdentitySnapshot(
+                canonicalID: canonicalQueueID(for: "\(song.title.lowercased())|\(song.artistsDisplay.lowercased())", fallback: song.videoId),
+                activeRepresentationKey: nil,
+                hydrationState: ["metadataResolved"],
+                candidateSnapshot: []
+            )
+        case .video(let video):
+            let title = video.title.lowercased()
+            let artist = video.author.lowercased()
+            return QueueIdentitySnapshot(
+                canonicalID: canonicalQueueID(for: "\(title)|\(artist)", fallback: video.id),
+                activeRepresentationKey: nil,
+                hydrationState: ["metadataResolved"],
+                candidateSnapshot: []
+            )
+        case .cachedRadio(let track):
+            return track.queueIdentity
+        case .external(let track):
+            return QueueIdentitySnapshot(
+                canonicalID: canonicalQueueID(for: "\(track.title.lowercased())|\(track.artist.lowercased())", fallback: track.mediaID),
+                activeRepresentationKey: nil,
+                hydrationState: ["metadataResolved"],
+                candidateSnapshot: []
+            )
         }
     }
 }
@@ -162,6 +246,17 @@ public struct PreparedQueuePlayback {
     public let albumName: String?
     public let isExplicit: Bool
     public let durationHint: Int?
+
+    public var queueIdentity: QueueIdentitySnapshot {
+        let canonicalTitle = title.lowercased()
+        let canonicalArtist = artist.lowercased()
+        return QueueIdentitySnapshot(
+            canonicalID: canonicalQueueID(for: "\(canonicalTitle)|\(canonicalArtist)", fallback: mediaID),
+            activeRepresentationKey: nil,
+            hydrationState: ["metadataResolved"],
+            candidateSnapshot: playbackCandidates.map(QueueCandidateSnapshot.init)
+        )
+    }
 }
 
 public struct QueueMusicPreloadInput {
@@ -173,4 +268,9 @@ public struct QueueMusicPreloadInput {
     public let isExplicit: Bool
     public let durationHint: Int?
     public let youtubeDebugSource: String
+}
+
+func canonicalQueueID(for fingerprint: String, fallback: String) -> String {
+    let normalized = fingerprint.trimmingCharacters(in: .whitespacesAndNewlines)
+    return normalized.isEmpty ? fallback : normalized
 }

@@ -18,6 +18,8 @@ let package = Package(
         .package(path: "../Features/Search"),
         .package(path: "../Features/Profile"),
         .package(path: "../Features/Authentication"),
+        .package(path: "../Features/Onboarding"),
+        .package(path: "../Features/Plugins"),
         .package(path: "../Shared/DesignSystem"),
         .package(path: "../Shared/Services"),
         .package(path: "../Shared/Models"),
@@ -27,17 +29,19 @@ let package = Package(
         .target(
             name: "Core",
             dependencies: [
+                "Authentication",
+                "DesignSystem",
+                "Services",
+                "Models",
+                "Utilities",
+                "Onboarding",
+                "Plugins",
                 "Home",
                 "Discover",
                 "Library",
                 "Player",
                 "Search",
-                "Profile",
-                "Authentication",
-                "DesignSystem",
-                "Services",
-                "Models",
-                "Utilities"
+                "Profile",        
             ]
         )
     ]

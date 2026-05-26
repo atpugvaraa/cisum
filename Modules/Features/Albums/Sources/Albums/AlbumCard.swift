@@ -1,3 +1,4 @@
+#if os(iOS)
 import SwiftUI
 import DesignSystem
 import Kingfisher
@@ -7,12 +8,13 @@ import Services
 
 struct AlbumCard: View {
     @State private var viewModel = AlbumViewModel()
+    let album: Album
     
     var body: some View {
         VStack {
             CardOpenTransition(backgroundColor: viewModel.backgroundColor) { isCardExpanded, dismiss in
                 VStack {
-                    AlbumCover(isCardExpanded: isCardExpanded, viewModel: viewModel)
+                    AlbumCover(isCardExpanded: isCardExpanded, viewModel: viewModel, album: album)
                         .overlay {
                             if let dismiss {
                                 Rectangle()
@@ -45,8 +47,10 @@ struct AlbumCard: View {
 }
 
 #if DEBUG
-#Preview {
-    AlbumCard()
-        .environment(PlaybackServices.preview)
-}
+//#Preview {
+//    AlbumCard(album: Album(...))
+//        .environment(PlaybackServices.preview)
+//}
+#endif
+
 #endif

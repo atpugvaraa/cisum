@@ -33,6 +33,7 @@ public final class MockPlayerViewModel: PlayerViewModelInterface {
     public func load(song: YouTubeMusicSong, preserveQueue: Bool) {}
     public func load(video: YouTubeVideo, preserveQueue: Bool) {}
     public func load(external track: ExternalQueueTrack, preserveQueue: Bool) {}
+    public func setQueue(_ externalTracks: [ExternalQueueTrack], startIndex: Int) {}
     
     public var isCheckingHiResAvailability: Bool = false
     public var canSwitchToHiResVersion: Bool = false

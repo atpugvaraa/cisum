@@ -21,6 +21,7 @@ let package = Package(
         .package(path: "../../Shared/Utilities"),
         .package(path: "../../Shared/Services"),
         .package(path: "../../Shared/DesignSystem"),
+        .package(path: "../../../Packages/StreamingKit/YouTubeSDK"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -32,6 +33,7 @@ let package = Package(
                 .product(name: "Utilities", package: "Utilities"),
                 .product(name: "Services", package: "Services"),
                 .product(name: "DesignSystem", package: "DesignSystem"),
+                .product(name: "YouTubeSDK", package: "YouTubeSDK"),
             ]
         ),
 

@@ -7,10 +7,14 @@ import Player
 import Search
 import Services
 import Profile
+import Plugins
 import SwiftData
 import Models
 import YouTubeSDK
 import Authentication
+import Artists
+import Albums
+import Playlists
 
 @MainActor
 public final class cisumModule {
@@ -74,6 +78,14 @@ public final class cisumModule {
         AnyView(profile.settingsView)
     }
 
+    public var pluginsView: AnyView {
+        AnyView(
+            PluginsView()
+                .environment(container)
+                .environment(container.playbackServices.streamingProviderSettings)
+        )
+    }
+
     public var profileView: AnyView {
         AnyView(profile.profileView)
     }
@@ -82,8 +94,32 @@ public final class cisumModule {
         AnyView(LoginView().environment(container.userServices))
     }
 
+    public var spotifyLoginView: AnyView {
+        #if canImport(SpotifySDK)
+        AnyView(SpotifyLoginView(coordinator: container.userServices.spotifySessionCoordinator))
+        #else
+        AnyView(EmptyView())
+        #endif
+    }
+
     public func playlistDetailView(for id: String) -> AnyView {
-        AnyView(library.playlistDetailView(for: id))
+        AnyView(PlaylistDetailWrapper(playlistID: id))
+    }
+
+    public func artistDetailView(for id: String) -> AnyView {
+        #if os(iOS)
+        AnyView(ArtistDetailWrapper(artistID: id))
+        #else
+        AnyView(EmptyView())
+        #endif
+    }
+
+    public func albumDetailView(for id: String) -> AnyView {
+        #if os(iOS)
+        AnyView(AlbumDetailWrapper(albumID: id))
+        #else
+        AnyView(EmptyView())
+        #endif
     }
 
     public var searchText: Binding<String> {
@@ -179,7 +215,8 @@ public final class cisumModule {
         self.navigationState = navigationState
         self.appRouter = appRouter
         
-        let youtube = YouTube()
+        YouTubeSDKConfig.storage = KeychainYouTubeStorage()
+        let youtube = YouTube.shared
         let container = AppBootstrap.makeDependenciesOrFallback(youtube: youtube, router: appRouter)
         self.container = container
         
@@ -192,7 +229,7 @@ public final class cisumModule {
         self.appDomain = container.app
 
         // 2. Initialize Features
-        self.home = HomeModule()
+        self.home = HomeModule(youtube: youtube)
         self.discover = DiscoverModule()
         self.library = LibraryModule()
         

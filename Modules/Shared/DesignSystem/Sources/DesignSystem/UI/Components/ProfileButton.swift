@@ -11,6 +11,7 @@ import SwiftUI
 public enum ProfileMenuAction {
     case profile
     case settings
+    case plugins
     case home
     case library
     case recents
@@ -24,15 +25,19 @@ public struct ProfileButton: View {
         self.profileImageURL = profileImageURL
         self.onAction = onAction
     }
-
+    
+    #if os(iOS)
     @State var isClicked: Bool = false
+    #elseif os(macOS)
+    @State var isClicked: Bool = true
+    #endif
     @State private var isHovering: Bool = false
     @Namespace private var namespace
 
     private enum Layout {
         static let collapsedSize: CGFloat = 60
         static let expandedWidth: CGFloat = 175
-        static let expandedHeight: CGFloat = 370
+        static let expandedHeight: CGFloat = 420
         static let expandedProfileSize: CGFloat = 50
         static let menuCornerRadius: CGFloat = 50
         static let menuHeight: CGFloat = 50
@@ -244,7 +249,10 @@ public struct ProfileButton: View {
                         } label: {
                             RoundedRectangle(cornerRadius: 50)
                                 .fill(.clear)
-                                .glassEffect(.regular)
+                                .glassEffect(.regular, in: .rect(cornerRadius: Layout.menuCornerRadius))
+                                .contentShape(.rect(cornerRadius: Layout.menuCornerRadius))
+                                .padding(.horizontal, 10)
+                                .frame(height: Layout.menuHeight)
                                 .overlay {
                                     Text("Profile")
                                         .fixedSize(horizontal: true, vertical: true)
@@ -252,9 +260,6 @@ public struct ProfileButton: View {
                         }
                         .buttonStyle(.plain)
                         .matchedGeometryEffect(id: "USERNAME", in: namespace, anchor: .topTrailing)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: Layout.expandedProfileSize)
-                        .padding(.horizontal, 10)
                     #endif
 
                     Button {
@@ -296,6 +301,16 @@ public struct ProfileButton: View {
                             }
                     }
                     .buttonStyle(.plain)
+
+                    Button {
+                        onAction(.plugins)
+                    } label: {
+                        menuRowGlassModern
+                            .overlay {
+                                Text("Plugins")
+                            }
+                    }
+                    .buttonStyle(.plain)
                 } else {
                     Button {
                         onAction(.recents)
@@ -313,6 +328,16 @@ public struct ProfileButton: View {
                         menuRowGlassFallback
                             .overlay {
                                 Text("Settings")
+                            }
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        onAction(.plugins)
+                    } label: {
+                        menuRowGlassFallback
+                            .overlay {
+                                Text("Plugins")
                             }
                     }
                     .buttonStyle(.plain)

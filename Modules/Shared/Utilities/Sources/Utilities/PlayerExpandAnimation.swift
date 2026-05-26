@@ -9,8 +9,9 @@ import SwiftUI
 
 public extension Animation {
     public static let playerExpandAnimationDuration: TimeInterval = 0.3
+
     public static var playerExpandAnimation: Animation {
-        .smooth(duration: playerExpandAnimationDuration, extraBounce: 0)
+        .spring(response: 0.5, dampingFraction: 0.8)
     }
     
     public static var sidebarExpandAnimation: Animation {

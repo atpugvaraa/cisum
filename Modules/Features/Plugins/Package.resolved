@@ -1,5 +1,5 @@
 {
-  "originHash" : "ddcb9bbd48b3fc739997d502092fa7dfb01f25f55a2914ae668baa5b889755d6",
+  "originHash" : "be51c374ca54eef74538a434509020d1fc908daeeda24638064cf7f7397c6d46",
   "pins" : [
     {
       "identity" : "clerk-ios",
@@ -11,21 +11,12 @@
       }
     },
     {
-      "identity" : "kingfisher",
+      "identity" : "javascriptkit",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/onevcat/Kingfisher.git",
-      "state" : {
-        "revision" : "c152c1915f60c51e4afa0752656993ee5b3c63db",
-        "version" : "8.8.1"
-      }
-    },
-    {
-      "identity" : "lastfm.swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/duhnnie/LastFM.swift",
+      "location" : "https://github.com/swiftwasm/JavaScriptKit.git",
       "state" : {
         "branch" : "main",
-        "revision" : "ab19b1f8c81abdb5760fb06b8095a9e232af1ca1"
+        "revision" : "403ae956d68503957699b6dc4c07b73caad031b7"
       }
     },
     {
@@ -42,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/marmelroy/PhoneNumberKit",
       "state" : {
-        "revision" : "2d547ffe38f61009219e34e5378d2aa4c13b6e51",
-        "version" : "4.2.12"
+        "revision" : "299a60aa4d715e2b302296fe98c27e1d0cafc7a6",
+        "version" : "4.2.13"
       }
     },
     {
@@ -110,12 +101,12 @@
       }
     },
     {
-      "identity" : "swiftrestclient",
+      "identity" : "swift-syntax",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/duhnnie/SwiftRestClient",
+      "location" : "https://github.com/swiftlang/swift-syntax",
       "state" : {
-        "revision" : "eb7b2fcf534b0293e11e139866c5117bc56e7695",
-        "version" : "0.7.1"
+        "revision" : "9de99a78f099e59caf2b2beec65a4c45d54b2081",
+        "version" : "603.0.1"
       }
     },
     {

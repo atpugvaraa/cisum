@@ -12,19 +12,19 @@ public final class PlayerPresentationController {
     }
     
     public func expand() {
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+        withAnimation(.playerExpandAnimation) {
             isExpanded = true
         }
     }
     
     public func collapse() {
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+        withAnimation(.playerExpandAnimation) {
             isExpanded = false
         }
     }
     
     public func toggle() {
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+        withAnimation(.playerExpandAnimation) {
             isExpanded.toggle()
         }
     }

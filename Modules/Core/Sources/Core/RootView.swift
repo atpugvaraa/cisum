@@ -6,11 +6,15 @@ import DesignSystem
 import Utilities
 import Services
 
+#if canImport(SpotifySDK)
+import SpotifySDK
+#endif
+
 public struct RootView: View {
     public let cisum: cisumModule
     
     @Environment(\.modelContext) private var modelContext
-    @ObservedObject private var navigationState: NavigationState
+    let navigationState: NavigationState
 
     @Environment(ServicesContainer.self) private var container
 
@@ -35,6 +39,7 @@ public struct RootView: View {
     public var body: some View {
 #if os(iOS)
         @Bindable var presentation = container.app.playerPresentationController
+        @Bindable var nav = navigationState
         
         iOSTabView(
             selection: selectedTabBinding,
@@ -89,6 +94,7 @@ public struct RootView: View {
             }
         }
         .usingRouter(cisum.router)
+        .background { spotifyBackgroundRefresh }
 #else
         tabSurface
             .onPreferenceChange(SearchOverlayContextPreferenceKey.self) { newContext in
@@ -113,33 +119,48 @@ public struct RootView: View {
             }
             .background {
                 backgroundFill
+                spotifyBackgroundRefresh
             }
             .environment(\.isDynamicPlayerExpanded, isDynamicPlayerExpanded)
             .ignoresSafeArea()
             .usingRouter(cisum.router)
 #endif
     }
+    
+    @ViewBuilder
+    private var spotifyBackgroundRefresh: some View {
+        #if canImport(SpotifySDK)
+        if let session = container.user.spotifySessionCoordinator.session {
+            SpotifySilentRefreshView(session: session)
+        }
+        if let fallbackSession = container.user.spotifySessionCoordinator.anonymousFallbackSession {
+            SpotifySilentRefreshView(session: fallbackSession)
+        }
+        #endif
+    }
 
     private func handleProfileAction(_ action: ProfileMenuAction) {
         switch action {
         case .profile:
-            cisum.router.navigate(to: AppRoute.profile)
+            cisum.router.navigate(to: .profile)
         case .settings:
-            cisum.router.navigate(to: AppRoute.settings)
+            cisum.router.navigate(to: .settings)
+        case .plugins:
+            cisum.router.navigate(to: .plugins)
         case .home:
-            cisum.router.navigate(to: AppRoute.home)
+            cisum.router.navigate(to: .home)
         case .library:
-            cisum.router.navigate(to: AppRoute.library)
+            cisum.router.navigate(to: .library)
         case .recents:
-            cisum.router.navigate(to: AppRoute.recents)
+            cisum.router.navigate(to: .library)
         }
     }
 
 #if os(iOS)
     private var selectedTabBinding: Binding<TabItem> {
         Binding(
-            get: { navigationState.selectedTab },
-            set: { navigationState.selectedTab = $0 }
+            get: { cisum.navigationState.selectedTab },
+            set: { cisum.navigationState.selectedTab = $0 }
         )
     }
 
@@ -167,12 +188,30 @@ public struct RootView: View {
                         cisum.profileView
                     case .settings:
                         cisum.settingsView
+                    case .plugins:
+                        cisum.pluginsView
                     case .playlist(let id):
                         cisum.playlistDetailView(for: id)
+                    case .artist(let id):
+                        cisum.artistDetailView(for: id)
+                    case .album(let id):
+                        cisum.albumDetailView(for: id)
                     case .login:
                         cisum.loginView
-                    default:
+                    case .spotifyLogin:
+                        #if canImport(SpotifySDK)
+                        cisum.spotifyLoginView
+                        #else
                         EmptyView()
+                        #endif
+                    case .home:
+                        cisum.homeView
+                    case .search:
+                        cisum.searchView
+                    case .library:
+                        cisum.libraryView
+                    case .recents:
+                        cisum.libraryView
                     }
                 }
                 .onScrollOffsetChange { oldValue, newValue in
@@ -255,12 +294,30 @@ public struct RootView: View {
                         cisum.profileView
                     case .settings:
                         cisum.settingsView
+                    case .plugins:
+                        cisum.pluginsView
                     case .playlist(let id):
                         cisum.playlistDetailView(for: id)
+                    case .artist(let id):
+                        cisum.artistDetailView(for: id)
+                    case .album(let id):
+                        cisum.albumDetailView(for: id)
                     case .login:
                         cisum.loginView
-                    default:
+                    case .spotifyLogin:
+                        #if canImport(SpotifySDK)
+                        cisum.spotifyLoginView
+                        #else
                         EmptyView()
+                        #endif
+                    case .home:
+                        cisum.homeView
+                    case .search:
+                        cisum.searchView
+                    case .library:
+                        cisum.libraryView
+                    case .recents:
+                        cisum.libraryView
                     }
                 }
         }

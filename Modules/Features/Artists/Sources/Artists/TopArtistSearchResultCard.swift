@@ -5,6 +5,7 @@
 //  Created by Aarav Gupta on 29/04/26.
 //
 
+#if os(iOS)
 import SwiftUI
 import Kingfisher
 
@@ -74,3 +75,4 @@ struct ArtistResultAlbumPreview: View {
         }
     }
 }
+#endif

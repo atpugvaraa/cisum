@@ -19,3 +19,4 @@ DerivedData/
 
 # Optional: logs
 *.log
+/.agents

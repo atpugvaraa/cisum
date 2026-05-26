@@ -5,11 +5,15 @@ public enum AppRoute: Hashable {
     case home
     case profile
     case settings
+    case plugins
     case search
     case library
     case recents
     case playlist(id: String)
+    case artist(id: String)
+    case album(id: String)
     case login
+    case spotifyLogin
 }
 
 @MainActor

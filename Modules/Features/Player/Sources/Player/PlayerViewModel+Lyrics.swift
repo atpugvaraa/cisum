@@ -63,11 +63,17 @@ extension PlayerViewModel {
             guard let self else { return }
 
             do {
-                let resolvedLyrics = try await Self.resolveLyrics(
+                let aggregator = LyricsAggregator(youtube: self.youtube)
+                
+                let isSpotify = self.currentStreamingServiceName == StreamingService.spotify.rawValue
+                
+                let resolvedLyrics = try await aggregator.fetchBestLyrics(
                     title: normalizedTitle,
                     artist: normalizedArtist,
                     albumName: normalizedAlbum,
-                    durationHint: durationHint
+                    durationHint: durationHint,
+                    spotifyTrackId: isSpotify ? mediaID : nil,
+                    youtubeVideoId: isSpotify ? nil : mediaID
                 )
 
                 guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
@@ -88,94 +94,6 @@ extension PlayerViewModel {
     self.lyricsController.state = .unavailable("LyricsKit is not linked to this target.")
 #endif
     }
-
-#if canImport(LyricsKit)
-    private struct LyricsResolution {
-        let syncedLines: [TimedLyricLine]
-        let plainText: String?
-        let attribution: String?
-    }
-
-    private static func resolveLyrics(
-        title: String,
-        artist: String,
-        albumName: String?,
-        durationHint: Int?
-    ) async throws -> LyricsResolution {
-        let kit = LyricsKit.shared
-        let artistName = nonEmptyTrimmed(artist)
-        let album = nonEmptyTrimmed(albumName)
-
-        if let durationHint,
-           durationHint > 0,
-           let artistName {
-            let signatureAlbum = album ?? "Single"
-            if let best = try await kit.bestLyrics(
-                trackName: title,
-                artistName: artistName,
-                albumName: signatureAlbum,
-                durationInSeconds: durationHint
-            ) {
-                let mapped = mapLyricsRecord(best)
-                if !mapped.syncedLines.isEmpty || mapped.plainText != nil {
-                    return mapped
-                }
-            }
-        }
-
-        let syncedCandidates = try await kit.searchSynced(
-            trackName: title,
-            artistName: artistName,
-            albumName: album
-        )
-
-        if let syncedMatch = syncedCandidates.first {
-            let mapped = mapLyricsRecord(syncedMatch)
-            if !mapped.syncedLines.isEmpty || mapped.plainText != nil {
-                return mapped
-            }
-        }
-
-        let fallbackCandidates = try await kit.search(
-            trackName: title,
-            artistName: artistName,
-            albumName: album
-        )
-
-        if let firstFallback = fallbackCandidates.first {
-            return mapLyricsRecord(firstFallback)
-        }
-
-        return LyricsResolution(syncedLines: [], plainText: nil, attribution: nil)
-    }
-
-    private static func mapLyricsRecord(_ record: LyricsRecord) -> LyricsResolution {
-        let syncedLines: [TimedLyricLine] = (record.parsedSyncedLyrics?.lines ?? [])
-            .compactMap { line in
-                let text = line.text.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !text.isEmpty else { return nil }
-                return TimedLyricLine(timestamp: line.timestamp, text: text)
-            }
-
-        var plainLyrics = nonEmptyTrimmed(record.plainLyrics)
-        if plainLyrics == nil, record.instrumental {
-            plainLyrics = "Instrumental"
-        }
-
-        let attributionParts = [
-            nonEmptyTrimmed(record.artistName),
-            nonEmptyTrimmed(record.trackName)
-        ]
-        .compactMap { $0 }
-        let attribution = attributionParts.isEmpty ? nil : attributionParts.joined(separator: " • ")
-
-        return LyricsResolution(
-            syncedLines: syncedLines,
-            plainText: plainLyrics,
-            attribution: attribution
-        )
-    }
-#endif
 
     private static func nonEmptyTrimmed(_ value: String?) -> String? {
         guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),

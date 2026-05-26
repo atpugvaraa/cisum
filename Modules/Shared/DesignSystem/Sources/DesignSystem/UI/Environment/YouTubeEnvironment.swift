@@ -9,7 +9,7 @@ import SwiftUI
 import YouTubeSDK
 
 private struct YouTubeEnvironmentKey: @preconcurrency EnvironmentKey {
-    @MainActor static let defaultValue: YouTube = YouTube()
+    @MainActor static let defaultValue: YouTube = YouTube.shared
 }
 
 

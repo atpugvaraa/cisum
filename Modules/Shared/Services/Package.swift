@@ -20,6 +20,7 @@ let package = Package(
         .package(path: "../Models"),
         .package(path: "../Utilities"),
         .package(path: "../../../Packages/StreamingKit/YouTubeSDK"),
+        .package(path: "../../../Packages/StreamingKit/ProviderSDK"),
         .package(path: "../../../Packages/StreamingKit/SpotifySDK"),
 
         .package(url: "https://github.com/clerk/clerk-ios", from: "1.1.3"),
@@ -35,6 +36,7 @@ let package = Package(
                 .product(name: "Models", package: "Models"),
                 .product(name: "Utilities", package: "Utilities"),
                 .product(name: "YouTubeSDK", package: "YouTubeSDK"),
+                .product(name: "ProviderSDK", package: "ProviderSDK"),
                 .product(name: "SpotifySDK", package: "SpotifySDK"),
 
                 .product(name: "ClerkKit", package: "clerk-ios"),

@@ -32,9 +32,13 @@ public final class PlaybackEngine {
         #if os(iOS)
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, policy: .longFormAudio)
-            try AVAudioSession.sharedInstance().setActive(true)
+            // try AVAudioSession.sharedInstance().setActive(true)
+            
+            // setActive(true) is intentionally deferred to the first actual load
+            // via reactivateSession(), preventing cisum from stealing the audio
+            // session from other apps before the user triggers playback.
         } catch {
-            print("Failed to set up audio session: \(error)")
+            print("Failed to set up audio session category: \(error)")
         }
         #endif
     }
@@ -113,7 +117,7 @@ public final class PlaybackEngine {
     public func load(url: URL) {
         let item = AVPlayerItem(url: url)
         player.replaceCurrentItem(with: item)
-        play()
+        // Callers are responsible for wiring observers before calling play().
     }
     
     public func reactivateSession() {

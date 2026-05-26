@@ -5,7 +5,7 @@
 //  Created by Aarav Gupta on 19/05/26.
 //
 
-
+#if os(iOS)
 import SwiftUI
 import DesignSystem
 import Kingfisher
@@ -14,13 +14,17 @@ import Services
 // MARK: - State Owner
 
 @MainActor @Observable
-final class AlbumViewModel {
+public final class AlbumViewModel {
     var palette: ImageColorPalette?
     
     private var hasFetched = false
     
     var backgroundColor: Color {
         palette?.background ?? .black
+    }
+    
+    var titleColor: Color {
+        palette?.title ?? .white
     }
     
     func fetchPaletteIfNeeded(from thumbnailURL: URL) async {
@@ -48,3 +52,4 @@ final class AlbumViewModel {
         self.palette = extracted
     }
 }
+#endif

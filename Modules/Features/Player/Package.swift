@@ -14,6 +14,7 @@ let package = Package(
         .package(path: "../../Shared/Services"),
         .package(url: "https://github.com/onevcat/Kingfisher.git", from: "8.0.0"),
         .package(path: "../../../Packages/StreamingKit/YouTubeSDK"),
+        .package(path: "../../../Packages/StreamingKit/ProviderSDK"),
         .package(path: "../../../Packages/StreamingKit/SpotifySDK"),
         .package(path: "../../../Packages/StreamingKit/iTunesKit"),
         .package(path: "../../../Packages/StreamingKit/LyricsKit"),
@@ -28,6 +29,7 @@ let package = Package(
                 .product(name: "Services", package: "Services"),
                 .product(name: "Kingfisher", package: "Kingfisher"),
                 .product(name: "YouTubeSDK", package: "YouTubeSDK"),
+                .product(name: "ProviderSDK", package: "ProviderSDK"),
                 .product(name: "SpotifySDK", package: "SpotifySDK"),
                 .product(name: "iTunesKit", package: "iTunesKit"),
                 .product(name: "LyricsKit", package: "LyricsKit")

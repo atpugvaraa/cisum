@@ -29,7 +29,7 @@ public struct ProfileView: View {
     @State private var showOAuthSheet: Bool = false
     @State private var hasOAuthSession: Bool = false
     @State private var isSigningOutSpotify: Bool = false
-    @State private var isSigningOutCisum: Bool = false
+    @State private var isSigningOutcisum: Bool = false
 
     public var body: some View {
         ZStack {
@@ -93,11 +93,6 @@ public struct ProfileView: View {
                 showOAuthSheet = false
             }
         }
-        #if os(iOS) && canImport(SpotifySDK)
-        .sheet(isPresented: Bindable(spotifyCoordinator).isPresentingExtractor) {
-            SpotifySessionExtractorSheet(coordinator: spotifyCoordinator)
-        }
-        #endif
         .onAppear {
             refreshSessionState()
         }
@@ -175,15 +170,15 @@ public struct ProfileView: View {
 
                     Button(role: .destructive) {
                         Task {
-                            isSigningOutCisum = true
+                            isSigningOutcisum = true
                             await userServices.authService.signOut()
                             userServices.analyticsService.reset()
-                            isSigningOutCisum = false
+                            isSigningOutcisum = false
                         }
                     } label: {
                         HStack {
                             Text("Sign Out")
-                            if isSigningOutCisum {
+                            if isSigningOutcisum {
                                 Spacer()
                                 ProgressView().controlSize(.small)
                             }
@@ -192,7 +187,7 @@ public struct ProfileView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
-                    .disabled(isSigningOutCisum)
+                    .disabled(isSigningOutcisum)
                 } else {
                     VStack(spacing: 12) {
                         Text("Sign in to connect Last.fm, sync listening data, and link Spotify")
@@ -265,13 +260,13 @@ public struct ProfileView: View {
             HStack(spacing: 12) {
                 Image(systemName: "music.note")
                     .font(.title2)
-                    .foregroundStyle(spotifyCoordinator.isAuthenticated ? .green : .secondary)
+                    .foregroundStyle(spotifyCoordinator.hasSession ? .green : .secondary)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Spotify")
                         .font(.headline)
                     Text(
-                        spotifyCoordinator.isAuthenticated
+                        spotifyCoordinator.hasSession
                             ? spotifyCoordinator.accountDescriptor : "Not Signed In"
                     )
                     .font(.caption)
@@ -286,13 +281,13 @@ public struct ProfileView: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(
-                        spotifyCoordinator.isAuthenticated
+                        spotifyCoordinator.hasSession
                             ? Color.green.opacity(0.15)
                             : Color.secondary.opacity(0.1),
                         in: Capsule()
                     )
                     .foregroundStyle(
-                        spotifyCoordinator.isAuthenticated ? .green : .secondary
+                        spotifyCoordinator.hasSession ? .green : .secondary
                     )
             }
             .padding(.horizontal, 14)
@@ -301,7 +296,7 @@ public struct ProfileView: View {
             Divider()
 
             VStack(spacing: 12) {
-                if spotifyCoordinator.isAuthenticated {
+                if spotifyCoordinator.hasSession {
                     Button(role: .destructive) {
                         Task {
                             isSigningOutSpotify = true
@@ -324,7 +319,7 @@ public struct ProfileView: View {
                 } else {
                     #if os(iOS) && canImport(SpotifySDK)
                         Button {
-                            spotifyCoordinator.beginSession(mode: .authenticated)
+                            router.navigate(to: .spotifyLogin)
                         } label: {
                             Label("Connect with Spotify", systemImage: "person.badge.key")
                                 .frame(maxWidth: .infinity)
@@ -364,68 +359,6 @@ public struct ProfileView: View {
         )
     }
 }
-
-#if os(iOS) && canImport(SpotifySDK)
-    struct SpotifySessionExtractorSheet: View {
-        @Bindable var coordinator: SpotifySessionCoordinator
-        @Environment(\.dismiss) private var dismiss
-
-        var body: some View {
-            VStack(spacing: 0) {
-                header
-                Divider()
-                if coordinator.session != nil {
-                    SpotifyTokenExtractorView(
-                        mode: coordinator.pendingMode,
-                        onTokensExtracted: { tokens in
-                            coordinator.completeSession(tokens: tokens)
-                        }
-                    )
-                } else {
-                    VStack(spacing: 16) {
-                        ProgressView()
-                        Text("Preparing Spotify session…")
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-            }
-            .background(Color(.systemBackground))
-
-        }
-
-        private var header: some View {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(
-                        coordinator.pendingMode == .anonymous ? "Use as guest" : "Login to Spotify"
-                    )
-                    .font(.headline)
-                    Text(coordinator.accountDescriptor)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    Text(
-                        coordinator.pendingMode == .anonymous
-                            ? "Anonymous tokens will be used for public search."
-                            : "Signing in will replace the current session with your Spotify account."
-                    )
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                Button("Cancel") {
-                    coordinator.cancelSessionSetup()
-                }
-                .buttonStyle(.bordered)
-            }
-            .padding(20)
-            .background(Color.secondary.opacity(0.05))
-        }
-    }
-#endif
 
 #if DEBUG
     #Preview {

@@ -9,6 +9,7 @@ import Foundation
 import SwiftData
 import YouTubeSDK
 import Services
+import Plugins
 import Search
 import Player
 import Models
@@ -56,6 +57,11 @@ enum AppBootstrap {
         let centralMediaStore = CentralMediaStore(context: modelContext)
         let artworkVideoProcessor = ArtworkVideoProcessor.shared
         let metadataCache = VideoMetadataCache.shared
+        Plugins.configurePlaybackURLResolver(
+            youtube: youtube,
+            mediaCacheStore: mediaCacheStore,
+            metadataCache: metadataCache
+        )
         let searchCache = SearchResultsCache.shared
         let radioSessionStore = RadioSessionStore.shared
         let playbackMetricsStore = PlaybackMetricsStore.shared
@@ -66,6 +72,8 @@ enum AppBootstrap {
         let lastFMScrobbler = LastFMScrobbler(configuration: lastFMSettings.configuration, authService: authService)
         let listeningHistoryStore = ListeningHistoryStore(context: modelContext)
         let spotifySessionCoordinator = SpotifySessionCoordinator.shared
+        let spotifyCacheStore = SpotifyCacheStore(context: modelContext)
+        spotifySessionCoordinator.setCacheDelegate(spotifyCacheStore)
     #if os(iOS)
         let artworkColorExtractor = ImageColorExtractor.shared
     #endif
@@ -264,6 +272,7 @@ enum AppBootstrap {
             ListeningHistoryEntry.self,
             MediaCacheEntry.self,
             SearchCacheHintEntry.self,
+            SpotifyCacheEntry.self,
             Playlist.self,
             PlaylistItem.self,
             PlaylistImportJobEntry.self,
@@ -290,6 +299,7 @@ enum AppBootstrap {
             ListeningHistoryEntry.self,
             MediaCacheEntry.self,
             SearchCacheHintEntry.self,
+            SpotifyCacheEntry.self,
             Playlist.self,
             PlaylistItem.self,
             PlaylistImportJobEntry.self,

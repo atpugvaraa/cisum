@@ -1,4 +1,3 @@
-import Utilities
 //
 //  PlayerViewModel.swift
 //  cisum
@@ -10,25 +9,28 @@ import SwiftUI
 import AVKit
 import AVFoundation
 import MediaPlayer
+import Utilities
+import Services
+import Models
+import DesignSystem
+import ProviderSDK
+
+
+public typealias PlaybackCandidate = Services.PlaybackCandidate
+
+#if os(iOS)
+import UIKit
+#endif
+
 import YouTubeSDK
 
 #if canImport(iTunesKit)
 import iTunesKit
 #endif
 
-import Services
-import Models
-import DesignSystem
-
 #if canImport(LyricsKit)
 import LyricsKit
 #endif
-
-#if os(iOS)
-import UIKit
-#endif
-
-import Services
 
 @Observable
 @MainActor
@@ -46,7 +48,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         static let verboseArtworkLogsEnabled = false
     }
 
-    private enum PlaybackRecoveryPolicy {
+    enum PlaybackRecoveryPolicy {
         static let maxAttemptsPerMediaID = 2
     }
 
@@ -64,6 +66,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         case searchVideo
         case searchExternal
         case radioAutoplay
+        case userQueue
     }
 
     public enum StreamingService: String {
@@ -74,19 +77,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
     }
 
 
-    public struct QueuePreviewItem: Identifiable, Equatable {
-        public let id: String
-        public let title: String
-        public let subtitle: String
-        public let artworkURL: URL?
-        
-        public init(id: String, title: String, subtitle: String, artworkURL: URL?) {
-            self.id = id
-            self.title = title
-            self.subtitle = subtitle
-            self.artworkURL = artworkURL
-        }
-    }
+
 
     @Observable
     @MainActor
@@ -97,7 +88,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         public init() {}
     }
 
-    private struct TrackPresentationState {
+    struct TrackPresentationState {
         let mediaID: String
         let title: String
         let artist: String
@@ -108,6 +99,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         let qualityLabel: String
         let codecLabel: String
         let durationHint: Int?
+        let queueIdentity: QueueIdentitySnapshot
     }
 
     public struct PrioritizedCandidateResolution {
@@ -123,7 +115,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 
     // MARK: - State
     public var player: AVPlayer { playbackEngine.player }
-    private let youtube: YouTube
+    let youtube: YouTube
     private let artworkVideoProcessor: ArtworkVideoProcessor
     public var currentVideoId: String?
     public var playbackError: String?
@@ -182,117 +174,68 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 
     public var queuePreviewItems: [QueuePreviewItem] = []
 
-    var currentQueuePreviewIndex: Int? {
-        queuePosition
-    }
 
-    var previousQueuePreviewItem: QueuePreviewItem? {
-        guard let queuePosition,
-              queuePosition > 0,
-              queuePreviewItems.indices.contains(queuePosition - 1) else {
-            return nil
-        }
-
-        return queuePreviewItems[queuePosition - 1]
-    }
-
-    var nextQueuePreviewItem: QueuePreviewItem? {
-        guard let queuePosition,
-              queuePreviewItems.indices.contains(queuePosition + 1) else {
-            return nil
-        }
-
-        return queuePreviewItems[queuePosition + 1]
-    }
 
     // Private
     private var timeObserver: Any?
-    private var currentLoadTask: Task<Void, Never>?
+    var currentLoadTask: Task<Void, Never>?
     var artworkLoadTask: Task<Void, Never>?
     private var artworkVideoTask: Task<Void, Never>?
     var lyricsLoadTask: Task<Void, Never>?
-    private var playbackRecoveryTask: Task<Void, Never>?
+    var playbackRecoveryTask: Task<Void, Never>?
     private var exhaustiveRetryTask: Task<Void, Never>?
     /// Tracks which mediaIDs have already had exhaustiveRetry attempted.
     /// Prevents the infinite loop: fail → retry → same URL → fail → retry...
     private var exhaustiveRetryAttemptedIDs: Set<String> = []
-    private var playbackRecoveryAttemptCounts: [String: Int] = [:]
-    private var playbackCandidates: [PlaybackCandidate] = []
-    private var playbackCandidateIndex: Int = 0
-    private var playbackCandidatesMediaID: String?
-    private var pendingPlaybackFormatOverride: (quality: String, codec: String)?
+    var playbackRecoveryAttemptCounts: [String: Int] = [:]
+    var playbackCandidates: [PlaybackCandidate] = []
+    var playbackCandidateIndex: Int = 0
+    var playbackCandidatesMediaID: String?
+    var pendingPlaybackFormatOverride: (quality: String, codec: String)?
     private var currentAlbumNameHint: String?
+    private var currentQueueIdentity: QueueIdentitySnapshot?
     var playbackQueue: [PlaybackQueueEntry] = [] {
         didSet {
             updateQueuePreviewItems()
         }
     }
-    
-    private func updateQueuePreviewItems() {
-        let entries = playbackQueue
-        Task {
-            let items = await self.mapQueueEntriesToPreview(entries)
-            await MainActor.run {
-                self.queuePreviewItems = items
-            }
-        }
-    }
 
-    nonisolated private func mapQueueEntriesToPreview(_ entries: [PlaybackQueueEntry]) async -> [QueuePreviewItem] {
-        return entries.map { entry in
-            switch entry {
-            case .song(let song):
-                return QueuePreviewItem(
-                    id: song.videoId,
-                    title: normalizedMusicDisplayTitle(song.title, artist: song.artistsDisplay),
-                    subtitle: normalizedMusicDisplayArtist(song.artistsDisplay, title: song.title),
-                    artworkURL: song.thumbnailURL
-                )
-            case .video(let video):
-                return QueuePreviewItem(
-                    id: video.id,
-                    title: normalizedMusicDisplayTitle(video.title, artist: video.author),
-                    subtitle: normalizedMusicDisplayArtist(video.author, title: video.title),
-                    artworkURL: normalizedArtworkURL(from: video.thumbnailURL)
-                )
-            case .cachedRadio(let track):
-                return QueuePreviewItem(
-                    id: track.videoID,
-                    title: normalizedMusicDisplayTitle(track.title, artist: track.artist),
-                    subtitle: normalizedMusicDisplayArtist(track.artist, title: track.title),
-                    artworkURL: track.thumbnailURL
-                )
-            case .external(let track):
-                return QueuePreviewItem(
-                    id: track.mediaID,
-                    title: normalizedMusicDisplayTitle(track.title, artist: track.artist),
-                    subtitle: normalizedMusicDisplayArtist(track.artist, title: track.title),
-                    artworkURL: track.artworkURL
-                )
-            }
-        }
-    }
-    private var currentItemStatusObservation: NSKeyValueObservation?
-    private var currentItemEndObserver: NSObjectProtocol?
+    // Patch 3: Duplicate-load guard. Prevents multiple concurrent loads for the
+    // same mediaID (e.g. rapid taps). Mirrors SmartTubeIOS's isLoading check.
+    var isLoading: Bool = false
+    var loadingMediaID: String?
+
+    // Patch 4: AsyncStream-based item status observer — replaces KVO.
+    // Cancelling itemObserverTask before replaceCurrentItem ensures stale
+    // callbacks from the previous item never fire against the new state.
+    private var itemObserverTask: Task<Void, Never>?
+
+    // Patch 5: Async notification-based end observer — replaces NotificationCenter handle.
+    private var endObserverTask: Task<Void, Never>?
+    var webHLSProxyLoader: YTHLSProxyLoader? // Prevents ARC release during playback
+
+    // Patch 7: Capture current playhead before a URL refresh so we can restore
+    // the position once the new item reaches .readyToPlay.
+    var savedPositionToRestore: TimeInterval?
     private let remoteCommandCenter = MPRemoteCommandCenter.shared()
-    private let metadataCache: any VideoMetadataCaching
+    let metadataCache: any VideoMetadataCaching
     #if canImport(iTunesKit)
     let itunes = iTunesKit()
     #endif
     let mediaCacheStore: MediaCacheStore
-    private let settings: PrefetchSettings
-    private let playbackMetricsStore: any PlaybackMetricsRecording
+    let settings: PrefetchSettings
+    let playbackMetricsStore: any PlaybackMetricsRecording
     private let lastFMScrobbler: LastFMScrobbler
     private let lastFMSettings: LastFMSettings
     private let listeningHistoryStore: ListeningHistoryStore
     private let streamingProviderSettings: StreamingProviderSettings
-    private let radioSessionStore: RadioSessionStore
+    let radioSessionStore: RadioSessionStore
     private var currentListeningHistoryEntry: ListeningHistoryEntry?
     private var activeScrobbleSessionMediaID: String?
     private var hasSubmittedScrobbleForActiveSession = false
     private var lastFMScrobbleTask: Task<Void, Never>?
 #if os(iOS)
-    let artworkColorExtractor: any ArtworkColorExtracting
+    var artworkColorExtractor = ImageColorExtractor.shared
 #endif
 
 #if os(iOS)
@@ -302,6 +245,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
     var currentArtworkMediaID: String?
     var artworkCache: [String: CachedNowPlayingArtworkResource] = [:]
     var artworkAccentCache: [String: (artworkURL: URL, color: Color)] = [:]
+    var artworkPaletteCache: [String: (artworkURL: URL, palette: ImageColorPalette?)] = [:]
     var accentLoadTask: Task<Void, Never>?
 
     var interruptionObserver: NSObjectProtocol?
@@ -309,7 +253,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
     var wasPlayingBeforeInterruption = false
 #endif
 
-    private var hasNextTrackInQueue: Bool {
+    var hasNextTrackInQueue: Bool {
         guard let queuePosition else { return false }
         return queuePosition + 1 < playbackQueue.count
     }
@@ -319,12 +263,12 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         return queuePosition > 0
     }
 
-    private var radioSeedVideoID: String?
-    private var radioPlaylistID: String?
-    private var radioContinuationToken: String?
-    private var radioAutoplayTask: Task<Void, Never>?
-    private var radioContinuationTask: Task<Void, Never>?
-    private var isLoadingRadioContinuation = false
+    var radioSeedVideoID: String?
+    var radioPlaylistID: String?
+    var radioContinuationToken: String?
+    var radioAutoplayTask: Task<Void, Never>?
+    var radioContinuationTask: Task<Void, Never>?
+    var isLoadingRadioContinuation = false
     var preparedNextPlayback: PreparedQueuePlayback?
     var nextPlaybackPreloadTask: Task<Void, Never>?
     var preloadingNextMediaID: String?
@@ -344,7 +288,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         listeningHistoryStore: ListeningHistoryStore,
         streamingProviderSettings: StreamingProviderSettings,
         radioSessionStore: RadioSessionStore,
-        artworkColorExtractor: any ArtworkColorExtracting
+        artworkColorExtractor: ImageColorExtractor
     ) {
         self.youtube = youtube
         self.settings = settings
@@ -422,12 +366,13 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 
     // MARK: - Playback Session State
 
-    private func preparePlaybackSession(for state: TrackPresentationState, preserveQueue: Bool) {
+    func preparePlaybackSession(for state: TrackPresentationState, preserveQueue: Bool) {
         if !preserveQueue {
             clearQueueContext()
         }
 
         resetHiResAvailabilityState()
+        currentQueueIdentity = state.queueIdentity
         applyTrackPresentation(state)
         resetPlaybackRuntimeState(for: state.mediaID)
         startTrackAncillaryWork(for: state)
@@ -444,6 +389,23 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         currentAudioCodecLabel = state.codecLabel
         pendingPlaybackFormatOverride = nil
         currentVideoId = state.mediaID
+    }
+
+    func makeQueueIdentitySnapshot(
+        mediaID: String,
+        title: String,
+        artist: String,
+        activeRepresentationKey: String?,
+        hydrationState: [String],
+        candidateSnapshot: [QueueCandidateSnapshot]
+    ) -> QueueIdentitySnapshot {
+        let fingerprint = "\(title.lowercased())|\(artist.lowercased())|\(mediaID.lowercased())"
+        return QueueIdentitySnapshot(
+            canonicalID: canonicalQueueID(for: fingerprint, fallback: mediaID),
+            activeRepresentationKey: activeRepresentationKey,
+            hydrationState: hydrationState,
+            candidateSnapshot: candidateSnapshot
+        )
     }
 
     private func resetPlaybackRuntimeState(for mediaID: String) {
@@ -486,193 +448,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 #endif
     }
 
-    // MARK: - Loaders
-
-    public func load(external track: ExternalQueueTrack, preserveQueue: Bool = false) {
-        loadExternalTrack(track, preserveQueue: preserveQueue)
-    }
-
-    public func load(song: YouTubeMusicSong, preserveQueue: Bool = false) {
-        loadMusicTrack(
-            mediaID: song.videoId,
-            title: song.title,
-            artist: song.artistsDisplay,
-            albumName: song.album,
-            thumbnailURL: song.thumbnailURL,
-            explicit: song.isExplicit,
-            durationHint: Self.lyricsDurationHint(from: song.duration),
-            preserveQueue: preserveQueue
-        )
-
-        if !preserveQueue {
-            seedRadioQueue(from: song)
-        }
-    }
-
-    public func load(video: YouTubeVideo, preserveQueue: Bool = false) {
-        let targetMediaID = video.id
-
-        let tapStartedAt = Date()
-        let fallbackURL = normalizedArtworkURL(from: video.thumbnailURL)
-        let displayTitle = normalizedMusicDisplayTitle(video.title, artist: video.author)
-        let displayArtist = normalizedMusicDisplayArtist(video.author, title: video.title)
-
-        let presentation = TrackPresentationState(
-            mediaID: targetMediaID,
-            title: displayTitle,
-            artist: displayArtist,
-            albumName: nil,
-            artworkURL: fallbackURL,
-            isExplicit: false,
-            streamingService: .youtube,
-            qualityLabel: "Resolving...",
-            codecLabel: "Resolving...",
-            durationHint: Self.lyricsDurationHint(from: video.lengthInSeconds)
-        )
-        preparePlaybackSession(for: presentation, preserveQueue: preserveQueue)
-
-        currentLoadTask?.cancel()
-        currentLoadTask = Task {
-            if Task.isCancelled { return }
-
-            do {
-                let candidates = try await self.resolvePlaybackCandidates(forID: video.id)
-
-                if Task.isCancelled { return }
-                guard self.currentVideoId == targetMediaID else { return }
-
-                self.configurePlaybackCandidates(for: video.id, candidates: candidates)
-                self.playCurrentPlaybackCandidate()
-                self.startArtworkVideoProcessingIfNeeded(
-                    for: video.id,
-                    title: displayTitle,
-                    artist: displayArtist,
-                    albumName: nil
-                )
-                self.logPlayback("Started playback for video id=\(video.id)")
-
-                if !preserveQueue {
-                    self.seedRadioQueueForVideoTrack(
-                        video: video,
-                        expectedCurrentMediaID: targetMediaID
-                    )
-                }
-
-                self.preloadNextQueueEntryIfNeeded()
-
-                if settings.metricsEnabled {
-                    let elapsed = Date().timeIntervalSince(tapStartedAt) * 1000
-                    await self.playbackMetricsStore.recordTapToPlay(durationMs: elapsed)
-                }
-            } catch {
-                if error is CancellationError { return }
-                guard self.currentVideoId == targetMediaID else { return }
-                self.handlePlaybackFailure(error)
-            }
-        }
-    }
-
-    private func loadMusicTrack(
-        mediaID: String,
-        title: String,
-        artist: String,
-        albumName: String?,
-        thumbnailURL: URL?,
-        explicit: Bool,
-        durationHint: Int?,
-        preserveQueue: Bool
-    ) {
-        let targetMediaID = mediaID
-
-        let tapStartedAt = Date()
-        let displayTitle = normalizedMusicDisplayTitle(title, artist: artist)
-        let displayArtist = normalizedMusicDisplayArtist(artist, title: title)
-
-        let presentation = TrackPresentationState(
-            mediaID: mediaID,
-            title: displayTitle,
-            artist: displayArtist,
-            albumName: albumName,
-            artworkURL: thumbnailURL,
-            isExplicit: explicit,
-            streamingService: .youtube,
-            qualityLabel: "Resolving...",
-            codecLabel: "Resolving...",
-            durationHint: durationHint
-        )
-        preparePlaybackSession(for: presentation, preserveQueue: preserveQueue)
-
-        currentLoadTask?.cancel()
-        currentLoadTask = Task {
-            if Task.isCancelled { return }
-
-            do {
-                // Resolve YouTube candidates and start playback immediately.
-                let youtubeCandidates = try await self.resolvePlaybackCandidates(forID: mediaID)
-
-                if Task.isCancelled { return }
-                guard self.currentVideoId == targetMediaID else { return }
-
-                self.configurePlaybackCandidates(for: mediaID, candidates: youtubeCandidates)
-                self.playCurrentPlaybackCandidate()
-                self.startArtworkVideoProcessingIfNeeded(
-                    for: mediaID,
-                    title: self.currentTitle,
-                    artist: self.currentArtist,
-                    albumName: albumName
-                )
-                self.logPlayback("Started playback for song id=\(mediaID)")
-                self.preloadNextQueueEntryIfNeeded()
-
-                if settings.metricsEnabled {
-                    let elapsed = Date().timeIntervalSince(tapStartedAt) * 1000
-                    await self.playbackMetricsStore.recordTapToPlay(durationMs: elapsed)
-                }
-
-            } catch {
-                if error is CancellationError { return }
-                guard self.currentVideoId == targetMediaID else { return }
-                self.handlePlaybackFailure(error)
-            }
-        }
-    }
-
-
-    public func loadExternalStream(
-        mediaID: String,
-        streamURL: URL,
-        title: String,
-        artist: String,
-        artworkURL: URL?,
-        service: FederatedService,
-        qualityLabel: String,
-        codecLabel: String
-    ) {
-        let immediateTrack = ExternalQueueTrack(
-            mediaID: mediaID,
-            title: title,
-            artist: artist,
-            artworkURL: artworkURL,
-            service: service,
-            isExplicit: false,
-            qualityLabelHint: qualityLabel,
-            codecLabelHint: codecLabel,
-            resolvePayload: {
-                ExternalStreamPayload(
-                    mediaID: mediaID,
-                    streamURL: streamURL,
-                    title: title,
-                    artist: artist,
-                    artworkURL: artworkURL,
-                    service: service,
-                    qualityLabel: qualityLabel,
-                    codecLabel: codecLabel
-                )
-            }
-        )
-
-        loadExternalTrack(immediateTrack, preserveQueue: false)
-    }
+    // MARK: - Loaders extracted to PlayerViewModel+Loading.swift
 
     // MARK: - Controls
 
@@ -711,7 +487,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         preloadNextQueueEntryIfNeeded()
     }
 
-    private func advanceToNextQueueEntry(triggeredByPlaybackEnd: Bool) {
+    func advanceToNextQueueEntry(triggeredByPlaybackEnd: Bool) {
         guard hasNextTrackInQueue, let queuePosition else {
             playbackEngine.setIsPlaying(false)
             updateNowPlayingPlaybackInfo(force: true)
@@ -751,9 +527,13 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 
     private func stopCurrentPlaybackForImmediateTransition() {
         currentLoadTask?.cancel()
+        // Patch 4 & 5: Cancel both async observers before replacing the item.
+        itemObserverTask?.cancel()
+        itemObserverTask = nil
+        endObserverTask?.cancel()
+        endObserverTask = nil
         player.pause()
         player.replaceCurrentItem(with: nil)
-        removeCurrentItemEndObserver()
         playbackEngine.setIsPlaying(false)
         playbackEngine.resetProgress()
         updateNowPlayingPlaybackInfo(force: true)
@@ -778,7 +558,11 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         currentLoadTask = Task {
             if Task.isCancelled { return }
             do {
-                let candidates = try await self.resolvePlaybackCandidates(forID: id)
+                let candidates = try await self.resolvePlaybackCandidates(
+                    forID: id,
+                    title: self.currentTitle,
+                    artist: self.currentArtist
+                )
 
                 if Task.isCancelled { return }
                 guard self.currentVideoId == targetMediaID else { return }
@@ -814,7 +598,8 @@ public final class PlayerViewModel: PlayerViewModelInterface {
     }
     #endif
 
-    private func load(entry: PlaybackQueueEntry) {
+    func load(entry: PlaybackQueueEntry) {
+        self.webHLSProxyLoader = nil
         switch entry {
         case .song(let song):
             load(song: song, preserveQueue: true)
@@ -836,7 +621,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         }
     }
 
-    private func loadExternalTrack(_ track: ExternalQueueTrack, preserveQueue: Bool) {
+    func loadExternalTrack(_ track: ExternalQueueTrack, preserveQueue: Bool) {
         let normalizedMediaID = track.mediaID.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedMediaID.isEmpty else {
             playbackError = "Invalid media identifier for external stream."
@@ -857,7 +642,15 @@ public final class PlayerViewModel: PlayerViewModelInterface {
             streamingService: Self.streamingService(for: track.service),
             qualityLabel: track.qualityLabelHint ?? "Resolving...",
             codecLabel: track.codecLabelHint ?? "Resolving...",
-            durationHint: nil
+            durationHint: nil,
+            queueIdentity: makeQueueIdentitySnapshot(
+                mediaID: normalizedMediaID,
+                title: displayTitle,
+                artist: displayArtist,
+                activeRepresentationKey: nil,
+                hydrationState: ["metadataResolved"],
+                candidateSnapshot: []
+            )
         )
 
         currentLoadTask?.cancel()
@@ -950,524 +743,11 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         queuePosition = nil
         queueCount = 0
         queueSource = .detached
+        currentQueueIdentity = nil
         updateRemoteCommandState()
     }
 
-    private func seedRadioQueue(from seedSong: YouTubeMusicSong) {
-        let seedVideoID = seedSong.videoId
-        radioSeedVideoID = seedVideoID
-        radioAutoplayTask?.cancel()
-
-        radioAutoplayTask = Task { @MainActor [weak self] in
-            guard let self else { return }
-
-            let cachedSession = self.radioSessionStore.session(forSeedVideoID: seedVideoID)
-
-            if let cachedSession,
-               self.shouldReuseCachedRadioSession(cachedSession),
-               self.currentVideoId == seedVideoID {
-                self.applyCachedRadioSession(cachedSession, fallbackSeed: seedSong)
-                self.scheduleRadioContinuationIfNeeded()
-                return
-            }
-
-            do {
-                let radio = try await self.youtube.music.getRadio(videoId: seedVideoID)
-                guard !Task.isCancelled, self.currentVideoId == seedVideoID else { return }
-
-                self.radioPlaylistID = radio.playlistId
-                self.radioContinuationToken = radio.continuationToken
-
-                var tracks = self.buildSeededRadioTracks(seedSong: seedSong, radioItems: radio.items)
-                tracks = await self.hydrateSeedRadioTracksIfNeeded(tracks, playlistID: self.radioPlaylistID)
-                guard !Task.isCancelled, self.currentVideoId == seedVideoID else { return }
-
-                self.applyRadioTracksToQueue(tracks, seedVideoID: seedVideoID)
-                self.scheduleRadioContinuationIfNeeded()
-            } catch {
-                guard !Task.isCancelled else { return }
-                if let cachedSession,
-                   self.currentVideoId == seedVideoID,
-                   !cachedSession.tracks.isEmpty {
-                    self.applyCachedRadioSession(cachedSession, fallbackSeed: seedSong)
-                    self.scheduleRadioContinuationIfNeeded()
-                }
-                self.logPlayback("Radio seed failed for id=\(seedVideoID): \(error.localizedDescription)")
-            }
-        }
-    }
-
-    private func seedRadioQueueForExternalTrack(
-        externalTrack: ExternalQueueTrack,
-        resolvedPayload: ExternalStreamPayload,
-        expectedCurrentMediaID: String
-    ) {
-
-        let title = normalizedMusicDisplayTitle(resolvedPayload.title, artist: resolvedPayload.artist)
-        let artist = normalizedMusicDisplayArtist(resolvedPayload.artist, title: resolvedPayload.title)
-        let query = radioSeedQuery(title: title, artist: artist)
-        guard !query.isEmpty else { return }
-
-        radioAutoplayTask?.cancel()
-        radioAutoplayTask = Task { @MainActor [weak self] in
-            guard let self else { return }
-            guard self.currentVideoId == expectedCurrentMediaID else { return }
-
-            do {
-                let searchResults = try await self.youtube.music.search(query)
-                guard !Task.isCancelled,
-                      self.currentVideoId == expectedCurrentMediaID,
-                      let seedSong = self.bestRadioSeedSong(
-                        from: searchResults,
-                        title: title,
-                        artist: artist
-                      ) else {
-                    return
-                }
-
-                let seedVideoID = seedSong.videoId
-                self.radioSeedVideoID = seedVideoID
-                let leadingEntry = PlaybackQueueEntry.external(externalTrack)
-                let cachedSession = self.radioSessionStore.session(forSeedVideoID: seedVideoID)
-
-                if let cachedSession,
-                   self.shouldReuseCachedRadioSession(cachedSession),
-                   self.currentVideoId == expectedCurrentMediaID {
-                    self.applyCachedRadioSession(
-                        cachedSession,
-                        fallbackSeed: seedSong,
-                        leadingEntry: leadingEntry,
-                        currentMediaID: expectedCurrentMediaID
-                    )
-                    self.scheduleRadioContinuationIfNeeded()
-                    return
-                }
-
-                let radio = try await self.youtube.music.getRadio(videoId: seedVideoID)
-                guard !Task.isCancelled, self.currentVideoId == expectedCurrentMediaID else { return }
-
-                self.radioPlaylistID = radio.playlistId
-                self.radioContinuationToken = radio.continuationToken
-
-                var tracks = self.buildSeededRadioTracks(seedSong: seedSong, radioItems: radio.items)
-                tracks = await self.hydrateSeedRadioTracksIfNeeded(tracks, playlistID: self.radioPlaylistID)
-                guard !Task.isCancelled, self.currentVideoId == expectedCurrentMediaID else { return }
-
-                self.applyRadioTracksToQueue(
-                    tracks,
-                    seedVideoID: seedVideoID,
-                    leadingEntry: leadingEntry,
-                    currentMediaID: expectedCurrentMediaID
-                )
-                self.scheduleRadioContinuationIfNeeded()
-            } catch {
-                guard !Task.isCancelled else { return }
-                self.logPlayback("External radio seed failed for query=\(query): \(error.localizedDescription)")
-            }
-        }
-    }
-
-    private func seedRadioQueueForVideoTrack(
-        video: YouTubeVideo,
-        expectedCurrentMediaID: String
-    ) {
-        let displayTitle = normalizedMusicDisplayTitle(video.title, artist: video.author)
-        let displayArtist = normalizedMusicDisplayArtist(video.author, title: video.title)
-        let query = radioSeedQuery(title: displayTitle, artist: displayArtist)
-        let leadingEntry = PlaybackQueueEntry.video(video)
-
-        radioAutoplayTask?.cancel()
-        radioAutoplayTask = Task { @MainActor [weak self] in
-            guard let self else { return }
-            guard self.currentVideoId == expectedCurrentMediaID else { return }
-
-            do {
-                let directRadio = try await self.youtube.music.getRadio(videoId: video.id)
-                guard !Task.isCancelled,
-                      self.currentVideoId == expectedCurrentMediaID else {
-                    return
-                }
-
-                var directTracks = self.buildRadioTracks(from: directRadio.items)
-                if !directTracks.isEmpty {
-                    self.radioSeedVideoID = video.id
-                    self.radioPlaylistID = directRadio.playlistId
-                    self.radioContinuationToken = directRadio.continuationToken
-
-                    directTracks = await self.hydrateSeedRadioTracksIfNeeded(
-                        directTracks,
-                        playlistID: self.radioPlaylistID
-                    )
-                    guard !Task.isCancelled,
-                          self.currentVideoId == expectedCurrentMediaID else {
-                        return
-                    }
-
-                    self.applyRadioTracksToQueue(
-                        directTracks,
-                        seedVideoID: video.id,
-                        leadingEntry: leadingEntry,
-                        currentMediaID: expectedCurrentMediaID
-                    )
-                    self.scheduleRadioContinuationIfNeeded()
-                    return
-                }
-            } catch {
-                self.logPlayback("Video direct radio seed failed for id=\(video.id): \(error.localizedDescription)")
-            }
-
-            guard !query.isEmpty else { return }
-
-            do {
-                let searchResults = try await self.youtube.music.search(query)
-                guard !Task.isCancelled,
-                      self.currentVideoId == expectedCurrentMediaID,
-                      let seedSong = self.bestRadioSeedSong(
-                        from: searchResults,
-                        title: displayTitle,
-                        artist: displayArtist
-                      ) else {
-                    return
-                }
-
-                let seedVideoID = seedSong.videoId
-                self.radioSeedVideoID = seedVideoID
-                let cachedSession = self.radioSessionStore.session(forSeedVideoID: seedVideoID)
-
-                if let cachedSession,
-                   self.shouldReuseCachedRadioSession(cachedSession),
-                   self.currentVideoId == expectedCurrentMediaID {
-                    self.applyCachedRadioSession(
-                        cachedSession,
-                        fallbackSeed: seedSong,
-                        leadingEntry: leadingEntry,
-                        currentMediaID: expectedCurrentMediaID
-                    )
-                    self.scheduleRadioContinuationIfNeeded()
-                    return
-                }
-
-                let radio = try await self.youtube.music.getRadio(videoId: seedVideoID)
-                guard !Task.isCancelled,
-                      self.currentVideoId == expectedCurrentMediaID else {
-                    return
-                }
-
-                self.radioPlaylistID = radio.playlistId
-                self.radioContinuationToken = radio.continuationToken
-
-                var tracks = self.buildSeededRadioTracks(seedSong: seedSong, radioItems: radio.items)
-                tracks = await self.hydrateSeedRadioTracksIfNeeded(tracks, playlistID: self.radioPlaylistID)
-                guard !Task.isCancelled,
-                      self.currentVideoId == expectedCurrentMediaID else {
-                    return
-                }
-
-                self.applyRadioTracksToQueue(
-                    tracks,
-                    seedVideoID: seedVideoID,
-                    leadingEntry: leadingEntry,
-                    currentMediaID: expectedCurrentMediaID
-                )
-                self.scheduleRadioContinuationIfNeeded()
-            } catch {
-                guard !Task.isCancelled else { return }
-                self.logPlayback("Video metadata radio seed failed for query=\(query): \(error.localizedDescription)")
-            }
-        }
-    }
-
-    private func radioSeedQuery(title: String, artist: String) -> String {
-        let normalizedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedArtist = artist.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if !normalizedTitle.isEmpty && !normalizedArtist.isEmpty {
-            return "\(normalizedTitle) \(normalizedArtist)"
-        }
-        if !normalizedTitle.isEmpty {
-            return normalizedTitle
-        }
-        return normalizedArtist
-    }
-
-    private func bestRadioSeedSong(from candidates: [YouTubeMusicSong], title: String, artist: String) -> YouTubeMusicSong? {
-        guard !candidates.isEmpty else { return nil }
-
-        let targetTitle = title.lowercased()
-        let targetArtist = artist.lowercased()
-
-        return candidates.max { lhs, rhs in
-            let lhsTitle = normalizedMusicDisplayTitle(lhs.title, artist: lhs.artistsDisplay).lowercased()
-            let rhsTitle = normalizedMusicDisplayTitle(rhs.title, artist: rhs.artistsDisplay).lowercased()
-            let lhsArtist = normalizedMusicDisplayArtist(lhs.artistsDisplay, title: lhs.title).lowercased()
-            let rhsArtist = normalizedMusicDisplayArtist(rhs.artistsDisplay, title: rhs.title).lowercased()
-
-            let lhsScore = (0.7 * tokenOverlapScore(lhsTitle, targetTitle)) + (0.3 * tokenOverlapScore(lhsArtist, targetArtist))
-            let rhsScore = (0.7 * tokenOverlapScore(rhsTitle, targetTitle)) + (0.3 * tokenOverlapScore(rhsArtist, targetArtist))
-            return lhsScore < rhsScore
-        }
-    }
-
-    private func shouldReuseCachedRadioSession(_ session: RadioSessionStore.Session) -> Bool {
-        let validTrackCount = session.tracks.compactMap { CachedRadioTrack(cached: $0) }.count
-        if validTrackCount == 0 {
-            return false
-        }
-        return validTrackCount >= RadioAutoplayPolicy.minCachedTracksWithoutContinuation
-    }
-
-    private func hydrateSeedRadioTracksIfNeeded(
-        _ tracks: [CachedRadioTrack],
-        playlistID: String?
-    ) async -> [CachedRadioTrack] {
-        guard tracks.count < RadioAutoplayPolicy.minSeedTracksBeforePlaylistHydration else {
-            return tracks
-        }
-
-        guard let playlistID = playlistID?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !playlistID.isEmpty else {
-            return tracks
-        }
-
-        do {
-            let queueItems = try await youtube.music.getQueue(playlistId: playlistID)
-            guard !queueItems.isEmpty else { return tracks }
-
-            var merged = tracks
-            var knownIDs = Set(merged.map(\.videoID))
-            for song in queueItems {
-                let track = CachedRadioTrack(song: song)
-                guard knownIDs.insert(track.videoID).inserted else { continue }
-                merged.append(track)
-                if merged.count >= RadioAutoplayPolicy.maxSeedQueueTracks {
-                    break
-                }
-            }
-
-            if merged.count > tracks.count {
-                logPlayback("Radio seed hydrated from playlist: +\(merged.count - tracks.count) track(s)")
-            }
-
-            return merged
-        } catch {
-            logPlayback("Radio seed hydration failed for playlistID=\(playlistID): \(error.localizedDescription)")
-            return tracks
-        }
-    }
-
-    private func clearRadioAutoplayState() {
-        radioAutoplayTask?.cancel()
-        radioAutoplayTask = nil
-        radioContinuationTask?.cancel()
-        radioContinuationTask = nil
-        radioSeedVideoID = nil
-        radioPlaylistID = nil
-        radioContinuationToken = nil
-        isLoadingRadioContinuation = false
-    }
-
-    private func applyCachedRadioSession(
-        _ session: RadioSessionStore.Session,
-        fallbackSeed: YouTubeMusicSong,
-        leadingEntry: PlaybackQueueEntry? = nil,
-        currentMediaID: String? = nil
-    ) {
-        var tracks = session.tracks.compactMap { CachedRadioTrack(cached: $0) }
-        let seedTrack = CachedRadioTrack(song: fallbackSeed)
-
-        if !tracks.contains(where: { $0.videoID == seedTrack.videoID }) {
-            tracks.insert(seedTrack, at: 0)
-        }
-
-        radioPlaylistID = session.playlistID
-        radioContinuationToken = session.continuationToken
-        applyRadioTracksToQueue(
-            Array(tracks.prefix(RadioAutoplayPolicy.maxSeedQueueTracks)),
-            seedVideoID: seedTrack.videoID,
-            leadingEntry: leadingEntry,
-            currentMediaID: currentMediaID
-        )
-    }
-
-    private func buildSeededRadioTracks(seedSong: YouTubeMusicSong, radioItems: [YouTubeMusicSong]) -> [CachedRadioTrack] {
-        var allSongs = [seedSong]
-        allSongs.append(contentsOf: radioItems)
-        
-        // Deduplicate by videoId then by fingerprint
-        let uniqueTracks = allSongs.removeDuplicates()
-                                   .removeDuplicates(on: { "\($0.title.lowercased())|\($0.artistsDisplay.lowercased())" })
-                                   .map(CachedRadioTrack.init(song:))
-        
-        return Array(uniqueTracks.prefix(RadioAutoplayPolicy.maxSeedQueueTracks))
-    }
-
-    private func buildRadioTracks(from radioItems: [YouTubeMusicSong]) -> [CachedRadioTrack] {
-        let uniqueTracks = radioItems.removeDuplicates()
-                                     .removeDuplicates(on: { "\($0.title.lowercased())|\($0.artistsDisplay.lowercased())" })
-                                     .map(CachedRadioTrack.init(song:))
-        return Array(uniqueTracks.prefix(RadioAutoplayPolicy.maxSeedQueueTracks))
-    }
-
-    private func applyRadioTracksToQueue(
-        _ tracks: [CachedRadioTrack],
-        seedVideoID: String,
-        leadingEntry: PlaybackQueueEntry? = nil,
-        currentMediaID: String? = nil
-    ) {
-        guard !tracks.isEmpty else { return }
-
-        var entries = tracks.map { PlaybackQueueEntry.cachedRadio($0) }
-        if let leadingEntry {
-            entries.removeAll { $0.mediaID == leadingEntry.mediaID }
-            entries.insert(leadingEntry, at: 0)
-        }
-
-        playbackQueue = entries
-        queueCount = entries.count
-        queueSource = .radioAutoplay
-
-        let playbackMediaID = currentMediaID ?? currentVideoId
-        if let playbackMediaID {
-            queuePosition = entries.firstIndex(where: { $0.mediaID == playbackMediaID }) ?? 0
-        } else {
-            queuePosition = 0
-        }
-
-        if radioSeedVideoID == nil {
-            radioSeedVideoID = seedVideoID
-        }
-
-        persistCurrentRadioSession()
-        updateRemoteCommandState()
-        preloadNextQueueEntryIfNeeded()
-    }
-
-    private func scheduleRadioContinuationIfNeeded() {
-        guard queueSource == .radioAutoplay,
-              let queuePosition,
-              !isLoadingRadioContinuation,
-              let continuation = radioContinuationToken,
-              !continuation.isEmpty else {
-            return
-        }
-
-        let remainingItems = playbackQueue.count - queuePosition - 1
-        guard remainingItems <= RadioAutoplayPolicy.queueLowWatermark else {
-            return
-        }
-
-        isLoadingRadioContinuation = true
-        radioContinuationTask?.cancel()
-        radioContinuationTask = Task { @MainActor [weak self] in
-            guard let self else { return }
-            defer {
-                self.isLoadingRadioContinuation = false
-            }
-
-            do {
-                let previousToken = self.radioContinuationToken
-                let page = try await self.youtube.music.getRadioContinuation(token: continuation)
-                guard !Task.isCancelled,
-                      self.queueSource == .radioAutoplay else {
-                    return
-                }
-
-                self.radioContinuationToken = page.continuationToken
-                if let playlistID = page.playlistId, !playlistID.isEmpty {
-                    self.radioPlaylistID = playlistID
-                }
-
-                let appended = self.appendRadioTracks(page.items.removeDuplicates().map(CachedRadioTrack.init(song:)))
-                if appended == 0 {
-                    let tokenChanged = previousToken != self.radioContinuationToken
-                    if !tokenChanged {
-                        await self.backfillRadioTracksFromPlaylistIfNeeded()
-                    }
-                }
-            } catch {
-                guard !Task.isCancelled else { return }
-                await self.backfillRadioTracksFromPlaylistIfNeeded()
-                self.logPlayback("Radio continuation failed: \(error.localizedDescription)")
-            }
-        }
-    }
-
-    @discardableResult
-    private func appendRadioTracks(_ incoming: [CachedRadioTrack]) -> Int {
-        guard !incoming.isEmpty else { return 0 }
-
-        var knownIDs = Set(playbackQueue.map(\.mediaID))
-        var knownFingerprints = Set(playbackQueue.map(\.fingerprint))
-        
-        var appended: [PlaybackQueueEntry] = []
-        for track in incoming {
-            guard knownIDs.insert(track.videoID).inserted else { continue }
-            guard knownFingerprints.insert(track.fingerprint).inserted else { continue }
-            
-            appended.append(.cachedRadio(track))
-        }
-
-        guard !appended.isEmpty else { return 0 }
-
-        playbackQueue.append(contentsOf: appended)
-        queueCount = playbackQueue.count
-        persistCurrentRadioSession()
-        updateRemoteCommandState()
-        preloadNextQueueEntryIfNeeded()
-        return appended.count
-    }
-
-    private func backfillRadioTracksFromPlaylistIfNeeded() async {
-        guard queueSource == .radioAutoplay,
-              let playlistID = radioPlaylistID?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !playlistID.isEmpty else {
-            return
-        }
-
-        do {
-            let queueItems = try await youtube.music.getQueue(playlistId: playlistID)
-            guard !queueItems.isEmpty else { return }
-
-            let appended = appendRadioTracks(queueItems.removeDuplicates().map(CachedRadioTrack.init(song:)))
-            if appended > 0 {
-                logPlayback("Radio playlist backfill appended \(appended) track(s)")
-            }
-        } catch {
-            logPlayback("Radio playlist backfill failed for playlistID=\(playlistID): \(error.localizedDescription)")
-        }
-    }
-
-    private func persistCurrentRadioSession() {
-        guard queueSource == .radioAutoplay,
-              let seedVideoID = radioSeedVideoID else {
-            return
-        }
-
-        let tracks = playbackQueue.compactMap { entry -> CachedRadioTrack? in
-            switch entry {
-            case .cachedRadio(let track):
-                return track
-            case .song(let song):
-                return CachedRadioTrack(song: song)
-            case .video:
-                return nil
-            case .external:
-                return nil
-            }
-        }
-
-        guard !tracks.isEmpty else { return }
-
-        radioSessionStore.save(
-            session: RadioSessionStore.Session(
-                seedVideoID: seedVideoID,
-                playlistID: radioPlaylistID,
-                continuationToken: radioContinuationToken,
-                tracks: tracks.map(\.persisted),
-                updatedAt: .now
-            )
-        )
-    }
+    // MARK: - Queue Management extracted to PlayerViewModel+Queue.swift
 
     private func shouldRefreshPreparedPlaybackBeforeUse(_ prepared: PreparedQueuePlayback) -> Bool {
         guard prepared.streamingService == .youtube || prepared.streamingService == .youtubeMusic else {
@@ -1503,7 +783,8 @@ public final class PlayerViewModel: PlayerViewModelInterface {
             streamingService: prepared.streamingService,
             qualityLabel: prepared.qualityLabel,
             codecLabel: prepared.codecLabel,
-            durationHint: prepared.durationHint
+            durationHint: prepared.durationHint,
+            queueIdentity: prepared.queueIdentity
         )
         preparePlaybackSession(for: presentation, preserveQueue: true)
 
@@ -1513,8 +794,12 @@ public final class PlayerViewModel: PlayerViewModelInterface {
             configurePlaybackCandidates(for: prepared.mediaID, candidates: prepared.playbackCandidates)
         }
 
-        observeCurrentItemStatus(prepared.item)
-        observeCurrentItemEnd(prepared.item)
+        // Cancel stale observers before installing the preloaded item.
+        itemObserverTask?.cancel()
+        itemObserverTask = nil
+        endObserverTask?.cancel()
+        endObserverTask = nil
+
         player.replaceCurrentItem(with: prepared.item)
 
 #if os(iOS)
@@ -1523,7 +808,11 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         }
 #endif
 
-        player.seek(to: .zero)
+        playbackEngine.reactivateSession()
+        observeItemStatus(prepared.item)
+        observeItemEnd(prepared.item)
+
+        playbackEngine.resetProgress()
         playbackEngine.play()
 
         startArtworkVideoProcessingIfNeeded(
@@ -1634,160 +923,19 @@ public final class PlayerViewModel: PlayerViewModelInterface {
 
     // MARK: - Playback Resolution
 
-    private func resolvePlaybackEntry(forID id: String, forceDecipher: Bool = false) async throws -> VideoMetadataCache.Entry {
-        // Capture sendable values (actor references and cookie string) up-front
-        // so the @Sendable fetcher closure doesn't try to access MainActor
-        // isolated properties directly.
-        let youtube = self.youtube.main
-        let normalizedID = canonicalPlaybackMediaID(id)
-
-        // Use a fetcher that will attempt the InnerTube `/player` call first,
-        // and if the server responds with `LOGIN_REQUIRED`, fall back to
-        // extracting `ytInitialPlayerResponse` from the watch HTML (web client).
-        return try await metadataCache.resolve(id: normalizedID, metricsEnabled: settings.metricsEnabled) { key in
-            return try await youtube.video(id: key)
-        }
-    }
-
-    func resolvePlaybackCandidates(forID id: String, forceDecipher: Bool = false) async throws -> [PlaybackCandidate] {
-        let normalizedID = canonicalPlaybackMediaID(id)
-
-        #if targetEnvironment(simulator)
-        if supportsYouTubeCandidateRecovery {
-            do {
-                let youtube = self.youtube.main
-                let androidVideo = try await youtube.videoAndroid(id: normalizedID)
-                let androidCandidates = PlaybackCandidateBuilder.fromVideo(
-                    androidVideo,
-                    preferredURL: nil,
-                    validUntil: Date().addingTimeInterval(3600)
-                )
-
-                if let preferredAndroidCandidate = androidCandidates.first {
-                    logPlayback("Simulator Android fast path selected for id=\(normalizedID) kind=\(preferredAndroidCandidate.streamKind.rawValue)")
-                    mediaCacheStore.savePlaybackResolution(
-                        mediaID: normalizedID,
-                        candidates: androidCandidates,
-                        validUntil: Date().addingTimeInterval(3600)
-                    )
-                    return androidCandidates
-                }
-            } catch {
-                logPlayback("Simulator Android fast path failed for id=\(normalizedID): \(error.localizedDescription)")
-            }
-        }
-        #endif
-
-        if !forceDecipher,
-           let cachedCandidates = mediaCacheStore.playbackCandidates(
-            for: normalizedID,
-            maxAge: CachePolicy.playbackURLTTL
-        ),
-        !cachedCandidates.isEmpty {
-            // ...
-            let hasUnknownExpiryCandidate = cachedCandidates.contains(where: { $0.expiresAt == nil })
-            if hasUnknownExpiryCandidate {
-                logPlayback("Cached playback candidates missing expiry for id=\(normalizedID); invalidating for refresh")
-                mediaCacheStore.invalidatePlayback(for: normalizedID)
-            } else if let earliestExpiry = cachedCandidates.compactMap(\.expiresAt).min(),
-                      earliestExpiry.timeIntervalSinceNow <= CachePolicy.playbackMinimumRemainingLifetime {
-                logPlayback("Cached playback candidates near expiry for id=\(normalizedID); invalidating for refresh")
-                mediaCacheStore.invalidatePlayback(for: normalizedID)
-            } else {
-                logPlayback("Using cached playback candidates for id=\(normalizedID)")
-                return cachedCandidates
-            }
-        }
-
-        // Fast path: if a resolver has a cached quick-play URL (warmed by Search prefetch),
-        // use it immediately to start playback without waiting for the full video metadata.
-        let resolver = await PlaybackURLResolver.sharedInstance()
-        if !forceDecipher,
-           let quickURL = await resolver.cachedURL(for: normalizedID) {
-            let ext = quickURL.pathExtension.lowercased()
-            let streamKind: PlaybackCandidate.StreamKind = ext == "m3u8" ? .hls : .muxed
-            let mimeType: String? = {
-                if streamKind == .hls { return "application/x-mpegURL" }
-                if ext == "mp4" { return "audio/mp4" }
-                if let components = URLComponents(url: quickURL, resolvingAgainstBaseURL: false),
-                   let queryMime = components.queryItems?.first(where: { $0.name.caseInsensitiveCompare("mime") == .orderedSame })?.value,
-                   !queryMime.isEmpty {
-                    return queryMime
-                }
-                return nil
-            }()
-            let isCompatible = mimeType.map { !$0.lowercased().contains("webm") } ?? (streamKind == .hls || ext == "mp4")
-
-            if isCompatible {
-                let expiresAt = Date().addingTimeInterval(CachePolicy.playbackURLTTL)
-                let candidate = PlaybackCandidate(url: quickURL, streamKind: streamKind, mimeType: mimeType, itag: nil, expiresAt: expiresAt, isCompatible: true)
-                mediaCacheStore.savePlaybackResolution(mediaID: normalizedID, candidates: [candidate], validUntil: expiresAt)
-                return [candidate]
-            } else {
-                logPlayback("Skipping cached quick URL for id=\(normalizedID) due to incompatible mime=\(mimeType ?? "unknown") host=\(quickURL.host ?? "unknown")")
-            }
-        }
-
-        let entry = try await resolvePlaybackEntry(forID: normalizedID, forceDecipher: forceDecipher)
-        let candidates = PlaybackCandidateBuilder.fromVideo(
-            entry.video,
-            preferredURL: entry.resolvedURL,
-            validUntil: entry.validUntil
-        )
-
-        guard !candidates.isEmpty else {
-            throw YouTubeError.decipheringFailed(videoId: normalizedID)
-        }
-
-        if currentStreamingServiceName == StreamingService.youtube.rawValue,
-           !candidates.contains(where: { $0.streamKind == .hls || $0.streamKind == .muxed }) {
-            do {
-                let youtube = self.youtube.main
-                let androidVideo = try await youtube.videoAndroid(id: normalizedID)
-                let androidCandidates = PlaybackCandidateBuilder.fromVideo(
-                    androidVideo,
-                    preferredURL: nil,
-                    validUntil: Date().addingTimeInterval(3600)
-                )
-
-                if !androidCandidates.isEmpty {
-                    logPlayback("No iOS video-safe candidate for id=\(normalizedID); using Android direct-CDN fallback kind=\(androidCandidates[0].streamKind.rawValue)")
-                    mediaCacheStore.savePlaybackResolution(
-                        mediaID: normalizedID,
-                        candidates: androidCandidates,
-                        validUntil: Date().addingTimeInterval(3600)
-                    )
-                    return androidCandidates
-                }
-            } catch {
-                logPlayback("Android fallback after iOS adaptive-only response failed for id=\(normalizedID): \(error.localizedDescription)")
-            }
-        }
-
-        mediaCacheStore.savePlaybackResolution(
-            mediaID: normalizedID,
-            candidates: candidates,
-            validUntil: entry.validUntil
-        )
-
-        return candidates
-    }
-
-    func resolvePrioritizedPlaybackCandidates(
-        mediaID: String,
-        title: String,
-        artist: String
-    ) async throws -> PrioritizedCandidateResolution {
-        let youtubeCandidates = try await resolvePlaybackCandidates(forID: mediaID)
-        return PrioritizedCandidateResolution(candidates: youtubeCandidates, hiResPayload: nil)
-    }
 
 
-    private func playFromBeginning(url: URL) {
+    private func playFromBeginning(url: URL, headers: [String: String]? = nil) {
         logPlayback("Creating playback item url=\(url.absoluteString) host=\(url.host ?? "unknown") service=\(currentStreamingServiceName)")
-        let item = makePlayerItem(for: url)
-        observeCurrentItemStatus(item)
-        observeCurrentItemEnd(item)
+        let item = makePlayerItem(for: url, headers: headers)
+
+        // Patch 4 & 5: Cancel stale observers before replacing the item so a
+        // previous item's .failed callback cannot fire against the new state.
+        itemObserverTask?.cancel()
+        itemObserverTask = nil
+        endObserverTask?.cancel()
+        endObserverTask = nil
+
         player.replaceCurrentItem(with: item)
 
         #if os(iOS)
@@ -1796,7 +944,16 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         }
         #endif
 
-        seek(to: .zero)
+        // Patch 6 (deferred audio session): activate the session at load time,
+        // not at init, so we only take the session when the user actually plays.
+        playbackEngine.reactivateSession()
+
+        // Patch 4: Wire the AsyncStream-based status observer *after* replaceCurrentItem
+        // so .readyToPlay is guaranteed to fire while the task is alive.
+        observeItemStatus(item)
+        // Patch 5: Wire the async end observer.
+        observeItemEnd(item)
+
         playbackEngine.resetProgress()
         playbackEngine.play()
 
@@ -1805,54 +962,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         preloadNextQueueEntryIfNeeded()
     }
 
-    func makePlayerItem(for url: URL, service: StreamingService? = nil) -> AVPlayerItem {
-        let resolvedService: StreamingService
-        if let service {
-            resolvedService = service
-        } else {
-            resolvedService = StreamingService(rawValue: currentStreamingServiceName) ?? .youtubeMusic
-        }
 
-        if resolvedService == .youtube || resolvedService == .youtubeMusic {
-            logPlayback("Using direct AVPlayerItem load for YouTube host=\(url.host ?? "unknown")")
-        } else {
-            logPlayback("Using plain AVPlayerItem load host=\(url.host ?? "unknown")")
-        }
-        return AVPlayerItem(url: url)
-    }
-
-    func mimeTypeForCodecLabel(_ codecLabel: String) -> String? {
-        let normalized = codecLabel.lowercased()
-        if normalized.contains("flac") { return "audio/flac" }
-        if normalized.contains("aac") { return "audio/aac" }
-        if normalized.contains("mp3") { return "audio/mpeg" }
-        if normalized.contains("hls") { return "application/x-mpegURL" }
-        return nil
-    }
-
-    private func updateAudioFormatLabels(for candidate: PlaybackCandidate) {
-        if let pendingPlaybackFormatOverride {
-            currentAudioQualityLabel = pendingPlaybackFormatOverride.quality
-            currentAudioCodecLabel = pendingPlaybackFormatOverride.codec
-            self.pendingPlaybackFormatOverride = nil
-            return
-        }
-
-        let labels = playbackLabels(for: candidate)
-        currentAudioQualityLabel = labels.quality
-        currentAudioCodecLabel = labels.codec
-    }
-
-    private func configurePlaybackCandidates(for mediaID: String, candidates: [PlaybackCandidate]) {
-        playbackCandidatesMediaID = mediaID
-        playbackCandidates = candidates
-        playbackCandidateIndex = 0
-        logPlayback("Prepared \(candidates.count) playback candidate(s) for id=\(mediaID)")
-        let hostSummary = candidates
-            .map { "\($0.streamKind.rawValue):\($0.url.host ?? "unknown-host")" }
-            .joined(separator: " | ")
-        logPlayback("Candidate hosts for id=\(mediaID): \(hostSummary)")
-    }
 
     private func resetPlaybackCandidates(for mediaID: String) {
         playbackCandidatesMediaID = mediaID
@@ -1864,17 +974,17 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         playbackRecoveryAttemptCounts.removeValue(forKey: mediaID)
     }
 
-    private var supportsYouTubeCandidateRecovery: Bool {
+    var supportsYouTubeCandidateRecovery: Bool {
         currentStreamingServiceName == StreamingService.youtube.rawValue
             || currentStreamingServiceName == StreamingService.youtubeMusic.rawValue
     }
 
-    private func playCurrentPlaybackCandidate() {
+    func playCurrentPlaybackCandidate() {
         guard playbackCandidateIndex < playbackCandidates.count else {
             if let fallback = playbackCandidates.first {
                 logPlayback("Playback candidate index out of range, retrying first candidate for id=\(playbackCandidatesMediaID ?? "unknown")")
                 updateAudioFormatLabels(for: fallback)
-                playFromBeginning(url: fallback.url)
+                playFromBeginning(url: fallback.url, headers: fallback.headers)
             }
             return
         }
@@ -1884,160 +994,14 @@ public final class PlayerViewModel: PlayerViewModelInterface {
             "Trying playback candidate #\(playbackCandidateIndex + 1) kind=\(candidate.streamKind.rawValue) for id=\(playbackCandidatesMediaID ?? "unknown")"
         )
         updateAudioFormatLabels(for: candidate)
-        playFromBeginning(url: candidate.url)
+        playFromBeginning(url: candidate.url, headers: candidate.headers)
     }
 
-    private func attemptNextPlaybackCandidateIfAvailable(errorMessage: String) -> Bool {
-        guard let mediaID = currentVideoId,
-              playbackCandidatesMediaID == mediaID,
-              playbackCandidateIndex + 1 < playbackCandidates.count else {
-            return false
-        }
 
-        playbackCandidateIndex += 1
-        let candidate = playbackCandidates[playbackCandidateIndex]
-        logPlayback(
-            "Trying fallback playback candidate #\(playbackCandidateIndex + 1) kind=\(candidate.streamKind.rawValue) for id=\(mediaID) after error=\(errorMessage)"
-        )
-        updateAudioFormatLabels(for: candidate)
-        playFromBeginning(url: candidate.url)
-        return true
-    }
 
-    /// Re-fetches streaming data from the network (bypassing cache) when all local candidates fail.
-    /// Mirrors SmartTubeIOS's exhaustiveRetry:
-    /// 1. Try iOS client (via resolvePlaybackCandidates — fresh fetch, no cache)
-    /// 2. Try Android client (muxed itag 18/22 — plays when iOS adaptive gets 403)
-    /// 3. Try TV client (authenticated — plays age-restricted/auth-required videos)
-    @MainActor
-    private func exhaustiveRetry(for mediaID: String, originalError: Error?) async {
-        guard !Task.isCancelled else { return }
-        let normalizedMediaID = canonicalPlaybackMediaID(mediaID)
-        print("🔁 PlayerViewModel: exhaustiveRetry starting for id=\(normalizedMediaID)")
-        
-        // 1. Thoroughly stop everything currently happening to avoid races during reset
-        currentLoadTask?.cancel()
-        currentLoadTask = nil
-        
-        // Cancel preloading and background tasks which might be "poisoning" the network/player context
-        nextPlaybackPreloadTask?.cancel()
-        nextPlaybackPreloadTask = nil
-        preloadingNextMediaID = nil
-        preparedNextPlayback = nil
-        
-        artworkVideoTask?.cancel()
-        artworkVideoTask = nil
-        
-        radioAutoplayTask?.cancel()
-        radioAutoplayTask = nil
-        
-        radioContinuationTask?.cancel()
-        radioContinuationTask = nil
-        
-        #if os(iOS)
-        accentLoadTask?.cancel()
-        accentLoadTask = nil
-        #endif
-        
-        lastFMScrobbleTask?.cancel()
-        lastFMScrobbleTask = nil
-        
-        removeCurrentItemEndObserver()
-        
-        // 2. Hard reset the player engine to clear any "stuck" error states (e.g. NSURLErrorDomain code -1)
-        playbackEngine.fullReset()
+    // Removed exhaustiveRetry
 
-        // 3. Invalidate cached playback resolution so we get fresh URLs
-        mediaCacheStore.invalidatePlayback(for: normalizedMediaID)
-
-        // --- Attempt 1: iOS client (fresh fetch) ---
-        do {
-            let freshCandidates = try await resolvePlaybackCandidates(forID: normalizedMediaID, forceDecipher: true)
-            guard !Task.isCancelled, currentVideoId == mediaID else { return }
-
-            if !freshCandidates.isEmpty {
-                print("✅ PlayerViewModel: exhaustiveRetry — got \(freshCandidates.count) iOS candidate(s) for id=\(normalizedMediaID)")
-                playbackCandidates = freshCandidates
-                playbackCandidateIndex = 0
-                playbackCandidatesMediaID = normalizedMediaID
-                let candidate = freshCandidates[0]
-                updateAudioFormatLabels(for: candidate)
-                playFromBeginning(url: candidate.url)
-                return
-            }
-            print("⚠️ PlayerViewModel: exhaustiveRetry — iOS returned 0 candidates for id=\(normalizedMediaID)")
-        } catch {
-            guard !Task.isCancelled, currentVideoId == mediaID else { return }
-            print("⚠️ PlayerViewModel: exhaustiveRetry — iOS failed for id=\(normalizedMediaID): \(error)")
-        }
-
-        // --- Attempt 2: Android client (muxed fallback) ---
-        do {
-            print("🔁 PlayerViewModel: exhaustiveRetry — trying Android client for id=\(normalizedMediaID)")
-            let youtube = self.youtube.main
-            let androidVideo = try await youtube.videoAndroid(id: normalizedMediaID)
-
-            guard !Task.isCancelled, currentVideoId == mediaID else { return }
-
-            // Use the standard candidate builder — same as iOS path
-            let androidCandidates = PlaybackCandidateBuilder.fromVideo(
-                androidVideo,
-                preferredURL: nil,
-                validUntil: Date().addingTimeInterval(3600)
-            )
-
-            if !androidCandidates.isEmpty {
-                print("✅ PlayerViewModel: exhaustiveRetry — got \(androidCandidates.count) Android candidate(s) for id=\(normalizedMediaID)")
-                playbackCandidates = androidCandidates
-                playbackCandidateIndex = 0
-                playbackCandidatesMediaID = normalizedMediaID
-                let candidate = androidCandidates[0]
-                updateAudioFormatLabels(for: candidate)
-                playFromBeginning(url: candidate.url)
-                return
-            }
-            print("⚠️ PlayerViewModel: exhaustiveRetry — Android returned no usable streams for id=\(normalizedMediaID)")
-        } catch {
-            guard !Task.isCancelled, currentVideoId == mediaID else { return }
-            print("⚠️ PlayerViewModel: exhaustiveRetry — Android failed for id=\(normalizedMediaID): \(error)")
-        }
-
-        // --- Attempt 3: TV client (authenticated fallback) ---
-        do {
-            print("🔁 PlayerViewModel: exhaustiveRetry — trying TV client for id=\(normalizedMediaID)")
-            let youtube = self.youtube.main
-            let tvVideo = try await youtube.videoTV(id: normalizedMediaID)
-
-            guard !Task.isCancelled, currentVideoId == mediaID else { return }
-
-            let tvCandidates = PlaybackCandidateBuilder.fromVideo(
-                tvVideo,
-                preferredURL: nil,
-                validUntil: Date().addingTimeInterval(3600)
-            )
-
-            if !tvCandidates.isEmpty {
-                print("✅ PlayerViewModel: exhaustiveRetry — got \(tvCandidates.count) TV candidate(s) for id=\(normalizedMediaID)")
-                playbackCandidates = tvCandidates
-                playbackCandidateIndex = 0
-                playbackCandidatesMediaID = normalizedMediaID
-                let candidate = tvCandidates[0]
-                updateAudioFormatLabels(for: candidate)
-                playFromBeginning(url: candidate.url)
-                return
-            }
-            print("❌ PlayerViewModel: exhaustiveRetry — TV returned no usable streams for id=\(normalizedMediaID)")
-        } catch {
-            guard !Task.isCancelled, currentVideoId == mediaID else { return }
-            print("❌ PlayerViewModel: exhaustiveRetry — TV failed for id=\(normalizedMediaID): \(error)")
-        }
-
-        // All attempts exhausted
-        playbackEngine.setIsPlaying(false)
-        playbackError = originalError?.localizedDescription ?? "Unable to play this video"
-    }
-
-    private func canonicalPlaybackMediaID(_ mediaID: String) -> String {
+    func canonicalPlaybackMediaID(_ mediaID: String) -> String {
         let trimmed = mediaID.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.hasPrefix("youtube-") {
             return String(trimmed.dropFirst("youtube-".count))
@@ -2045,7 +1009,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         return trimmed
     }
 
-    private func startArtworkVideoProcessingIfNeeded(
+    func startArtworkVideoProcessingIfNeeded(
         for mediaID: String,
         title: String,
         artist: String,
@@ -2146,19 +1110,29 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         artworkVideoError = nil
     }
 
-    private func observeCurrentItemStatus(_ item: AVPlayerItem) {
-        currentItemStatusObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
-            guard let self = self else { return }
-
-            Task { @MainActor in
-                switch item.status {
+    // Patch 4: AsyncStream-based item status observer.
+    // The task is stored so it can be cancelled before replaceCurrentItem,
+    // eliminating the race window where a stale .failed fires against new state.
+    private func observeItemStatus(_ item: AVPlayerItem) {
+        itemObserverTask?.cancel()
+        itemObserverTask = Task { @MainActor [weak self, weak item] in
+            guard let self, let item else { return }
+            for await status in item.statusStream where !Task.isCancelled {
+                guard item === self.player.currentItem else { return }
+                switch status {
                 case .readyToPlay:
                     self.logPlayback("AVPlayerItem ready to play")
+                    // Patch 7: Restore saved position after a URL refresh.
+                    if let position = self.savedPositionToRestore {
+                        self.savedPositionToRestore = nil
+                        self.playbackEngine.seek(to: position)
+                    }
                     if self.isPlaying {
                         self.player.play()
                     }
                     self.updateNowPlayingPlaybackInfo(force: true)
                     self.updateRemoteCommandState()
+
                 case .failed:
                     let nsError = item.error as NSError?
                     let errorMessage = nsError?.localizedDescription ?? "unknown error"
@@ -2178,19 +1152,38 @@ public final class PlayerViewModel: PlayerViewModelInterface {
                     }
 
                     // Step 2: One-shot exhaustive retry — fetch fresh URLs from the network.
-                    // We gate on exhaustiveRetryAttemptedIDs so this fires exactly once per
-                    // track. Without the gate the loop is: fail → retry → same URL → fail → ...
-                    if let mediaID = self.currentVideoId,
+                    // Patch 6: No fullReset() — reuse the existing AVPlayer instance.
+                    if let mediaID = self.playbackCandidatesMediaID,
                        !self.exhaustiveRetryAttemptedIDs.contains(mediaID) {
                         self.exhaustiveRetryAttemptedIDs.insert(mediaID)
+                        // Patch 7: Capture position before we swap the URL.
+                        self.savedPositionToRestore = self.currentTime > 1 ? self.currentTime : nil
                         self.exhaustiveRetryTask?.cancel()
-                        self.exhaustiveRetryTask = Task { [weak self] in
-                            await self?.exhaustiveRetry(for: mediaID, originalError: item.error)
+                        self.exhaustiveRetryTask = Task { @MainActor [weak self] in
+                            guard let self else { return }
+                            do {
+                                let freshCandidates = try await self.resolvePlaybackCandidates(
+                                    forID: mediaID,
+                                    title: self.currentTitle,
+                                    artist: self.currentArtist,
+                                    forceDecipher: true
+                                )
+                                guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
+                                if !freshCandidates.isEmpty {
+                                    self.configurePlaybackCandidates(for: mediaID, candidates: freshCandidates)
+                                    self.playCurrentPlaybackCandidate()
+                                }
+                            } catch {
+                                guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
+                                self.savedPositionToRestore = nil
+                                self.playbackEngine.setIsPlaying(false)
+                                self.playbackError = error.localizedDescription
+                            }
                         }
                         return
                     }
 
-                    // Step 3: Exhaustive retry already attempted — fall through to standard handlers.
+                    // Step 3: Exhaustive retry already attempted — fall through.
                     if self.handlePlaybackPermissionFailureIfNeeded(
                         errorMessage: errorMessage,
                         statusCode: statusCode,
@@ -2208,6 +1201,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
                     self.playbackError = item.error?.localizedDescription ?? "Failed to load media"
                     self.updateNowPlayingPlaybackInfo(force: true)
                     self.updateRemoteCommandState()
+
                 case .unknown:
                     self.logPlayback("AVPlayerItem status unknown")
                 @unknown default:
@@ -2221,35 +1215,28 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         guard let events = item.errorLog()?.events else {
             return nil
         }
-
         for event in events.reversed() {
             let statusCode = Int(event.errorStatusCode)
-            if statusCode != 0 {
-                return statusCode
-            }
+            if statusCode != 0 { return statusCode }
         }
-
         return nil
     }
 
-    private func observeCurrentItemEnd(_ item: AVPlayerItem) {
-        removeCurrentItemEndObserver()
-        currentItemEndObserver = NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: item,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in
+    // Patch 5: Async notification-based end observer.
+    // Stored as a Task so it is automatically cancelled before each replaceCurrentItem.
+    private func observeItemEnd(_ item: AVPlayerItem) {
+        endObserverTask?.cancel()
+        endObserverTask = Task { @MainActor [weak self, weak item] in
+            guard let self, let item else { return }
+            let notifications = NotificationCenter.default.notifications(
+                named: .AVPlayerItemDidPlayToEndTime,
+                object: item
+            )
+            for await _ in notifications where !Task.isCancelled {
+                guard item === self.player.currentItem else { return }
                 self.advanceToNextQueueEntry(triggeredByPlaybackEnd: true)
+                return
             }
-        }
-    }
-
-    private func removeCurrentItemEndObserver() {
-        if let currentItemEndObserver {
-            NotificationCenter.default.removeObserver(currentItemEndObserver)
-            self.currentItemEndObserver = nil
         }
     }
 
@@ -2377,128 +1364,7 @@ public final class PlayerViewModel: PlayerViewModelInterface {
         )
     }
 
-    private func handlePlaybackPermissionFailureIfNeeded(
-        errorMessage: String,
-        statusCode: Int?,
-        errorDomain: String?,
-        errorCode: Int?
-    ) -> Bool {
-        guard let mediaID = currentVideoId else { return false }
-        guard supportsYouTubeCandidateRecovery else { return false }
 
-        guard shouldAttemptPlaybackRecovery(
-            for: errorMessage,
-            statusCode: statusCode,
-            errorDomain: errorDomain,
-            errorCode: errorCode
-        ) else {
-            return false
-        }
-
-        let currentAttemptCount = playbackRecoveryAttemptCounts[mediaID, default: 0]
-        guard currentAttemptCount < PlaybackRecoveryPolicy.maxAttemptsPerMediaID else {
-            return false
-        }
-
-        playbackRecoveryAttemptCounts[mediaID] = currentAttemptCount + 1
-        playbackRecoveryTask?.cancel()
-        playbackRecoveryTask = Task { [weak self] in
-            guard let self else { return }
-
-            do {
-                await self.metadataCache.remove(mediaID)
-                self.mediaCacheStore.invalidatePlayback(for: mediaID)
-                let candidates = try await self.resolvePlaybackCandidates(forID: mediaID, forceDecipher: true)
-
-                guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
-                self.configurePlaybackCandidates(for: mediaID, candidates: candidates)
-                self.playCurrentPlaybackCandidate()
-                self.logPlayback(
-                    "Recovered playback with refreshed stream URL for id=\(mediaID), attempt=\(currentAttemptCount + 1), status=\(statusCode.map(String.init) ?? "n/a")"
-                )
-            } catch {
-                guard !Task.isCancelled, self.currentVideoId == mediaID else { return }
-                self.playbackEngine.setIsPlaying(false)
-                self.playbackError = error.localizedDescription
-                self.updateNowPlayingPlaybackInfo(force: true)
-                self.updateRemoteCommandState()
-                print("❌ PlayerViewModel: Playback recovery failed for id=\(mediaID): \(error.localizedDescription)")
-            }
-        }
-
-        return true
-    }
-
-    private func shouldAttemptPlaybackRecovery(
-        for errorMessage: String,
-        statusCode: Int?,
-        errorDomain: String?,
-        errorCode: Int?
-    ) -> Bool {
-        if let statusCode {
-            if statusCode == 401 || statusCode == 403 || statusCode == 404 || statusCode == 410 || statusCode == 429 {
-                return true
-            }
-
-            if statusCode >= 500 {
-                return true
-            }
-        }
-
-        if let errorDomain,
-           let errorCode,
-           errorDomain == NSURLErrorDomain {
-            let recoverableCodes: Set<Int> = [-1100, -1102, -1011, -1009, -1005, -1004, -1003, -1001]
-            if recoverableCodes.contains(errorCode) {
-                return true
-            }
-        }
-
-        if let errorDomain,
-           let errorCode,
-           errorDomain == AVFoundationErrorDomain {
-            let recoverableCodes: Set<Int> = [-11800, -11819, -11850, -11867]
-            if recoverableCodes.contains(errorCode) {
-                return true
-            }
-        }
-
-        let normalized = errorMessage.lowercased()
-        return normalized.contains("permission")
-            || normalized.contains("forbidden")
-            || normalized.contains("403")
-            || normalized.contains("not authorized")
-            || normalized.contains("access denied")
-            || normalized.contains("expired")
-            || normalized.contains("signature")
-            || normalized.contains("token")
-            || normalized == "unknown error"
-            || normalized.contains("failed to load")
-            || normalized.contains("could not be loaded")
-    }
-
-    private func advanceQueueAfterUnrecoverableFailure(errorMessage: String) -> Bool {
-        guard hasNextTrackInQueue else {
-            return false
-        }
-
-        logPlayback("Advancing queue after unrecoverable failure: \(errorMessage)")
-        advanceToNextQueueEntry(triggeredByPlaybackEnd: true)
-        return true
-    }
-
-    private func handlePlaybackFailure(_ error: Error) {
-        playbackEngine.pause()
-        playbackError = error.localizedDescription
-        updateNowPlayingPlaybackInfo(force: true)
-        updateRemoteCommandState()
-        
-        let videoID = currentVideoId ?? "Unknown"
-        print("❌ PlayerViewModel: Playback failed for ID [\(videoID)]: \(error.localizedDescription)")
-        if let youtubeError = error as? YouTubeError {
-             print("   Details: \(youtubeError)")
-        }
-    }
 
     // MARK: - Internal Setup
 

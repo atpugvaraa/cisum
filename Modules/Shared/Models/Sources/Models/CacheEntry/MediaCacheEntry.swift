@@ -12,13 +12,15 @@ import SwiftData
 public final class MediaCacheEntry {
     @Attribute(.unique) public var mediaID: String
 
-    public var playbackPreferredURLString: String?
-    public var playbackHLSURLString: String?
-    public var playbackMuxedURLString: String?
-    public var playbackAudioURLString: String?
-    public var playbackAudioMimeType: String?
-    public var playbackUpdatedAt: Date?
-    public var playbackValidUntilAt: Date?
+    // Ephemeral playback URL data MUST NOT be persisted here. Playback URLs are
+    // ephemeral runtime artifacts and are stored in an in-memory TTL store.
+    // Persist only minimal canonical metadata for playback resolution auditing.
+    public var canonicalID: String?
+    public var activeRepresentationKey: String?
+    // Optional JSON blobs for hydration/candidate metadata; kept small and opaque.
+    public var hydrationMetadataJSON: String?
+    public var candidateMetadataJSON: String?
+    public var playbackResolvedAt: Date?
 
     public var artworkURLString: String?
     public var artworkUpdatedAt: Date?

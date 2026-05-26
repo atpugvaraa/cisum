@@ -142,6 +142,14 @@ public struct SettingsView: View {
                 }
             #endif
 
+            Section("Streaming Sources") {
+                Picker("Radio Recommendations", selection: Bindable(streamingProviderSettings).recommendationSource) {
+                    ForEach(StreamingProviderSettings.RecommendationSource.allCases) { source in
+                        Text(source.rawValue).tag(source)
+                    }
+                }
+            }
+
             Section("Diagnostics") {
                 Toggle("Enable Metrics", isOn: Bindable(settings).metricsEnabled)
                 LabeledContent(

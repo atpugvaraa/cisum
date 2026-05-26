@@ -1,4 +1,5 @@
 import SwiftUI
+import Playlists
 
 public final class LibraryModule {
     public init() {}
@@ -8,6 +9,6 @@ public final class LibraryModule {
     }
 
     public func playlistDetailView(for id: String) -> some View {
-        PlaylistDetailView(playlistID: id)
+        PlaylistDetailWrapper(playlistID: id)
     }
 }

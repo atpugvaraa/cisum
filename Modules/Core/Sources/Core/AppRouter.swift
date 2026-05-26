@@ -19,7 +19,7 @@ public final class AppRouter: Router {
             onTabSwitch?(.library)
         case .search:
             onTabSwitch?(.search)
-        case .profile, .settings, .playlist, .login:
+        case .profile, .settings, .plugins, .playlist, .artist, .album, .login, .spotifyLogin:
             onPush?(route)
         }
     }

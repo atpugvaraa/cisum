@@ -2,9 +2,10 @@ import SwiftUI
 import DesignSystem
 
 @MainActor
-public final class NavigationState: ObservableObject {
-    @Published public var selectedTab: TabItem = .home
-    @Published public var tabPaths: [TabItem: NavigationPath] = Dictionary(
+@Observable
+public final class NavigationState {
+    public var selectedTab: TabItem = .home
+    public var tabPaths: [TabItem: NavigationPath] = Dictionary(
         uniqueKeysWithValues: TabItem.allCases.map { ($0, NavigationPath()) }
     )
 

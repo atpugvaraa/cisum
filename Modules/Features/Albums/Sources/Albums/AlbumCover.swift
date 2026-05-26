@@ -5,27 +5,33 @@
 //  Created by Aarav Gupta on 19/05/26.
 //
 
+#if os(iOS)
 import SwiftUI
 import DesignSystem
 import Kingfisher
 import Services
+import Models
 
 // MARK: - Album Cover
-struct AlbumCover: View {
-    var isCardExpanded: Bool
-    var viewModel: AlbumViewModel
+public struct AlbumCover: View {
+    public var isCardExpanded: Bool
+    @Bindable public var viewModel: AlbumViewModel
+    public let album: Album
     
-    private let displayURL = URL(string: "https://yt3.googleusercontent.com/_c4JMCiDeaC2RRfShXddOuIV_A7oCL4m1R6-YK-3TDlsYgNQTXwxV0f-TTJrsO1StMt07qW3O6XNPSNt=w544-h544-l90-rj")
-    private let paletteURL = URL(string: "https://yt3.googleusercontent.com/_c4JMCiDeaC2RRfShXddOuIV_A7oCL4m1R6-YK-3TDlsYgNQTXwxV0f-TTJrsO1StMt07qW3O6XNPSNt=w36-h36-l90-rj")
+    public init(isCardExpanded: Bool, viewModel: AlbumViewModel, album: Album) {
+        self.isCardExpanded = isCardExpanded
+        self.viewModel = viewModel
+        self.album = album
+    }
     
-    var body: some View {
+    public var body: some View {
         ZStack {
             Rectangle()
                 .foregroundStyle(viewModel.backgroundColor)
                 .overlay(isCardExpanded ? .clear : .black.opacity(0.1))
                 .clipShape(ExtrusionShape(offset: 5))
                 
-            if let displayURL {
+            if let artwork = album.artworkURLString, let displayURL = URL(string: artwork) {
                 KFImage(displayURL)
                     .resizable()
                     .padding(.top, isCardExpanded ? 50 : 0)
@@ -42,14 +48,16 @@ struct AlbumCover: View {
                 .overlay {
                     HStack {
                         VStack(alignment: .leading) {
-                            Text("Igor")
+                            Text(album.title)
                                 .font(.title)
                                 .fontWidth(.expanded)
                                 .bold()
                             
-                            Text("67 plays")
-                                .fontWidth(.expanded)
-                                .fontWeight(.semibold)
+                            if let year = album.releaseDateString {
+                                Text(year)
+                                    .fontWidth(.expanded)
+                                    .fontWeight(.semibold)
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
@@ -64,8 +72,10 @@ struct AlbumCover: View {
             }
         }
         .task {
-            guard let paletteURL else { return }
+            guard let artwork = album.artworkURLString, let displayURL = URL(string: artwork) else { return }
+            let paletteURL = ImageColorExtractor.paletteURL(from: displayURL)
             await viewModel.fetchPaletteIfNeeded(from: paletteURL)
         }
     }
 }
+#endif

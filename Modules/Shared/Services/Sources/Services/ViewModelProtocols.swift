@@ -43,6 +43,7 @@ public protocol PlayerViewModelInterface: AnyObject, Observable {
     func load(song: YouTubeMusicSong, preserveQueue: Bool)
     func load(video: YouTubeVideo, preserveQueue: Bool)
     func load(external track: ExternalQueueTrack, preserveQueue: Bool)
+    func setQueue(_ tracks: [ExternalQueueTrack], startIndex: Int)
     
     // Hi-Res Actions
     var isCheckingHiResAvailability: Bool { get }

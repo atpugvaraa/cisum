@@ -32,7 +32,6 @@ public struct SearchView: View {
     @State private var isSearchPresentationActive: Bool = false
     @State private var showNonPlayableAlert: Bool = false
     @State private var nonPlayableMessage: String = ""
-    @State private var selectedSpotifyArtist: SpotifySearchArtist?
     @State private var isImportingSpotifyPlaylistID: String?
     @State private var actionAlertMessage: String = ""
     @State private var showActionAlert: Bool = false
@@ -67,7 +66,6 @@ public struct SearchView: View {
                         searchViewModel: searchViewModel,
                         playerViewModel: playerViewModel,
                         isImportingSpotifyPlaylistID: $isImportingSpotifyPlaylistID,
-                        selectedSpotifyArtist: $selectedSpotifyArtist,
                         showNonPlayableAlert: $showNonPlayableAlert,
                         nonPlayableMessage: $nonPlayableMessage,
                         onRowSelection: handleRowSelection
@@ -89,12 +87,6 @@ public struct SearchView: View {
                 searchViewModel.applySuggestion(suggestion)
             }
         )
-        .sheet(item: $selectedSpotifyArtist) { artist in
-            SpotifyArtistDetailSheet(
-                artist: artist,
-                onSearchSongs: { searchSongs(for: artist) }
-            )
-        }
         .alert(actionAlertMessage, isPresented: $showActionAlert) {
             Button("OK", role: .cancel) {}
         }
@@ -103,6 +95,8 @@ public struct SearchView: View {
     // MARK: - Actions
 
     private func handleRowSelection(_ item: FederatedSearchItem) {
+        hideKeyboard()
+        
         switch item.payload {
         case .youtubeMusic(let song):
             searchViewModel.recordSuccessfulPlayFromCurrentQuery()
@@ -120,7 +114,7 @@ public struct SearchView: View {
             }
 
         case .spotifyArtist(let artist):
-            selectedSpotifyArtist = artist
+            navigateToArtist(artist)
 
         case .spotifyPlaylist(let playlist):
             Task {
@@ -209,6 +203,37 @@ public struct SearchView: View {
         isSearchPresentationActive = true
     }
 
+    /// Upserts a SwiftData Artist stub from a Spotify search result, then navigates natively.
+    private func navigateToArtist(_ spotifyArtist: SpotifySearchArtist) {
+        // Check if we already have an Artist for this Spotify ID.
+        let spotifyID = spotifyArtist.id
+        let descriptor = FetchDescriptor<Artist>(
+            predicate: #Predicate<Artist> { $0.spotifyArtistID == spotifyID }
+        )
+        let existing = try? modelContext.fetch(descriptor)
+
+        if let artist = existing?.first {
+            // Update artwork if we now have a better URL
+            if artist.artworkURLString == nil, let url = spotifyArtist.artworkURL {
+                artist.artworkURLString = url.absoluteString
+                artist.updatedAt = .now
+            }
+            router.navigate(to: .artist(id: artist.artistID))
+            return
+        }
+
+        // Create a stub artist from the search result.
+        let stub = Artist(
+            displayName: spotifyArtist.name,
+            normalizedName: spotifyArtist.name.lowercased(),
+            artworkURLString: spotifyArtist.artworkURL?.absoluteString,
+            genresJSONString: spotifyArtist.genres.isEmpty ? nil : (try? String(data: JSONEncoder().encode(spotifyArtist.genres), encoding: .utf8)) ?? nil,
+            spotifyArtistID: spotifyArtist.id
+        )
+        modelContext.insert(stub)
+        router.navigate(to: .artist(id: stub.artistID))
+    }
+
     private func playlistID(for item: FederatedSearchItem) -> String? {
         guard case .spotifyPlaylist(let playlist) = item.payload else { return nil }
         return playlist.id
@@ -290,7 +315,6 @@ private struct SearchResultsList: View {
     let searchViewModel: any SearchViewModelInterface
     let playerViewModel: any PlayerViewModelInterface
     @Binding var isImportingSpotifyPlaylistID: String?
-    @Binding var selectedSpotifyArtist: SpotifySearchArtist?
     @Binding var showNonPlayableAlert: Bool
     @Binding var nonPlayableMessage: String
     let onRowSelection: (FederatedSearchItem) -> Void

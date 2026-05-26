@@ -64,7 +64,7 @@ struct WindowModifier: NSViewRepresentable {
     func makeNSView(context: Context) -> some NSView {
         let view = NSView()
         
-        DispatchQueue.main.async {
+        Task { @MainActor in
             configureWindow(for: view)
         }
         
@@ -72,7 +72,7 @@ struct WindowModifier: NSViewRepresentable {
     }
     
     func updateNSView(_ nsView: NSViewType, context: Context) {
-        DispatchQueue.main.async {
+        Task { @MainActor in
             configureWindow(for: nsView)
         }
     }

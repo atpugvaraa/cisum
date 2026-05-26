@@ -218,6 +218,8 @@ public struct SearchOverlayBar: View {
         let trimmedQuery = searchOverlay.query.trimmingCharacters(in: .whitespacesAndNewlines)
         searchOverlay.updateActiveQuery(trimmedQuery)
 
+        hideKeyboard()
+
         switch searchOverlay.selectedScope {
         case .global:
             router.navigate(to: .search)

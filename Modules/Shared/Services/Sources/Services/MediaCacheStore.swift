@@ -2,6 +2,15 @@ import Foundation
 import SwiftData
 import YouTubeSDK
 import Models
+import os
+
+// Minimal persisted candidate metadata (no URLs) used for auditing and canonical tracing.
+private struct PersistedCandidateMetadata: Codable, Sendable {
+    let streamKind: String
+    let mimeType: String?
+    let itag: Int?
+    let expiresAt: Date?
+}
 
 public struct PlaybackCandidate: Sendable, Equatable {
     public enum StreamKind: String, Sendable {
@@ -11,6 +20,7 @@ public struct PlaybackCandidate: Sendable, Equatable {
     }
 
     public let url: URL
+    public let headers: [String: String]?
     public let streamKind: StreamKind
     public let mimeType: String?
     public let itag: Int?
@@ -19,6 +29,7 @@ public struct PlaybackCandidate: Sendable, Equatable {
 
     public init(
         url: URL,
+        headers: [String: String]? = nil,
         streamKind: StreamKind,
         mimeType: String? = nil,
         itag: Int? = nil,
@@ -26,6 +37,7 @@ public struct PlaybackCandidate: Sendable, Equatable {
         isCompatible: Bool = true
     ) {
         self.url = url
+        self.headers = headers
         self.streamKind = streamKind
         self.mimeType = mimeType
         self.itag = itag
@@ -50,6 +62,7 @@ public enum PlaybackCandidateBuilder {
             candidates.append(
                 PlaybackCandidate(
                     url: hls,
+                    headers: video.streamingData?.hlsPlaybackHeaders,
                     streamKind: .hls,
                     mimeType: "application/x-mpegURL",
                     itag: nil,
@@ -66,6 +79,7 @@ public enum PlaybackCandidateBuilder {
             candidates.append(
                 PlaybackCandidate(
                     url: url,
+                    headers: muxed.playbackHeaders,
                     streamKind: .muxed,
                     mimeType: mimeType,
                     itag: muxed.itag,
@@ -82,6 +96,7 @@ public enum PlaybackCandidateBuilder {
             candidates.append(
                 PlaybackCandidate(
                     url: url,
+                    headers: audio.playbackHeaders,
                     streamKind: .audio,
                     mimeType: mimeType,
                     itag: audio.itag,
@@ -96,6 +111,7 @@ public enum PlaybackCandidateBuilder {
             candidates.append(
                 PlaybackCandidate(
                     url: preferredURL,
+                    headers: nil,
                     streamKind: inferKind(for: preferredURL),
                     mimeType: nil,
                     itag: nil,
@@ -109,70 +125,11 @@ public enum PlaybackCandidateBuilder {
     }
 
     public static func fromPersistedEntry(_ entry: MediaCacheEntry) -> [PlaybackCandidate] {
-        let expiresAt = entry.playbackValidUntilAt
-        var candidates: [PlaybackCandidate] = []
-
-        if let hlsURLString = entry.playbackHLSURLString,
-           let hlsURL = URL(string: hlsURLString) {
-            candidates.append(
-                PlaybackCandidate(
-                    url: hlsURL,
-                    streamKind: .hls,
-                    mimeType: "application/x-mpegURL",
-                    itag: nil,
-                    expiresAt: expiresAt,
-                    isCompatible: true
-                )
-            )
-        }
-
-        if let muxedURLString = entry.playbackMuxedURLString,
-           let muxedURL = URL(string: muxedURLString) {
-            let mimeType = inferredMimeType(from: muxedURL, fallback: nil)
-            candidates.append(
-                PlaybackCandidate(
-                    url: muxedURL,
-                    streamKind: .muxed,
-                    mimeType: mimeType,
-                    itag: nil,
-                    expiresAt: expiresAt,
-                    isCompatible: isLikelyAVPlayerCompatible(mimeType: mimeType)
-                )
-            )
-        }
-
-        if let audioURLString = entry.playbackAudioURLString,
-           let audioURL = URL(string: audioURLString) {
-            let mimeType = inferredMimeType(from: audioURL, fallback: entry.playbackAudioMimeType)
-            candidates.append(
-                PlaybackCandidate(
-                    url: audioURL,
-                    streamKind: .audio,
-                    mimeType: mimeType,
-                    itag: nil,
-                    expiresAt: expiresAt,
-                    isCompatible: isLikelyAVPlayerCompatible(mimeType: mimeType)
-                )
-            )
-        }
-
-        if candidates.isEmpty,
-           let preferredURLString = entry.playbackPreferredURLString,
-           let preferredURL = URL(string: preferredURLString) {
-            let mimeType = inferredMimeType(from: preferredURL, fallback: nil)
-            candidates.append(
-                PlaybackCandidate(
-                    url: preferredURL,
-                    streamKind: inferKind(for: preferredURL),
-                    mimeType: mimeType,
-                    itag: nil,
-                    expiresAt: expiresAt,
-                    isCompatible: isLikelyAVPlayerCompatible(mimeType: mimeType)
-                )
-            )
-        }
-
-        return deduplicatedCompatibleCandidates(candidates)
+        // Stream URLs are ephemeral and are no longer persisted in SwiftData.
+        // This function remains for API compatibility but will not reconstruct
+        // `PlaybackCandidate` instances from persisted URL strings.
+        // Instead, callers should consult the ephemeral `PlaybackURLEphemeralStore`.
+        return []
     }
 
     private static func deduplicatedCompatibleCandidates(_ candidates: [PlaybackCandidate]) -> [PlaybackCandidate] {
@@ -190,7 +147,7 @@ public enum PlaybackCandidateBuilder {
     }
 
     private static func isLikelyAVPlayerCompatible(mimeType: String?) -> Bool {
-        guard let mimeType else {
+        guard let mimeType = mimeType else {
             return false
         }
 
@@ -240,15 +197,15 @@ public enum PlaybackCandidateBuilder {
 
         let fallbackURL = video.hlsURL
             ?? video.bestMuxedStream.flatMap { stream in
-                guard let streamURL = stream.url else { return nil }
+                guard let streamURL = stream.playbackUrl else { return nil }
                 return URL(string: streamURL)
             }
             ?? video.bestAudioStream.flatMap { stream in
-                guard let streamURL = stream.url else { return nil }
+                guard let streamURL = stream.playbackUrl else { return nil }
                 return URL(string: streamURL)
             }
 
-        guard let fallbackURL else {
+        guard let fallbackURL = fallbackURL else {
             return nil
         }
 
@@ -313,23 +270,20 @@ public final class MediaCacheStore {
         self.imageFileStore = imageFileStore
     }
 
-    public func playbackCandidates(for mediaID: String, maxAge: TimeInterval) -> [PlaybackCandidate]? {
-        guard let entry = fetchEntry(for: mediaID),
-              let updatedAt = entry.playbackUpdatedAt,
-              Date().timeIntervalSince(updatedAt) <= maxAge else {
-            return nil
+    public func playbackCandidates(for mediaID: String, maxAge: TimeInterval) async -> [PlaybackCandidate]? {
+        // First check ephemeral runtime store for valid playback URLs.
+        if let ephemeral = await PlaybackURLEphemeralStore.shared.candidates(for: mediaID, maxAge: maxAge) {
+            // mark last access on corresponding SwiftData entry for bookkeeping
+            if let entry = fetchEntry(for: mediaID) {
+                entry.lastAccessedAt = .now
+                saveContext()
+            }
+            return ephemeral
         }
 
-        if let validUntil = entry.playbackValidUntilAt,
-           Date() >= validUntil {
-            return nil
-        }
-
-        entry.lastAccessedAt = .now
-        saveContext()
-
-        let candidates = PlaybackCandidateBuilder.fromPersistedEntry(entry)
-        return candidates.isEmpty ? nil : candidates
+        // No ephemeral URLs available; do not reconstruct candidates from
+        // persisted data because URLs are ephemeral by definition.
+        return nil
     }
 
     public func savePlaybackResolution(mediaID: String, candidates: [PlaybackCandidate], validUntil: Date?) {
@@ -337,33 +291,35 @@ public final class MediaCacheStore {
             return
         }
 
+        // Persist URLs only in the ephemeral runtime store (in-memory TTL store).
+        Task { @MainActor in
+            await PlaybackURLEphemeralStore.shared.save(mediaID: mediaID, candidates: candidates, expiresAt: validUntil)
+        }
+
+        // Persist minimal candidate metadata (without URLs) into SwiftData for auditing
+        // and canonical tracing. This intentionally excludes absolute URLs.
         let entry = entryForWrite(mediaID: mediaID)
+        entry.playbackResolvedAt = .now
+        if let json = try? JSONEncoder().encode(
+            candidates.map { c in
+                PersistedCandidateMetadata(streamKind: c.streamKind.rawValue, mimeType: c.mimeType, itag: c.itag, expiresAt: c.expiresAt)
+            }
+        ), let string = String(data: json, encoding: .utf8) {
+            entry.candidateMetadataJSON = string
+        }
 
-        let preferredCandidate = candidates.first
-        let hlsCandidate = candidates.first(where: { $0.streamKind == .hls })
-        let muxedCandidate = candidates.first(where: { $0.streamKind == .muxed })
-        let audioCandidate = candidates.first(where: { $0.streamKind == .audio })
-
-        entry.playbackPreferredURLString = preferredCandidate?.url.absoluteString
-        entry.playbackHLSURLString = hlsCandidate?.url.absoluteString
-        entry.playbackMuxedURLString = muxedCandidate?.url.absoluteString
-        entry.playbackAudioURLString = audioCandidate?.url.absoluteString
-        entry.playbackAudioMimeType = audioCandidate?.mimeType
-        entry.playbackUpdatedAt = .now
-        entry.playbackValidUntilAt = validUntil ?? candidates.compactMap(\.expiresAt).min()
         entry.lastAccessedAt = .now
         saveContext()
     }
 
     public func invalidatePlayback(for mediaID: String) {
+        Task { @MainActor in
+            await PlaybackURLEphemeralStore.shared.invalidate(mediaID: mediaID)
+        }
+
         guard let entry = fetchEntry(for: mediaID) else { return }
-        entry.playbackPreferredURLString = nil
-        entry.playbackHLSURLString = nil
-        entry.playbackMuxedURLString = nil
-        entry.playbackAudioURLString = nil
-        entry.playbackAudioMimeType = nil
-        entry.playbackUpdatedAt = nil
-        entry.playbackValidUntilAt = nil
+        entry.candidateMetadataJSON = nil
+        entry.playbackResolvedAt = nil
         entry.lastAccessedAt = .now
         saveContext()
     }
@@ -478,7 +434,7 @@ public final class MediaCacheStore {
         enforceEntryLimit(policy.maxEntries)
         saveContext()
 
-        let keepFilenames = Set(allEntries().compactMap(\.localArtworkFilename))
+        let keepFilenames = Set(allEntries().compactMap({ $0.localArtworkFilename }))
         await imageFileStore.pruneOrphanedFiles(
             keeping: keepFilenames,
             maxFileAge: policy.localArtworkMaxAge
@@ -504,7 +460,7 @@ public final class MediaCacheStore {
     }
 
     private func url(from string: String?) -> URL? {
-        guard let string else { return nil }
+        guard let string = string else { return nil }
         return URL(string: string)
     }
 
@@ -535,16 +491,12 @@ public final class MediaCacheStore {
     }
 
     private func pruneExpiredPayloads(in entry: MediaCacheEntry, now: Date, policy: MaintenancePolicy) async {
-        if let updatedAt = entry.playbackUpdatedAt,
-           now.timeIntervalSince(updatedAt) > policy.playbackMaxAge ||
-            (entry.playbackValidUntilAt.map { now >= $0 } ?? false) {
-            entry.playbackPreferredURLString = nil
-            entry.playbackHLSURLString = nil
-            entry.playbackMuxedURLString = nil
-            entry.playbackAudioURLString = nil
-            entry.playbackAudioMimeType = nil
-            entry.playbackUpdatedAt = nil
-            entry.playbackValidUntilAt = nil
+        // Ephemeral playback URLs are pruned by the ephemeral store. Clear
+        // persisted metadata if it is stale according to policy.
+        if let resolvedAt = entry.playbackResolvedAt,
+           now.timeIntervalSince(resolvedAt) > policy.playbackMaxAge {
+            entry.playbackResolvedAt = nil
+            entry.candidateMetadataJSON = nil
         }
 
         if let updatedAt = entry.artworkUpdatedAt,
@@ -596,10 +548,8 @@ public final class MediaCacheStore {
     }
 
     private func hasAnyCachedPayload(in entry: MediaCacheEntry) -> Bool {
-        entry.playbackPreferredURLString != nil
-            || entry.playbackHLSURLString != nil
-            || entry.playbackMuxedURLString != nil
-            || entry.playbackAudioURLString != nil
+        entry.playbackResolvedAt != nil
+            || entry.candidateMetadataJSON != nil
             || entry.artworkURLString != nil
             || entry.localArtworkFilename != nil
             || entry.motionArtworkHLSURLString != nil

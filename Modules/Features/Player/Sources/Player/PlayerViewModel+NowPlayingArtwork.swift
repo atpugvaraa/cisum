@@ -212,16 +212,13 @@ extension PlayerViewModel {
         accentLoadTask = Task { @MainActor [weak self] in
             guard let self else { return }
 
-            let extractedAccent = await artworkColorExtractor.dominantColor(
-                from: artworkData,
-                cacheKey: artworkURL.absoluteString
-            )
+            let extractedPalette = await artworkColorExtractor.extractPalette(from: artworkData, cacheKey: artworkURL.absoluteString)
 
             guard !Task.isCancelled else { return }
             guard self.currentVideoId == mediaID else { return }
 
-            self.artworkAccentCache[mediaID] = (artworkURL: artworkURL, color: extractedAccent)
-            self.applyAccentColor(extractedAccent)
+            self.artworkPaletteCache[mediaID] = (artworkURL: artworkURL, palette: extractedPalette)
+            self.applyAccentColor(extractedPalette?.dominant ?? .accentColor)
         }
     }
 

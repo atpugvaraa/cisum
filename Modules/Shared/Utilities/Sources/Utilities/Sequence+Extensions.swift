@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension Sequence {
+public extension Sequence {
     /// Returns an array with duplicates removed while preserving order.
     /// Elements must be Hashable.
     func removeDuplicates() -> [Element] where Element: Hashable {

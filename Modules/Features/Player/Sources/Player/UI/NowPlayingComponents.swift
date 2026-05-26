@@ -276,10 +276,11 @@ struct SyncedLyricsView: View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 28) {
-                    ForEach(playerViewModel.syncedLyricsLines) { (line: Services.TimedLyricLine) in
+                    ForEach(Array(playerViewModel.syncedLyricsLines.enumerated()), id: \.element.id) { index, line in
                         LyricLineView(
                             line: line,
-                            isActive: isLineActive(line)
+                            isActive: isLineActive(line),
+                            distance: distanceToActiveLine(index)
                         )
                         .id(line.id)
                     }
@@ -314,28 +315,85 @@ struct SyncedLyricsView: View {
         guard let index = playerViewModel.currentSyncedLyricIndex else { return false }
         return playerViewModel.syncedLyricsLines[index].id == line.id
     }
+
+    private func distanceToActiveLine(_ index: Int) -> Int {
+        guard let currentIndex = playerViewModel.currentSyncedLyricIndex else { return index }
+        return abs(index - currentIndex)
+    }
 }
 
 struct LyricLineView: View {
     let line: Services.TimedLyricLine
     let isActive: Bool
+    let distance: Int
     @Environment(PlaybackServices.self) private var playbackServices
     private var playerViewModel: any PlayerViewModelInterface { playbackServices.playerViewModel }
 
     var body: some View {
-        Text(line.text)
-            .font(.system(size: 32, weight: .bold, design: .rounded))
-            .foregroundStyle(isActive ? .white : .white.opacity(0.2))
-            .blur(radius: isActive ? 0 : 0.8)
-            .scaleEffect(isActive ? 1.0 : 0.95, anchor: .leading)
-            .multilineTextAlignment(.leading)
-            .fixedSize(horizontal: false, vertical: true)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                playerViewModel.seek(to: line.timestamp)
+        Group {
+            if isActive, let syllables = line.syllables, !syllables.isEmpty {
+                syllablesText(currentTime: playerViewModel.currentTime)
+            } else {
+                Text(line.text)
+                    .foregroundStyle(isActive ? .white : .white.opacity(opacityForDistance))
             }
-            .animation(.spring(response: 0.4, dampingFraction: 0.75), value: isActive)
+        }
+        .font(.system(size: 34, weight: .heavy, design: .rounded))
+        .blur(radius: blurForDistance)
+        .scaleEffect(scaleForDistance, anchor: .leading)
+        .shadow(color: isActive ? .white.opacity(0.3) : .clear, radius: 10, x: 0, y: 0)
+        .multilineTextAlignment(.leading)
+        .fixedSize(horizontal: false, vertical: true)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            playerViewModel.seek(to: line.timestamp)
+        }
+        .animation(.spring(response: 0.6, dampingFraction: 0.75), value: isActive)
+        .animation(.spring(response: 0.6, dampingFraction: 0.75), value: distance)
+    }
 
+    private func syllablesText(currentTime: TimeInterval) -> Text {
+        guard let syllables = line.syllables else { return Text(line.text) }
+        
+        var combinedText = Text("")
+        for (index, syllable) in syllables.enumerated() {
+            let isSyllableActive = currentTime >= syllable.timestamp
+            let color = isSyllableActive ? Color.white : Color.white.opacity(0.3)
+            
+            var sylText = Text(syllable.text).foregroundStyle(color)
+            if !syllable.isPartOfWord && index < syllables.count - 1 {
+                sylText = sylText + Text(" ")
+            }
+            combinedText = combinedText + sylText
+        }
+        return combinedText
+    }
+
+    private var opacityForDistance: Double {
+        switch distance {
+        case 0: return 1.0
+        case 1: return 0.5
+        case 2: return 0.25
+        default: return 0.15
+        }
+    }
+
+    private var blurForDistance: CGFloat {
+        switch distance {
+        case 0: return 0
+        case 1: return 1.5
+        case 2: return 3.0
+        default: return 4.5
+        }
+    }
+
+    private var scaleForDistance: CGFloat {
+        switch distance {
+        case 0: return 1.0
+        case 1: return 0.95
+        case 2: return 0.9
+        default: return 0.85
+        }
     }
 }
 

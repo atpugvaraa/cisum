@@ -50,7 +50,7 @@ public actor VideoMetadataCache {
 
     public func set(_ id: String, video: YouTubeVideo) throws {
         guard let url = Self.resolvePlayableURL(from: video) else {
-            throw YouTubeError.decipheringFailed(videoId: id)
+            throw CacheError.decipheringFailed(videoId: id)
         }
 
         let cachedAt = Date()
@@ -100,7 +100,7 @@ public actor VideoMetadataCache {
         let task = Task<Entry, Error> {
             let video = try await fetcher(id)
             guard let url = Self.resolvePlayableURL(from: video) else {
-                throw YouTubeError.decipheringFailed(videoId: id)
+                throw CacheError.decipheringFailed(videoId: id)
             }
 
             let cachedAt = Date()
@@ -228,14 +228,14 @@ public actor VideoMetadataCache {
     private static func resolvePlayableURL(from video: YouTubeVideo) -> URL? {
         // 1) Audio-only stream (ideal for music)
         if let audio = video.bestAudioStream,
-           let urlString = audio.url,
+           let urlString = audio.playbackUrl,
            let url = URL(string: urlString) {
             return url
         }
 
         // 2) Muxed stream (video + audio in one container)
         if let muxed = video.bestMuxedStream,
-           let urlString = muxed.url,
+              let urlString = muxed.playbackUrl,
            let url = URL(string: urlString) {
             return url
         }
@@ -248,7 +248,7 @@ public actor VideoMetadataCache {
         // 4) Fallback: use the first adaptive format with a URL
         //    (covers videos where YouTube returns only video-only streams)
         if let first = video.streamingData?.adaptiveFormats.first,
-           let urlString = first.url,
+              let urlString = first.playbackUrl,
            let url = URL(string: urlString) {
             return url
         }
@@ -296,5 +296,9 @@ public actor VideoMetadataCache {
         }
 
         return nil
+    }
+
+    public enum CacheError: Error {
+        case decipheringFailed(videoId: String)
     }
 }

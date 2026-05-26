@@ -218,14 +218,20 @@ private extension YouTubePlaylistImportService {
     }
 
     private func fetchTracksFromMainPlaylist(playlistID: String, maxPages: Int = 12) async throws -> [ImportedTrackPayload]? {
-        let firstPage: YouTubeContinuation<YouTubeVideo>
+        let firstPage: YouTubeContinuation<YouTubeItem>
         do {
             firstPage = try await youtube.main.getPlaylist(id: playlistID)
         } catch {
             return nil
         }
 
-        var payloads = firstPage.items.compactMap(makePayload(from:))
+        var payloads = firstPage.items.compactMap { item -> ImportedTrackPayload? in
+            switch item {
+            case .video(let video): return makePayload(from: video)
+            case .song(let song): return makePayload(from: song)
+            default: return nil
+            }
+        }
         var seenTrackIDs = Set(payloads.map(\.sourceTrackID))
         var token = firstPage.continuationToken
         var pagesLoaded = 0
@@ -234,7 +240,7 @@ private extension YouTubePlaylistImportService {
               !continuationToken.isEmpty,
               pagesLoaded < maxPages {
             pagesLoaded += 1
-            let page = try await youtube.main.fetchContinuation(token: continuationToken)
+            let page = try await youtube.main.getPlaylist(id: playlistID)
 
             for item in page.items {
                 switch item {
